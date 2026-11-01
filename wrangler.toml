@@ -2,6 +2,7 @@ name = "thai-3d-ai-studio"
 main = "cloudflare-worker.mjs"
 compatibility_date = "2025-02-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 [assets]
 directory = ".cloudflare-assets"
