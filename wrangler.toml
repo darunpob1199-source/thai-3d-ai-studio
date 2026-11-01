@@ -1,0 +1,19 @@
+name = "thai-3d-ai-studio"
+main = "cloudflare-worker.mjs"
+compatibility_date = "2025-02-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".cloudflare-assets"
+binding = "ASSETS"
+run_worker_first = true
+
+[vars]
+NEXT_PUBLIC_GOOGLE_CLIENT_ID = "903200043425-m524dh0crheri45us9ai1237ujq1p6pa.apps.googleusercontent.com"
+PROMPTPAY_ID = "0812345678"
+
+# Cloudflare D1 Database Binding (Region: APAC)
+[[d1_databases]]
+binding = "DB"
+database_name = "thai-3d-studio-db"
+database_id = "262a23d5-604f-435e-80bb-6d11b100a0cd"

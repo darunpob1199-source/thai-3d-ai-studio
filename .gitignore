@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js & Cloudflare Build Artifacts
+.next/
+out/
+build/
+.cloudflare-assets/
+.wrangler/
+
+# Local SQLite & Runtime Logs
+data/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.log
+ecosystem.config.cjs
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
+cloudflared-tunnel.yml
+
+# OS
+.DS_Store
