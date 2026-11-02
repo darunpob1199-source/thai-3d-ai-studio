@@ -600,10 +600,26 @@ export default function Viewport3D({
   );
   const partPaintMapRef = useRef<Record<number, string>>({});
   const decalHitPosRef = useRef<[number, number, number] | null>(null);
+  const cameraStateRef = useRef<{
+    taskId: string;
+    pos: [number, number, number];
+    target: [number, number, number];
+  } | null>(null);
+  const glbCacheRef = useRef<Map<string, THREE.Group>>(new Map());
+  const texCacheRef = useRef<Map<string, THREE.CanvasTexture>>(new Map());
+
+  const getFlattenedMeshes = (root: THREE.Object3D): THREE.Mesh[] => {
+    const list: THREE.Mesh[] = [];
+    root.traverse((c) => {
+      if ((c as THREE.Mesh).isMesh) list.push(c as THREE.Mesh);
+    });
+    return list;
+  };
 
   const handlePaintSelectedPart = (hexColor: string | null) => {
     if (!selectedPart || !meshGroupRef.current) return;
-    const child = meshGroupRef.current.children[selectedPart.index] as THREE.Mesh | undefined;
+    const meshes = getFlattenedMeshes(meshGroupRef.current);
+    const child = meshes[selectedPart.index];
     if (!child || !child.isMesh) return;
     if (hexColor === null) {
       delete partPaintMapRef.current[selectedPart.index];
@@ -619,7 +635,8 @@ export default function Viewport3D({
 
   const handleToggleSelectedPartVisible = () => {
     if (!selectedPart || !meshGroupRef.current) return;
-    const child = meshGroupRef.current.children[selectedPart.index];
+    const meshes = getFlattenedMeshes(meshGroupRef.current);
+    const child = meshes[selectedPart.index];
     if (child) {
       child.visible = !child.visible;
     }
@@ -674,6 +691,13 @@ export default function Viewport3D({
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
     controls.target.set(0, 0.15, 0);
+
+    const activeTaskId = activeTask?.id || "default_preview";
+    if (cameraStateRef.current && cameraStateRef.current.taskId === activeTaskId) {
+      camera.position.set(...cameraStateRef.current.pos);
+      controls.target.set(...cameraStateRef.current.target);
+      controls.update();
+    }
 
     if (studioOverrides?.showGrid !== false) {
       const grid = new THREE.GridHelper(12, 24, "#3b1219", "#17090c");
@@ -836,7 +860,10 @@ export default function Viewport3D({
               flatShading: isFlat,
             });
           } else if (effectiveShading === "printability") {
-            const isOverhangCandidate = mesh.position.y > 0.35 && Math.abs(mesh.position.x) > 0.55;
+            const isOverhangCandidate =
+              mesh.name.includes("Arm") ||
+              mesh.name.includes("Wing") ||
+              (mesh.position.y > 0.35 && Math.abs(mesh.position.x) > 0.55);
             mesh.material = new THREE.MeshStandardMaterial({
               color: isOverhangCandidate ? "#f43f5e" : "#10b981",
               roughness: 0.4,
@@ -873,10 +900,17 @@ export default function Viewport3D({
               const aiMetalness =
                 studioOverrides?.material.metalness ??
                 (currentTask.output_glb_url ? 0.18 : Math.min(mVal, 0.35));
+              const emInt = studioOverrides?.material.emissiveIntensity ?? 0;
               mesh.material = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(aiColor),
                 roughness: aiRoughness,
                 metalness: aiMetalness,
+                emissive: new THREE.Color(
+                  emInt > 0.08
+                    ? studioOverrides?.material.accentColor || "#f59e0b"
+                    : "#000000"
+                ),
+                emissiveIntensity: emInt > 0.08 ? emInt * 0.45 : 0,
                 flatShading: isFlat,
               });
             }
@@ -896,502 +930,551 @@ export default function Viewport3D({
       studioOverrides?.artStyleMode === "text3d" ||
       studioOverrides?.artStyleMode === "voxel";
 
-    if (currentTask.output_glb_url && !isSpecialArtMode) {
-      // Hide procedural fallback while loading real AI .GLB so it never flashes a dummy robot
-      assetGroup.visible = false;
-      const loader = new GLTFLoader();
-      loader.load(
-        currentTask.output_glb_url,
-        (gltf) => {
-          const loadedRoot = new THREE.Group();
-          loadedRoot.name = `AI_GLB_${currentTask.id}`;
+    const partSpecs = [
+      { name: "Part_01_Head_Hood", explodeDir: new THREE.Vector3(0, 0.55, 0) },
+      { name: "Part_02_Torso_Cloak", explodeDir: new THREE.Vector3(0, 0.05, 0.25) },
+      { name: "Part_03_Left_Arm", explodeDir: new THREE.Vector3(-0.55, 0.1, 0) },
+      { name: "Part_04_Right_Arm_Weapon", explodeDir: new THREE.Vector3(0.55, 0.1, 0) },
+      { name: "Part_05_Legs_Boots", explodeDir: new THREE.Vector3(0, -0.5, 0) },
+    ];
 
-          // Keep native +Z front of GLB, preserve native baked UV textures when present
-          let mIdx = 1;
-          let hasNativeTexture = false;
-          const meshList: THREE.Mesh[] = [];
-          gltf.scene.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh) {
-              const m = child as THREE.Mesh;
-              meshList.push(m);
-              const mat = m.material as THREE.MeshStandardMaterial;
-              if (mat && mat.map) {
-                hasNativeTexture = true;
+    const mountConfiguredGlbScene = (baseTemplate: THREE.Group) => {
+      const loadedRoot = new THREE.Group();
+      loadedRoot.name = `AI_GLB_${currentTask.id}`;
+
+      const sceneInstance = baseTemplate.clone(true);
+      const hasNativeTexture = !!baseTemplate.userData.hasNativeTexture;
+      const explodeAmt = studioOverrides?.explodeFactor || 0;
+      const hiddenSet = new Set(studioOverrides?.hiddenParts || []);
+      const pose = studioOverrides?.posePreset || "bind";
+
+      let subIdx = 0;
+      sceneInstance.traverse((obj) => {
+        if ((obj as THREE.Mesh).isMesh) {
+          const m = obj as THREE.Mesh;
+          m.material = Array.isArray(m.material)
+            ? m.material[0].clone()
+            : m.material.clone();
+          const pIdx = subIdx++;
+          m.visible = !hiddenSet.has(pIdx);
+          if (pIdx < partSpecs.length) {
+            if (explodeAmt > 0) {
+              m.position.addScaledVector(partSpecs[pIdx].explodeDir, explodeAmt);
+            }
+            if (pose !== "bind" && (pIdx === 2 || pIdx === 3)) {
+              const sign = pIdx === 2 ? -1 : 1;
+              if (pose === "t_pose") m.rotation.z = sign * 0.28;
+              else if (pose === "a_pose") m.rotation.z = sign * 0.15;
+              else if (pose === "battle") m.rotation.x = -0.25;
+            }
+          }
+        }
+      });
+
+      loadedRoot.add(sceneInstance);
+
+      // Attach Fill Parts, 3D Print Base Platform, and 3D Decal onto loadedRoot so all 14 tools work on real GLBs
+      const addonAccentMat = new THREE.MeshStandardMaterial({
+        color: studioOverrides?.material.accentColor || currentTask.accent_color || "#f59e0b",
+        roughness: 0.25,
+        metalness: 0.85,
+      });
+      const addonDarkMat = new THREE.MeshStandardMaterial({
+        color: "#1e293b",
+        roughness: 0.45,
+        metalness: 0.35,
+      });
+      if (studioOverrides?.filledParts.auraRing) {
+        const haloGeo = new THREE.TorusGeometry(1.15, 0.04, 16, 48);
+        const halo = new THREE.Mesh(haloGeo, addonAccentMat);
+        halo.name = "Part_Filled_Cyber_Halo_Ring";
+        halo.position.set(0, 0.45, -0.35);
+        loadedRoot.add(halo);
+      }
+      if (studioOverrides?.filledParts.backWings) {
+        for (const side of [-1, 1]) {
+          const wingGeo = new THREE.BoxGeometry(0.85, 0.95, 0.07);
+          const wing = new THREE.Mesh(wingGeo, addonAccentMat.clone());
+          wing.name = side < 0 ? "Part_Filled_Left_Wing" : "Part_Filled_Right_Wing";
+          wing.position.set(side * 0.95, 0.4, -0.4);
+          wing.rotation.z = side * 0.35;
+          wing.rotation.y = side * -0.25;
+          loadedRoot.add(wing);
+        }
+      }
+      if (studioOverrides?.filledParts.pedestal) {
+        const pedGeo = new THREE.CylinderGeometry(1.25, 1.4, 0.16, 32);
+        const ped = new THREE.Mesh(pedGeo, addonDarkMat);
+        ped.name = "Part_Filled_Display_Pedestal";
+        ped.position.set(0, -0.98, 0);
+        loadedRoot.add(ped);
+      }
+      if (studioOverrides?.addPrintBase) {
+        const basePlatGeo = new THREE.CylinderGeometry(1.35, 1.5, 0.2, 48);
+        const basePlat = new THREE.Mesh(basePlatGeo, addonDarkMat.clone());
+        basePlat.name = "AddBaseStlPlatform";
+        basePlat.position.set(0, -1.0, 0);
+        loadedRoot.add(basePlat);
+      }
+      if (studioOverrides?.decalEnabled) {
+        const dScale = studioOverrides.decalScale ?? 1.0;
+        const dRot = ((studioOverrides.decalRotation ?? 0) * Math.PI) / 180;
+        const dColor = studioOverrides.decalColor || "#22d3ee";
+        const decalMat = new THREE.MeshStandardMaterial({
+          color: dColor,
+          emissive: new THREE.Color(dColor),
+          emissiveIntensity: 0.45,
+          roughness: 0.2,
+          metalness: 0.6,
+        });
+        const badgeGeo = new THREE.CylinderGeometry(0.22 * dScale, 0.22 * dScale, 0.04, 6);
+        badgeGeo.rotateX(Math.PI / 2);
+        const badge = new THREE.Mesh(badgeGeo, decalMat);
+        badge.name = "Part_Decal_Projected_Emblem";
+        const hitPos = decalHitPosRef.current || [0, 0.15, 0.68];
+        badge.position.set(hitPos[0], hitPos[1], hitPos[2]);
+        badge.rotation.z = dRot;
+        loadedRoot.add(badge);
+      }
+
+      if (studioOverrides?.transform) {
+        loadedRoot.scale.set(
+          studioOverrides.transform.scaleX,
+          studioOverrides.transform.scaleY,
+          studioOverrides.transform.scaleZ
+        );
+      }
+
+      applyShadingToGroup(loadedRoot, true);
+
+      const applyProjectedTexAndCustomPaint = (projTex: THREE.CanvasTexture | null) => {
+        const customPrimary = studioOverrides?.material.primaryColor;
+        const useCustomTint =
+          customPrimary &&
+          customPrimary.toLowerCase() !== "#d6d3d1" &&
+          customPrimary.toLowerCase() !== "#ffffff";
+        const emInt = studioOverrides?.material.emissiveIntensity ?? 0;
+
+        if (projTex && (effectiveShading === "pbr" || effectiveShading === "base_color")) {
+          loadedRoot.traverse((obj) => {
+            if ((obj as THREE.Mesh).isMesh) {
+              const m = obj as THREE.Mesh;
+              if (
+                m.name.startsWith("Part_Filled_") ||
+                m.name.startsWith("AddBaseStlPlatform") ||
+                m.name.startsWith("Part_Decal_")
+              ) {
+                return;
               }
-              if (m.geometry) {
-                const geom = m.geometry;
-                const posAttr = geom.attributes.position;
-                if (geom.attributes.color) {
+              const tintColor = useCustomTint ? customPrimary : "#ffffff";
+              if (effectiveShading === "base_color") {
+                m.material = new THREE.MeshBasicMaterial({
+                  map: projTex,
+                  color: tintColor,
+                });
+              } else if (effectiveShading === "pbr") {
+                m.material = new THREE.MeshStandardMaterial({
+                  map: projTex,
+                  color: tintColor,
+                  roughness: studioOverrides?.material.roughness ?? 0.45,
+                  metalness: studioOverrides?.material.metalness ?? 0.16,
+                  emissive: new THREE.Color(
+                    emInt > 0.08
+                      ? studioOverrides?.material.accentColor || "#f59e0b"
+                      : "#000000"
+                  ),
+                  emissiveIntensity: emInt > 0.08 ? emInt * 0.45 : 0,
+                  flatShading: isFlat,
+                });
+              }
+            }
+          });
+        }
+
+        // Re-apply per-part custom paint colors from Brush/Decal or Floating HUD
+        const allMeshes = getFlattenedMeshes(loadedRoot);
+        allMeshes.forEach((m, idx) => {
+          const paintedHex = partPaintMapRef.current[idx];
+          if (paintedHex && (m.material as THREE.MeshStandardMaterial)?.color) {
+            (m.material as THREE.MeshStandardMaterial).color.set(paintedHex);
+            (m.material as THREE.MeshStandardMaterial).needsUpdate = true;
+          }
+        });
+      };
+
+      // Project 2D Reference Image Texture ONLY for untextured clay GLBs (!hasNativeTexture)
+      if (
+        !hasNativeTexture &&
+        currentTask.input_image_url &&
+        (effectiveShading === "pbr" || effectiveShading === "base_color")
+      ) {
+        const cachedTex = texCacheRef.current.get(currentTask.input_image_url);
+        if (cachedTex) {
+          applyProjectedTexAndCustomPaint(cachedTex);
+        } else {
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.onload = () => {
+            const natW = img.naturalWidth || 512;
+            const natH = img.naturalHeight || 512;
+            const isTurnaroundSheet = natW > natH * 1.35;
+
+            const extractSubViewToCanvas = (
+              sx: number,
+              sy: number,
+              sw: number,
+              sh: number,
+              forBackFallback: boolean
+            ) => {
+              const W = 512;
+              const H = 512;
+              const c = document.createElement("canvas");
+              c.width = W;
+              c.height = H;
+              const ctx = c.getContext("2d");
+              if (!ctx) return c;
+              ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+              const imgData = ctx.getImageData(0, 0, W, H);
+              const d = imgData.data;
+
+              const bgR =
+                (d[0] +
+                  d[(W - 1) * 4] +
+                  d[(H - 1) * W * 4] +
+                  d[((H - 1) * W + (W - 1)) * 4]) *
+                0.25;
+              const bgG =
+                (d[1] +
+                  d[(W - 1) * 4 + 1] +
+                  d[(H - 1) * W * 4 + 1] +
+                  d[((H - 1) * W + (W - 1)) * 4 + 1]) *
+                0.25;
+              const bgB =
+                (d[2] +
+                  d[(W - 1) * 4 + 2] +
+                  d[(H - 1) * W * 4 + 2] +
+                  d[((H - 1) * W + (W - 1)) * 4 + 2]) *
+                0.25;
+              const bgA =
+                (d[3] +
+                  d[(W - 1) * 4 + 3] +
+                  d[(H - 1) * W * 4 + 3] +
+                  d[((H - 1) * W + (W - 1)) * 4 + 3]) *
+                0.25;
+
+              let fgMinX = W;
+              let fgMaxX = 0;
+              let fgMinY = H;
+              let fgMaxY = 0;
+              const isFg = new Uint8Array(W * H);
+
+              for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                  const idx = (y * W + x) * 4;
+                  const a = d[idx + 3];
+                  const dist =
+                    Math.abs(d[idx] - bgR) +
+                    Math.abs(d[idx + 1] - bgG) +
+                    Math.abs(d[idx + 2] - bgB);
+                  if (a > 30 && (bgA < 40 || dist > 42)) {
+                    isFg[y * W + x] = 1;
+                    if (x < fgMinX) fgMinX = x;
+                    if (x > fgMaxX) fgMaxX = x;
+                    if (y < fgMinY) fgMinY = y;
+                    if (y > fgMaxY) fgMaxY = y;
+                  }
+                }
+              }
+
+              // Horizontal color dilation so silhouette edges never sample background pixels
+              for (let y = 0; y < H; y++) {
+                let lastR = 140,
+                  lastG = 90,
+                  lastB = 70;
+                for (let x = 0; x < W; x++) {
+                  const p = y * W + x;
+                  const idx = p * 4;
+                  if (isFg[p]) {
+                    lastR = d[idx];
+                    lastG = d[idx + 1];
+                    lastB = d[idx + 2];
+                  } else {
+                    d[idx] = lastR;
+                    d[idx + 1] = lastG;
+                    d[idx + 2] = lastB;
+                    d[idx + 3] = 255;
+                  }
+                }
+                for (let x = W - 1; x >= 0; x--) {
+                  const p = y * W + x;
+                  const idx = p * 4;
+                  if (isFg[p]) {
+                    lastR = d[idx];
+                    lastG = d[idx + 1];
+                    lastB = d[idx + 2];
+                  } else {
+                    d[idx] = (d[idx] + lastR) >> 1;
+                    d[idx + 1] = (d[idx + 1] + lastG) >> 1;
+                    d[idx + 2] = (d[idx + 2] + lastB) >> 1;
+                  }
+                }
+              }
+
+              if (forBackFallback) {
+                for (let y = 0; y < H; y++) {
+                  const leftIdx = (y * W + Math.floor(W * 0.24)) * 4;
+                  const rightIdx = (y * W + Math.floor(W * 0.76)) * 4;
+                  for (let x = Math.floor(W * 0.25); x <= Math.floor(W * 0.75); x++) {
+                    const t = (x - W * 0.25) / (W * 0.5);
+                    const idx = (y * W + x) * 4;
+                    d[idx] = Math.round(d[leftIdx] * (1 - t) + d[rightIdx] * t);
+                    d[idx + 1] = Math.round(d[leftIdx + 1] * (1 - t) + d[rightIdx + 1] * t);
+                    d[idx + 2] = Math.round(d[leftIdx + 2] * (1 - t) + d[rightIdx + 2] * t);
+                  }
+                }
+              }
+
+              ctx.putImageData(imgData, 0, 0);
+
+              if (fgMaxX <= fgMinX + 16 || fgMaxY <= fgMinY + 16) {
+                fgMinX = 0;
+                fgMaxX = W - 1;
+                fgMinY = 0;
+                fgMaxY = H - 1;
+              }
+
+              const out = document.createElement("canvas");
+              out.width = W;
+              out.height = H;
+              const outCtx = out.getContext("2d");
+              if (outCtx) {
+                outCtx.drawImage(
+                  c,
+                  fgMinX,
+                  fgMinY,
+                  fgMaxX - fgMinX + 1,
+                  fgMaxY - fgMinY + 1,
+                  0,
+                  0,
+                  W,
+                  H
+                );
+              }
+              return out;
+            };
+
+            const atlasCanvas = document.createElement("canvas");
+            atlasCanvas.width = 1024;
+            atlasCanvas.height = 512;
+            const atlasCtx = atlasCanvas.getContext("2d");
+            if (!atlasCtx) return;
+
+            if (isTurnaroundSheet) {
+              const frontCrop = extractSubViewToCanvas(
+                0,
+                natH * 0.04,
+                natW * 0.25,
+                natH * 0.92,
+                false
+              );
+              const backCrop = extractSubViewToCanvas(
+                natW * 0.25,
+                natH * 0.04,
+                natW * 0.25,
+                natH * 0.92,
+                false
+              );
+              atlasCtx.drawImage(frontCrop, 0, 0, 512, 512);
+              atlasCtx.drawImage(backCrop, 512, 0, 512, 512);
+            } else {
+              const frontCrop = extractSubViewToCanvas(0, 0, natW, natH, false);
+              const backCrop = extractSubViewToCanvas(0, 0, natW, natH, true);
+              atlasCtx.drawImage(frontCrop, 0, 0, 512, 512);
+              atlasCtx.drawImage(backCrop, 512, 0, 512, 512);
+            }
+
+            const projTex = new THREE.CanvasTexture(atlasCanvas);
+            projTex.colorSpace = THREE.SRGBColorSpace;
+            projTex.needsUpdate = true;
+            if (currentTask.input_image_url) {
+              texCacheRef.current.set(currentTask.input_image_url, projTex);
+            }
+            applyProjectedTexAndCustomPaint(projTex);
+          };
+          img.src = currentTask.input_image_url;
+        }
+      } else {
+        applyProjectedTexAndCustomPaint(null);
+      }
+
+      scene.remove(assetGroup);
+      scene.add(loadedRoot);
+      meshGroupRef.current = loadedRoot;
+
+      if (onPartNamesChangeRef.current) {
+        const meshNames = getFlattenedMeshes(loadedRoot).map(
+          (m, idx) => m.name || `AI_Mesh_${idx + 1}`
+        );
+        const namesKey = meshNames.join("|");
+        if (meshNames.length > 0 && namesKey !== lastPartNamesKeyRef.current) {
+          lastPartNamesKeyRef.current = namesKey;
+          onPartNamesChangeRef.current(meshNames);
+        }
+      }
+    };
+
+    if (currentTask.output_glb_url && !isSpecialArtMode) {
+      assetGroup.visible = false;
+      const glbUrl = currentTask.output_glb_url;
+      const cachedTemplate = glbCacheRef.current.get(glbUrl);
+      if (cachedTemplate) {
+        mountConfiguredGlbScene(cachedTemplate);
+      } else {
+        const loader = new GLTFLoader();
+        loader.load(
+          glbUrl,
+          (gltf) => {
+            let mIdx = 1;
+            let hasNativeTexture = false;
+            const meshList: THREE.Mesh[] = [];
+            gltf.scene.traverse((child) => {
+              if ((child as THREE.Mesh).isMesh) {
+                const m = child as THREE.Mesh;
+                meshList.push(m);
+                const mat = m.material as THREE.MeshStandardMaterial;
+                if (mat && mat.map) {
                   hasNativeTexture = true;
                 }
-
-                geom.computeVertexNormals();
-                geom.computeBoundingBox();
-
-                // Generate Dual Front+Back Atlas UV coordinates ONLY if geometry lacks UVs
-                if (!geom.attributes.uv && posAttr && geom.boundingBox) {
-                  const bb = geom.boundingBox;
-                  const spanX = Math.max(bb.max.x - bb.min.x, 0.001);
-                  const spanY = Math.max(bb.max.y - bb.min.y, 0.001);
-                  const normAttr = geom.attributes.normal;
-                  const uvs = new Float32Array(posAttr.count * 2);
-
-                  for (let i = 0; i < posAttr.count; i++) {
-                    const vx = posAttr.getX(i);
-                    const vy = posAttr.getY(i);
-                    const vz = posAttr.getZ(i);
-                    const nz = normAttr ? normAttr.getZ(i) : 1;
-
-                    const normX = Math.min(0.98, Math.max(0.02, (vx - bb.min.x) / spanX));
-                    const v = Math.min(0.98, Math.max(0.02, (vy - bb.min.y) / spanY));
-
-                    // Front half of atlas (u: 0.01..0.49) = Front View; Right half (u: 0.51..0.99) = Back View
-                    const isBack = vz < -0.04 && nz < -0.12;
-                    const u = isBack
-                      ? 0.51 + (1.0 - normX) * 0.48
-                      : 0.01 + normX * 0.48;
-
-                    uvs[i * 2] = u;
-                    uvs[i * 2 + 1] = v;
+                if (m.geometry) {
+                  const geom = m.geometry;
+                  const posAttr = geom.attributes.position;
+                  if (geom.attributes.color) {
+                    hasNativeTexture = true;
                   }
-                  geom.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+
+                  geom.computeVertexNormals();
+                  geom.computeBoundingBox();
+
+                  if (!geom.attributes.uv && posAttr && geom.boundingBox) {
+                    const bb = geom.boundingBox;
+                    const spanX = Math.max(bb.max.x - bb.min.x, 0.001);
+                    const spanY = Math.max(bb.max.y - bb.min.y, 0.001);
+                    const normAttr = geom.attributes.normal;
+                    const uvs = new Float32Array(posAttr.count * 2);
+
+                    for (let i = 0; i < posAttr.count; i++) {
+                      const vx = posAttr.getX(i);
+                      const vy = posAttr.getY(i);
+                      const vz = posAttr.getZ(i);
+                      const nz = normAttr ? normAttr.getZ(i) : 1;
+
+                      const normX = Math.min(0.98, Math.max(0.02, (vx - bb.min.x) / spanX));
+                      const v = Math.min(0.98, Math.max(0.02, (vy - bb.min.y) / spanY));
+
+                      const isBack = vz < -0.04 && nz < -0.12;
+                      const u = isBack
+                        ? 0.51 + (1.0 - normX) * 0.48
+                        : 0.01 + normX * 0.48;
+
+                      uvs[i * 2] = u;
+                      uvs[i * 2 + 1] = v;
+                    }
+                    geom.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+                  }
+                }
+                if (!m.name) {
+                  m.name = `AI_Mesh_Part_0${mIdx++}`;
                 }
               }
-              if (!m.name) {
-                m.name = `AI_Mesh_Part_0${mIdx++}`;
-              }
-            }
-          });
-
-          // Semantic Auto-Split: Partition single-mesh GLB into 5 anatomical sub-meshes (Head, Torso, Left Arm, Right Arm, Legs)
-          if (meshList.length === 1 && meshList[0].geometry?.boundingBox) {
-            const srcMesh = meshList[0];
-            const srcGeom = srcMesh.geometry;
-            const posAttr = srcGeom.attributes.position;
-            const bb = srcGeom.boundingBox!;
-            const minX = bb.min.x;
-            const spanX = Math.max(bb.max.x - bb.min.x, 0.001);
-            const minY = bb.min.y;
-            const spanY = Math.max(bb.max.y - bb.min.y, 0.001);
-
-            const buckets: number[][] = [[], [], [], [], []];
-            const idxAttr = srcGeom.index;
-            const triCount = idxAttr ? Math.floor(idxAttr.count / 3) : Math.floor(posAttr.count / 3);
-
-            for (let t = 0; t < triCount; t++) {
-              const i0 = idxAttr ? idxAttr.getX(t * 3) : t * 3;
-              const i1 = idxAttr ? idxAttr.getX(t * 3 + 1) : t * 3 + 1;
-              const i2 = idxAttr ? idxAttr.getX(t * 3 + 2) : t * 3 + 2;
-
-              const cx = (posAttr.getX(i0) + posAttr.getX(i1) + posAttr.getX(i2)) / 3;
-              const cy = (posAttr.getY(i0) + posAttr.getY(i1) + posAttr.getY(i2)) / 3;
-              const nx = (cx - minX) / spanX; // 0..1
-              const ny = (cy - minY) / spanY; // 0..1
-
-              let bIdx = 1; // Torso default
-              if (ny > 0.62) {
-                bIdx = 0; // Part_01_Head_Hood
-              } else if (ny < 0.26) {
-                bIdx = 4; // Part_05_Lower_Legs
-              } else if (nx < 0.28) {
-                bIdx = 2; // Part_03_Left_Arm
-              } else if (nx > 0.72) {
-                bIdx = 3; // Part_04_Right_Arm_Weapon
-              }
-              buckets[bIdx].push(i0, i1, i2);
-            }
-
-            const partSpecs = [
-              { name: "Part_01_Head_Hood", explodeDir: new THREE.Vector3(0, 0.55, 0) },
-              { name: "Part_02_Torso_Cloak", explodeDir: new THREE.Vector3(0, 0.05, 0.25) },
-              { name: "Part_03_Left_Arm", explodeDir: new THREE.Vector3(-0.55, 0.1, 0) },
-              { name: "Part_04_Right_Arm_Weapon", explodeDir: new THREE.Vector3(0.55, 0.1, 0) },
-              { name: "Part_05_Legs_Boots", explodeDir: new THREE.Vector3(0, -0.5, 0) },
-            ];
-
-            const parentNode = srcMesh.parent || gltf.scene;
-            const explodeAmt = studioOverrides?.explodeFactor || 0;
-            const hiddenSet = new Set(studioOverrides?.hiddenParts || []);
-            const pose = studioOverrides?.posePreset || "bind";
-
-            buckets.forEach((indices, pIdx) => {
-              if (indices.length === 0) return;
-              const subGeom = new THREE.BufferGeometry();
-              subGeom.setAttribute("position", posAttr);
-              if (srcGeom.attributes.normal) {
-                subGeom.setAttribute("normal", srcGeom.attributes.normal);
-              }
-              if (srcGeom.attributes.uv) {
-                subGeom.setAttribute("uv", srcGeom.attributes.uv);
-              }
-              if (srcGeom.attributes.color) {
-                subGeom.setAttribute("color", srcGeom.attributes.color);
-              }
-              subGeom.setIndex(indices);
-
-              const subMat = Array.isArray(srcMesh.material)
-                ? srcMesh.material[0].clone()
-                : srcMesh.material.clone();
-              const subMesh = new THREE.Mesh(subGeom, subMat);
-              subMesh.name = partSpecs[pIdx].name;
-              subMesh.visible = !hiddenSet.has(pIdx);
-
-              if (explodeAmt > 0) {
-                subMesh.position.addScaledVector(partSpecs[pIdx].explodeDir, explodeAmt);
-              }
-              if (pose !== "bind" && (pIdx === 2 || pIdx === 3)) {
-                const sign = pIdx === 2 ? -1 : 1;
-                if (pose === "t_pose") subMesh.rotation.z = sign * 0.28;
-                else if (pose === "a_pose") subMesh.rotation.z = sign * 0.15;
-                else if (pose === "battle") subMesh.rotation.x = -0.25;
-              }
-              parentNode.add(subMesh);
             });
-            parentNode.remove(srcMesh);
-          }
 
-          // Normalize bounding box of loaded AI GLB mesh to fit studio viewport cleanly
-          const box = new THREE.Box3().setFromObject(gltf.scene);
-          const size = new THREE.Vector3();
-          const center = new THREE.Vector3();
-          box.getSize(size);
-          box.getCenter(center);
-          const maxDim = Math.max(size.x, size.y, size.z, 0.001);
-          const normScale = 2.1 / maxDim;
+            // Normalize bounding box BEFORE partitioning/exploding so scale never shrinks when Explode > 0
+            const box = new THREE.Box3().setFromObject(gltf.scene);
+            const size = new THREE.Vector3();
+            const center = new THREE.Vector3();
+            box.getSize(size);
+            box.getCenter(center);
+            const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+            const normScale = 2.1 / maxDim;
 
-          gltf.scene.position.set(
-            -center.x * normScale,
-            -box.min.y * normScale - 0.9,
-            -center.z * normScale
-          );
-          gltf.scene.scale.setScalar(normScale);
-
-          loadedRoot.add(gltf.scene);
-
-          // Attach Fill Parts, 3D Print Base Platform, and 3D Decal onto loadedRoot so all 14 tools work on real GLBs
-          const addonAccentMat = new THREE.MeshStandardMaterial({
-            color: studioOverrides?.material.accentColor || currentTask.accent_color || "#f59e0b",
-            roughness: 0.25,
-            metalness: 0.85,
-          });
-          const addonDarkMat = new THREE.MeshStandardMaterial({
-            color: "#1e293b",
-            roughness: 0.45,
-            metalness: 0.35,
-          });
-          if (studioOverrides?.filledParts.auraRing) {
-            const haloGeo = new THREE.TorusGeometry(1.15, 0.04, 16, 48);
-            const halo = new THREE.Mesh(haloGeo, addonAccentMat);
-            halo.name = "Part_Filled_Cyber_Halo_Ring";
-            halo.position.set(0, 0.45, -0.35);
-            loadedRoot.add(halo);
-          }
-          if (studioOverrides?.filledParts.backWings) {
-            for (const side of [-1, 1]) {
-              const wingGeo = new THREE.BoxGeometry(0.85, 0.95, 0.07);
-              const wing = new THREE.Mesh(wingGeo, addonAccentMat.clone());
-              wing.name = side < 0 ? "Part_Filled_Left_Wing" : "Part_Filled_Right_Wing";
-              wing.position.set(side * 0.95, 0.4, -0.4);
-              wing.rotation.z = side * 0.35;
-              wing.rotation.y = side * -0.25;
-              loadedRoot.add(wing);
-            }
-          }
-          if (studioOverrides?.filledParts.pedestal) {
-            const pedGeo = new THREE.CylinderGeometry(1.25, 1.4, 0.16, 32);
-            const ped = new THREE.Mesh(pedGeo, addonDarkMat);
-            ped.name = "Part_Filled_Display_Pedestal";
-            ped.position.set(0, -0.98, 0);
-            loadedRoot.add(ped);
-          }
-          if (studioOverrides?.addPrintBase) {
-            const basePlatGeo = new THREE.CylinderGeometry(1.35, 1.5, 0.2, 48);
-            const basePlat = new THREE.Mesh(basePlatGeo, addonDarkMat.clone());
-            basePlat.name = "AddBaseStlPlatform";
-            basePlat.position.set(0, -1.0, 0);
-            loadedRoot.add(basePlat);
-          }
-          if (studioOverrides?.decalEnabled) {
-            const dScale = studioOverrides.decalScale ?? 1.0;
-            const dRot = ((studioOverrides.decalRotation ?? 0) * Math.PI) / 180;
-            const dColor = studioOverrides.decalColor || "#22d3ee";
-            const decalMat = new THREE.MeshStandardMaterial({
-              color: dColor,
-              emissive: new THREE.Color(dColor),
-              emissiveIntensity: 0.45,
-              roughness: 0.2,
-              metalness: 0.6,
-            });
-            const badgeGeo = new THREE.CylinderGeometry(0.22 * dScale, 0.22 * dScale, 0.04, 6);
-            badgeGeo.rotateX(Math.PI / 2);
-            const badge = new THREE.Mesh(badgeGeo, decalMat);
-            badge.name = "Part_Decal_Projected_Emblem";
-            badge.position.set(0, 0.15, 0.68);
-            badge.rotation.z = dRot;
-            loadedRoot.add(badge);
-          }
-
-          if (studioOverrides?.transform) {
-            loadedRoot.scale.set(
-              studioOverrides.transform.scaleX,
-              studioOverrides.transform.scaleY,
-              studioOverrides.transform.scaleZ
+            gltf.scene.position.set(
+              -center.x * normScale,
+              -box.min.y * normScale - 0.9,
+              -center.z * normScale
             );
-          }
+            gltf.scene.scale.setScalar(normScale);
 
-          applyShadingToGroup(loadedRoot, true);
+            // Semantic Auto-Split: Partition single-mesh GLB into 5 anatomical sub-meshes
+            if (meshList.length === 1 && meshList[0].geometry?.boundingBox) {
+              const srcMesh = meshList[0];
+              const srcGeom = srcMesh.geometry;
+              const posAttr = srcGeom.attributes.position;
+              const bb = srcGeom.boundingBox!;
+              const minX = bb.min.x;
+              const spanX = Math.max(bb.max.x - bb.min.x, 0.001);
+              const minY = bb.min.y;
+              const spanY = Math.max(bb.max.y - bb.min.y, 0.001);
 
-          // Project 2D Reference Image Texture ONLY for untextured clay GLBs (!hasNativeTexture)
-          if (
-            !hasNativeTexture &&
-            currentTask.input_image_url &&
-            (effectiveShading === "pbr" || effectiveShading === "base_color")
-          ) {
-            const img = new Image();
-            img.crossOrigin = "anonymous";
-            img.onload = () => {
-              const natW = img.naturalWidth || 512;
-              const natH = img.naturalHeight || 512;
-              const isTurnaroundSheet = natW > natH * 1.35;
+              const buckets: number[][] = [[], [], [], [], []];
+              const idxAttr = srcGeom.index;
+              const triCount = idxAttr
+                ? Math.floor(idxAttr.count / 3)
+                : Math.floor(posAttr.count / 3);
 
-              const extractSubViewToCanvas = (
-                sx: number,
-                sy: number,
-                sw: number,
-                sh: number,
-                forBackFallback: boolean
-              ) => {
-                const W = 512;
-                const H = 512;
-                const c = document.createElement("canvas");
-                c.width = W;
-                c.height = H;
-                const ctx = c.getContext("2d");
-                if (!ctx) return c;
-                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
-                const imgData = ctx.getImageData(0, 0, W, H);
-                const d = imgData.data;
+              for (let t = 0; t < triCount; t++) {
+                const i0 = idxAttr ? idxAttr.getX(t * 3) : t * 3;
+                const i1 = idxAttr ? idxAttr.getX(t * 3 + 1) : t * 3 + 1;
+                const i2 = idxAttr ? idxAttr.getX(t * 3 + 2) : t * 3 + 2;
 
-                const bgR =
-                  (d[0] +
-                    d[(W - 1) * 4] +
-                    d[(H - 1) * W * 4] +
-                    d[((H - 1) * W + (W - 1)) * 4]) *
-                  0.25;
-                const bgG =
-                  (d[1] +
-                    d[(W - 1) * 4 + 1] +
-                    d[(H - 1) * W * 4 + 1] +
-                    d[((H - 1) * W + (W - 1)) * 4 + 1]) *
-                  0.25;
-                const bgB =
-                  (d[2] +
-                    d[(W - 1) * 4 + 2] +
-                    d[(H - 1) * W * 4 + 2] +
-                    d[((H - 1) * W + (W - 1)) * 4 + 2]) *
-                  0.25;
-                const bgA =
-                  (d[3] +
-                    d[(W - 1) * 4 + 3] +
-                    d[(H - 1) * W * 4 + 3] +
-                    d[((H - 1) * W + (W - 1)) * 4 + 3]) *
-                  0.25;
+                const cx = (posAttr.getX(i0) + posAttr.getX(i1) + posAttr.getX(i2)) / 3;
+                const cy = (posAttr.getY(i0) + posAttr.getY(i1) + posAttr.getY(i2)) / 3;
+                const nx = (cx - minX) / spanX;
+                const ny = (cy - minY) / spanY;
 
-                let fgMinX = W;
-                let fgMaxX = 0;
-                let fgMinY = H;
-                let fgMaxY = 0;
-                const isFg = new Uint8Array(W * H);
-
-                for (let y = 0; y < H; y++) {
-                  for (let x = 0; x < W; x++) {
-                    const idx = (y * W + x) * 4;
-                    const a = d[idx + 3];
-                    const dist =
-                      Math.abs(d[idx] - bgR) +
-                      Math.abs(d[idx + 1] - bgG) +
-                      Math.abs(d[idx + 2] - bgB);
-                    if (a > 30 && (bgA < 40 || dist > 42)) {
-                      isFg[y * W + x] = 1;
-                      if (x < fgMinX) fgMinX = x;
-                      if (x > fgMaxX) fgMaxX = x;
-                      if (y < fgMinY) fgMinY = y;
-                      if (y > fgMaxY) fgMaxY = y;
-                    }
-                  }
-                }
-
-                // Horizontal color dilation so silhouette edges never sample background pixels
-                for (let y = 0; y < H; y++) {
-                  let lastR = 140,
-                    lastG = 90,
-                    lastB = 70;
-                  for (let x = 0; x < W; x++) {
-                    const p = y * W + x;
-                    const idx = p * 4;
-                    if (isFg[p]) {
-                      lastR = d[idx];
-                      lastG = d[idx + 1];
-                      lastB = d[idx + 2];
-                    } else {
-                      d[idx] = lastR;
-                      d[idx + 1] = lastG;
-                      d[idx + 2] = lastB;
-                      d[idx + 3] = 255;
-                    }
-                  }
-                  for (let x = W - 1; x >= 0; x--) {
-                    const p = y * W + x;
-                    const idx = p * 4;
-                    if (isFg[p]) {
-                      lastR = d[idx];
-                      lastG = d[idx + 1];
-                      lastB = d[idx + 2];
-                    } else {
-                      d[idx] = (d[idx] + lastR) >> 1;
-                      d[idx + 1] = (d[idx + 1] + lastG) >> 1;
-                      d[idx + 2] = (d[idx + 2] + lastB) >> 1;
-                    }
-                  }
-                }
-
-                if (forBackFallback) {
-                  // For single-view images without a back view, fill center column with outer cloak/armor color
-                  for (let y = 0; y < H; y++) {
-                    const leftIdx = (y * W + Math.floor(W * 0.24)) * 4;
-                    const rightIdx = (y * W + Math.floor(W * 0.76)) * 4;
-                    for (let x = Math.floor(W * 0.25); x <= Math.floor(W * 0.75); x++) {
-                      const t = (x - W * 0.25) / (W * 0.5);
-                      const idx = (y * W + x) * 4;
-                      d[idx] = Math.round(d[leftIdx] * (1 - t) + d[rightIdx] * t);
-                      d[idx + 1] = Math.round(d[leftIdx + 1] * (1 - t) + d[rightIdx + 1] * t);
-                      d[idx + 2] = Math.round(d[leftIdx + 2] * (1 - t) + d[rightIdx + 2] * t);
-                    }
-                  }
-                }
-
-                ctx.putImageData(imgData, 0, 0);
-
-                if (fgMaxX <= fgMinX + 16 || fgMaxY <= fgMinY + 16) {
-                  fgMinX = 0;
-                  fgMaxX = W - 1;
-                  fgMinY = 0;
-                  fgMaxY = H - 1;
-                }
-
-                const out = document.createElement("canvas");
-                out.width = W;
-                out.height = H;
-                const outCtx = out.getContext("2d");
-                if (outCtx) {
-                  outCtx.drawImage(
-                    c,
-                    fgMinX,
-                    fgMinY,
-                    fgMaxX - fgMinX + 1,
-                    fgMaxY - fgMinY + 1,
-                    0,
-                    0,
-                    W,
-                    H
-                  );
-                }
-                return out;
-              };
-
-              const atlasCanvas = document.createElement("canvas");
-              atlasCanvas.width = 1024;
-              atlasCanvas.height = 512;
-              const atlasCtx = atlasCanvas.getContext("2d");
-              if (!atlasCtx) return;
-
-              if (isTurnaroundSheet) {
-                // 4-View Turnaround Sheet: Column 1 (0.00..0.25) = Front, Column 2 (0.25..0.50) = Back
-                const frontCrop = extractSubViewToCanvas(
-                  0,
-                  natH * 0.04,
-                  natW * 0.25,
-                  natH * 0.92,
-                  false
-                );
-                const backCrop = extractSubViewToCanvas(
-                  natW * 0.25,
-                  natH * 0.04,
-                  natW * 0.25,
-                  natH * 0.92,
-                  false
-                );
-                atlasCtx.drawImage(frontCrop, 0, 0, 512, 512);
-                atlasCtx.drawImage(backCrop, 512, 0, 512, 512);
-              } else {
-                const frontCrop = extractSubViewToCanvas(0, 0, natW, natH, false);
-                const backCrop = extractSubViewToCanvas(0, 0, natW, natH, true);
-                atlasCtx.drawImage(frontCrop, 0, 0, 512, 512);
-                atlasCtx.drawImage(backCrop, 512, 0, 512, 512);
+                let bIdx = 1;
+                if (ny > 0.62) bIdx = 0;
+                else if (ny < 0.26) bIdx = 4;
+                else if (nx < 0.28) bIdx = 2;
+                else if (nx > 0.72) bIdx = 3;
+                buckets[bIdx].push(i0, i1, i2);
               }
 
-              const projTex = new THREE.CanvasTexture(atlasCanvas);
-              projTex.colorSpace = THREE.SRGBColorSpace;
-              projTex.needsUpdate = true;
-
-              const customPrimary = studioOverrides?.material.primaryColor;
-              const useCustomTint =
-                customPrimary &&
-                customPrimary.toLowerCase() !== "#d6d3d1" &&
-                customPrimary.toLowerCase() !== "#ffffff";
-
-              loadedRoot.traverse((obj) => {
-                if ((obj as THREE.Mesh).isMesh) {
-                  const m = obj as THREE.Mesh;
-                  if (
-                    m.name.startsWith("Part_Filled_") ||
-                    m.name.startsWith("AddBaseStlPlatform") ||
-                    m.name.startsWith("Part_Decal_")
-                  ) {
-                    return;
-                  }
-                  const tintColor = useCustomTint ? customPrimary : "#ffffff";
-                  if (effectiveShading === "base_color") {
-                    m.material = new THREE.MeshBasicMaterial({
-                      map: projTex,
-                      color: tintColor,
-                    });
-                  } else if (effectiveShading === "pbr") {
-                    m.material = new THREE.MeshStandardMaterial({
-                      map: projTex,
-                      color: tintColor,
-                      roughness: studioOverrides?.material.roughness ?? 0.45,
-                      metalness: studioOverrides?.material.metalness ?? 0.16,
-                      flatShading: isFlat,
-                    });
-                  }
+              const parentNode = srcMesh.parent || gltf.scene;
+              buckets.forEach((indices, pIdx) => {
+                if (indices.length === 0) return;
+                const subGeom = new THREE.BufferGeometry();
+                subGeom.setAttribute("position", posAttr);
+                if (srcGeom.attributes.normal) {
+                  subGeom.setAttribute("normal", srcGeom.attributes.normal);
                 }
+                if (srcGeom.attributes.uv) {
+                  subGeom.setAttribute("uv", srcGeom.attributes.uv);
+                }
+                if (srcGeom.attributes.color) {
+                  subGeom.setAttribute("color", srcGeom.attributes.color);
+                }
+                subGeom.setIndex(indices);
+
+                const subMat = Array.isArray(srcMesh.material)
+                  ? srcMesh.material[0].clone()
+                  : srcMesh.material.clone();
+                const subMesh = new THREE.Mesh(subGeom, subMat);
+                subMesh.name = partSpecs[pIdx].name;
+                parentNode.add(subMesh);
               });
-            };
-            img.src = currentTask.input_image_url;
-          }
-
-          scene.remove(assetGroup);
-          scene.add(loadedRoot);
-          meshGroupRef.current = loadedRoot;
-
-          if (onPartNamesChangeRef.current) {
-            const meshNames: string[] = [];
-            loadedRoot.traverse((c) => {
-              if ((c as THREE.Mesh).isMesh) {
-                meshNames.push(c.name || `AI_Mesh_${meshNames.length + 1}`);
-              }
-            });
-            if (meshNames.length > 0) {
-              onPartNamesChangeRef.current(meshNames);
+              parentNode.remove(srcMesh);
             }
+
+            gltf.scene.userData.hasNativeTexture = hasNativeTexture;
+            glbCacheRef.current.set(glbUrl, gltf.scene);
+            mountConfiguredGlbScene(gltf.scene);
+          },
+          undefined,
+          () => {
+            assetGroup.visible = true;
           }
-        },
-        undefined,
-        () => {
-          assetGroup.visible = true;
-        }
-      );
+        );
+      }
     }
 
     // Build Humanoid or Quadruped Rig Skeleton Helper + 6-Point Symmetry Markers
@@ -1476,6 +1559,24 @@ export default function Viewport3D({
         meshGroupRef.current.position.set(0, 0, 0);
         meshGroupRef.current.rotation.x = 0;
         meshGroupRef.current.rotation.z = 0;
+
+        const leftArm = meshGroupRef.current.getObjectByName("Part_03_Left_Arm");
+        const rightArm = meshGroupRef.current.getObjectByName("Part_04_Right_Arm_Weapon");
+        if (leftArm && rightArm) {
+          if (clip === "walk") {
+            leftArm.rotation.x = Math.sin(t * 5) * 0.14;
+            rightArm.rotation.x = -Math.sin(t * 5) * 0.18;
+          } else if (clip === "run") {
+            leftArm.rotation.x = Math.sin(t * 9) * 0.24;
+            rightArm.rotation.x = -Math.sin(t * 9) * 0.28;
+          } else if (clip === "attack" || clip === "boxing") {
+            leftArm.rotation.x = -0.15 + Math.sin(t * 8) * 0.22;
+            rightArm.rotation.x = -0.25 - Math.cos(t * 8) * 0.32;
+          } else if (clip === "dance") {
+            leftArm.rotation.z = -0.15 + Math.sin(t * 6) * 0.18;
+            rightArm.rotation.z = 0.15 - Math.sin(t * 6) * 0.18;
+          }
+        }
 
         if (clip === "idle") {
           meshGroupRef.current.position.y = Math.sin(t * 2.5) * 0.08;
@@ -1566,13 +1667,19 @@ export default function Viewport3D({
 
       if (intersects.length > 0) {
         const hit = intersects[0];
-        let hitObj: THREE.Object3D | null = hit.object;
-        while (hitObj && hitObj.parent && hitObj.parent !== meshGroupRef.current) {
-          hitObj = hitObj.parent;
+        const allMeshes = getFlattenedMeshes(meshGroupRef.current);
+        let hitMesh: THREE.Mesh | null = null;
+        let curr: THREE.Object3D | null = hit.object;
+        while (curr && curr !== meshGroupRef.current) {
+          if ((curr as THREE.Mesh).isMesh) {
+            hitMesh = curr as THREE.Mesh;
+            break;
+          }
+          curr = curr.parent;
         }
-        if (hitObj) {
-          const partIndex = meshGroupRef.current.children.indexOf(hitObj);
-          const partName = hitObj.name || `Mesh_Part_${partIndex + 1}`;
+        if (hitMesh) {
+          const partIndex = allMeshes.indexOf(hitMesh);
+          const partName = hitMesh.name || `Mesh_Part_${partIndex + 1}`;
           if (partIndex >= 0) {
             setSelectedPart({ index: partIndex, name: partName });
           }
@@ -1608,6 +1715,11 @@ export default function Viewport3D({
     window.addEventListener("resize", handleResize);
 
     return () => {
+      cameraStateRef.current = {
+        taskId: activeTaskId,
+        pos: [camera.position.x, camera.position.y, camera.position.z],
+        target: [controls.target.x, controls.target.y, controls.target.z],
+      };
       cancelAnimationFrame(frameId);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);

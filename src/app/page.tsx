@@ -2733,14 +2733,20 @@ export default function SiamPrism3DStudioPage() {
                 </div>
 
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    const nextWire = viewChannel === "wireframe" ? undefined : "wireframe";
+                    setViewChannel(nextWire);
                     triggerToast(
-                      `จัดเรียงเส้น Clean ${activeTask?.topology.toUpperCase() || "QUAD"} Topology เรียบร้อย!`
-                    )
-                  }
+                      nextWire === "wireframe"
+                        ? `จัดเรียงเส้น Clean ${activeTask?.topology.toUpperCase() || "QUAD"} Topology เรียบร้อย! (กำลังแสดงเส้น Wireframe)`
+                        : "สลับกลับสู่มุมมองพื้นผิว PBR ปกติ"
+                    );
+                  }}
                   className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-lg"
                 >
-                  Apply Smart Remesh / Retopo
+                  {viewChannel === "wireframe"
+                    ? "Exit Wireframe / Back to PBR"
+                    : "Apply Smart Remesh / Inspect Wireframe"}
                 </button>
               </div>
             )}
@@ -2816,8 +2822,85 @@ export default function SiamPrism3DStudioPage() {
                     rows={3}
                     value={texturePrompt}
                     onChange={(e) => setTexturePrompt(e.target.value)}
+                    placeholder="เช่น ทองคำโบราณแกะสลัก, เกราะมรกตเรืองแสง, เหล็กดำไซเบอร์พังก์..."
                     className="w-full rounded-xl bg-[#090709] border border-white/10 p-2.5 text-xs text-white focus:border-red-400 focus:outline-none resize-none"
                   />
+                  <button
+                    onClick={() => {
+                      const q = texturePrompt.toLowerCase();
+                      setSegmentColorMode(false);
+                      setUvCheckerMode(false);
+                      setViewChannel(undefined);
+                      if (q.includes("ทองแดง") || q.includes("bronze") || q.includes("copper")) {
+                        setMaterialState((p) => ({
+                          ...p,
+                          primaryColor: "#b45309",
+                          accentColor: "#f59e0b",
+                          roughness: 0.28,
+                          metalness: 0.88,
+                          emissiveIntensity: 0.15,
+                        }));
+                      } else if (q.includes("ทอง") || q.includes("gold")) {
+                        setMaterialState((p) => ({
+                          ...p,
+                          primaryColor: "#eab308",
+                          accentColor: "#fef08a",
+                          roughness: 0.16,
+                          metalness: 0.95,
+                          emissiveIntensity: 0.22,
+                        }));
+                      } else if (q.includes("มรกต") || q.includes("เขียว") || q.includes("emerald") || q.includes("jade")) {
+                        setMaterialState((p) => ({
+                          ...p,
+                          primaryColor: "#10b981",
+                          accentColor: "#34d399",
+                          roughness: 0.18,
+                          metalness: 0.72,
+                          emissiveIntensity: 0.35,
+                        }));
+                      } else if (q.includes("คริสตัล") || q.includes("น้ำแข็ง") || q.includes("crystal") || q.includes("ice") || q.includes("ฟ้า")) {
+                        setMaterialState((p) => ({
+                          ...p,
+                          primaryColor: "#38bdf8",
+                          accentColor: "#22d3ee",
+                          roughness: 0.1,
+                          metalness: 0.45,
+                          emissiveIntensity: 0.48,
+                        }));
+                      } else if (q.includes("ดำ") || q.includes("obsidian") || q.includes("dark") || q.includes("carbon")) {
+                        setMaterialState((p) => ({
+                          ...p,
+                          primaryColor: "#1e293b",
+                          accentColor: "#ef4444",
+                          roughness: 0.24,
+                          metalness: 0.88,
+                          emissiveIntensity: 0.32,
+                        }));
+                      } else if (q.includes("ม่วง") || q.includes("นีออน") || q.includes("cyber") || q.includes("neon")) {
+                        setMaterialState((p) => ({
+                          ...p,
+                          primaryColor: "#a855f7",
+                          accentColor: "#ec4899",
+                          roughness: 0.15,
+                          metalness: 0.82,
+                          emissiveIntensity: 0.55,
+                        }));
+                      } else {
+                        setMaterialState((p) => ({
+                          ...p,
+                          primaryColor: "#ef4444",
+                          accentColor: "#f59e0b",
+                          roughness: 0.22,
+                          metalness: 0.85,
+                          emissiveIntensity: 0.28,
+                        }));
+                      }
+                      triggerToast(`สร้างพื้นผิว AI Texture ตามคำสั่ง "${texturePrompt.slice(0, 28)}" สำเร็จ!`);
+                    }}
+                    className="w-full py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs cursor-pointer shadow-lg transition"
+                  >
+                    🎨 สร้างพื้นผิวตามคำสั่ง (Apply AI Texture Prompt)
+                  </button>
                 </div>
 
                 <div className="space-y-1.5">
