@@ -602,9 +602,9 @@ export default {
       const hasRig = Boolean(body.hasRig);
       let inputImageUrl = body.inputImageUrl || null;
 
-      const engineCosts = { triposg: 2, hunyuan3d_2_1: 7, trellis_pbr: 10 };
+      const engineCosts = { triposg: 2, hunyuan3d_2_1: 6, trellis_pbr: 15 };
       const costCredits =
-        stage === "draft_3d" ? 2 : (engineCosts[engine] || 8) + (hasRig ? 3 : 0);
+        stage === "draft_3d" ? 2 : (engineCosts[engine] || 6) + (hasRig ? 3 : 0);
 
       if (Number(user.credits_balance) < costCredits) {
         return jsonResponse(
@@ -667,13 +667,11 @@ export default {
               condImg = fd?.images?.[0]?.url || null;
             }
           }
-          const endpoint =
+          const primaryEndpoint =
             engine === "trellis_pbr"
-              ? "https://fal.run/fal-ai/trellis"
-              : engine === "hunyuan3d_2_1"
-                ? "https://fal.run/fal-ai/hunyuan3d/v2"
-                : "https://fal.run/fal-ai/triposr";
-          const gpuRes = await fetch(endpoint, {
+              ? "https://fal.run/fal-ai/tripo3d/v2.5/image-to-3d"
+              : "https://fal.run/fal-ai/trellis";
+          let gpuRes = await fetch(primaryEndpoint, {
             method: "POST",
             headers: {
               Authorization: `Key ${falKey}`,
@@ -682,12 +680,34 @@ export default {
             body: JSON.stringify({
               prompt: enhanced.promptEn,
               image_url: condImg || undefined,
+              texture: "standard",
             }),
           });
+          if (!gpuRes.ok && primaryEndpoint !== "https://fal.run/fal-ai/trellis") {
+            gpuRes = await fetch("https://fal.run/fal-ai/trellis", {
+              method: "POST",
+              headers: {
+                Authorization: `Key ${falKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                prompt: enhanced.promptEn,
+                image_url: condImg || undefined,
+              }),
+            });
+          }
           if (gpuRes.ok) {
             const gd = await gpuRes.json();
-            outputGlbUrl = gd?.model_mesh?.url || gd?.mesh?.url || null;
-            providerMode = "fal_live";
+            const rawGlb =
+              gd?.model_mesh?.url ||
+              gd?.mesh?.url ||
+              gd?.pbr_model?.url ||
+              gd?.glb?.url ||
+              null;
+            if (rawGlb) {
+              outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawGlb)}`;
+              providerMode = "fal_live";
+            }
           }
         } catch {
           providerMode = "sandbox";

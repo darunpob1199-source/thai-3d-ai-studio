@@ -142,23 +142,23 @@ const MODEL_OPTIONS: {
 }[] = [
   {
     id: "trellis_pbr",
-    code: "M7.1",
-    name: "Meshy 7.1 + TRELLIS.2 Flagship",
-    sub: "4B O-Voxel + Native 8K PBR",
-    credits: 8,
+    code: "3.0",
+    name: "Prism 3.0 Ultra (VIP HD)",
+    sub: "Tripo3D v2.5 + 360° Full PBR",
+    credits: 15,
   },
   {
     id: "hunyuan3d_2_1",
-    code: "T3.0",
-    name: "Tripo 3.0 + Hunyuan3D – Realistic",
-    sub: "Smart Quad Topology + BRDF",
+    code: "2.5",
+    name: "Prism 2.5 Standard (แนะนำ)",
+    sub: "360° O-Voxel PBR + Clean Mesh",
     credits: 6,
   },
   {
     id: "triposg",
-    code: "FAST",
-    name: "Prism Turbo 1.5 – Quick Draft",
-    sub: "4-Second Clean SDF Mesh",
+    code: "2.0",
+    name: "Prism 2.0 Turbo (Fast)",
+    sub: "ปั้นทรงไว ประหยัดเครดิต",
     credits: 2,
   },
 ];
@@ -419,7 +419,7 @@ export default function SiamPrism3DStudioPage() {
     "text_to_3d"
   );
   const [selectedModel, setSelectedModel] = useState<"trellis_pbr" | "hunyuan3d_2_1" | "triposg">(
-    "trellis_pbr"
+    "hunyuan3d_2_1"
   );
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
 
