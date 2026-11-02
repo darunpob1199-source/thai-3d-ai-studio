@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ExternalLink, ShieldCheck, ToggleRight, X } from "lucide-react";
+import { Box, X } from "lucide-react";
 import { signInWithPopup } from "firebase/auth";
 import { firebaseAuth, googleAuthProvider } from "@/lib/firebase/client";
 
@@ -11,7 +11,7 @@ interface GmailLoginModalProps {
   onSuccess: (data: any) => void;
 }
 
-function GoogleLogoSvg({ className = "w-5 h-5" }: { className?: string }) {
+export function GoogleLogoSvg({ className = "w-5 h-5" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24">
       <path
@@ -34,6 +34,19 @@ function GoogleLogoSvg({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+export async function triggerGooglePopupLogin(): Promise<any> {
+  const result = await signInWithPopup(firebaseAuth, googleAuthProvider);
+  const firebaseIdToken = await result.user.getIdToken();
+  const res = await fetch("/api/auth/google", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ firebaseIdToken }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "ไม่สามารถเข้าสู่ระบบด้วย Google ได้");
+  return data;
+}
+
 export default function GmailLoginModal({
   isOpen,
   onClose,
@@ -44,28 +57,16 @@ export default function GmailLoginModal({
 
   if (!isOpen) return null;
 
-  const handleRealFirebaseGooglePopup = async () => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await signInWithPopup(firebaseAuth, googleAuthProvider);
-      const firebaseIdToken = await result.user.getIdToken();
-      const res = await fetch("/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firebaseIdToken }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Google Auth Failed");
+      const data = await triggerGooglePopupLogin();
       onSuccess(data);
       onClose();
     } catch (err: any) {
-      if (err?.code === "auth/operation-not-allowed") {
-        setError(
-          "เหลือแค่กดเปิดสวิตช์ Google ในหน้า Firebase Console (ลิงก์ด้านล่าง) แล้วกดปุ่มนี้อีกครั้ง หน้าต่าง accounts.google.com จะเด้งขึ้นมาทันทีครับ!"
-        );
-      } else if (err?.code !== "auth/popup-closed-by-user") {
-        setError(err?.message || "เกิดข้อผิดพลาดในการเปิดหน้าต่าง Google Login");
+      if (err?.code !== "auth/popup-closed-by-user" && err?.code !== "auth/cancelled-popup-request") {
+        setError("ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง");
       }
     } finally {
       setLoading(false);
@@ -73,86 +74,43 @@ export default function GmailLoginModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#111622] text-slate-100 rounded-2xl shadow-2xl overflow-hidden border border-slate-800">
-        <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
-              <GoogleLogoSvg className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-white">
-                เข้าสู่ระบบด้วย Google (accounts.google.com)
-              </h3>
-              <p className="text-[11px] text-slate-400">
-                เชื่อมผ่านโปรเจกต์ Google Cloud ของคุณ (calorie-line-app)
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="w-full max-w-sm bg-[#0b0708] text-zinc-100 rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.9)] overflow-hidden border border-red-500/20 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-3.5 right-3.5 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
 
-        <div className="p-6 space-y-4">
-          {/* ปุ่มเปิด Popup accounts.google.com จริง */}
+        <div className="p-6 pt-7 text-center space-y-5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center mx-auto shadow-[0_0_25px_rgba(239,68,68,0.45)]">
+            <Box className="w-6 h-6 text-white" />
+          </div>
+
+          <div className="space-y-1">
+            <h3 className="text-base font-extrabold text-white tracking-tight">
+              เข้าสู่ระบบ Prism3D Studio
+            </h3>
+            <p className="text-xs text-zinc-400">
+              เข้าสู่ระบบด้วยบัญชี Google เพื่อสร้างและบันทึกโมเดล 3D
+            </p>
+          </div>
+
           <button
             disabled={loading}
-            onClick={handleRealFirebaseGooglePopup}
-            className="w-full py-3.5 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-extrabold text-xs flex items-center justify-center gap-3 shadow-xl transition"
+            onClick={handleGoogleSignIn}
+            className="w-full py-3 px-4 rounded-xl bg-white hover:bg-zinc-100 disabled:opacity-60 text-zinc-900 font-bold text-xs flex items-center justify-center gap-2.5 shadow-lg transition cursor-pointer"
           >
-            <GoogleLogoSvg className="w-5 h-5" />
-            <span>
-              {loading
-                ? "กำลังเปิดหน้าต่าง Google (accounts.google.com)..."
-                : "ดำเนินการต่อด้วย Google (Popup ของแท้)"}
-            </span>
+            <GoogleLogoSvg className="w-4 h-4" />
+            <span>{loading ? "กำลังเข้าสู่ระบบ..." : "ดำเนินการต่อด้วย Google"}</span>
           </button>
 
           {error && (
-            <div className="p-3.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-xs text-amber-200 leading-relaxed">
+            <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-[11px] text-red-300">
               {error}
             </div>
           )}
-
-          {/* กล่องกดเปิดสวิตช์ใน Firebase Console 1 คลิก */}
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 text-xs">
-            <div className="font-bold text-emerald-400 flex items-center gap-1.5">
-              <ToggleRight className="w-4 h-4" />
-              ผมผูกโดเมน 3d-studio-dev.lungnuek.com เข้ากับ Google Cloud ของเพื่อนให้แล้ว!
-            </div>
-            <p className="text-[11px] text-slate-300 leading-relaxed">
-              เหลือแค่เพื่อนกดเปิดสวิตช์ <b>Google</b> ในหน้า Firebase (ไม่ต้องกรอก URL หรือก๊อปโค้ดใดๆ ทั้งสิ้น):
-            </p>
-            <ol className="text-[11px] text-slate-400 space-y-1 list-decimal list-inside">
-              <li>
-                คลิกปุ่มด้านล่างเพื่อเปิดหน้า <b>Sign-in providers</b>
-              </li>
-              <li>
-                คลิก <b>Add new provider</b> เลือก <b>Google</b>
-              </li>
-              <li>
-                กดเปิดสวิตช์ <b>Enable</b> เลือกอีเมล แล้วกด <b>Save</b>
-              </li>
-            </ol>
-            <a
-              href="https://console.firebase.google.com/project/calorie-line-app/authentication/providers"
-              target="_blank"
-              rel="noreferrer"
-              className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition shadow-lg"
-            >
-              <span>เปิดหน้ากดสวิตช์ Google (คลิกเดียวจบ)</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
-          </div>
-
-          <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Authorized Domain: 3d-studio-dev.lungnuek.com (ผูกสำเร็จแล้ว)</span>
-          </div>
         </div>
       </div>
     </div>

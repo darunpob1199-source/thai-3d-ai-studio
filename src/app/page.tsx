@@ -44,7 +44,10 @@ import {
   X,
   Printer,
 } from "lucide-react";
-import GmailLoginModal from "@/components/auth/GmailLoginModal";
+import GmailLoginModal, {
+  triggerGooglePopupLogin,
+  GoogleLogoSvg,
+} from "@/components/auth/GmailLoginModal";
 import TopupModal from "@/components/billing/TopupModal";
 import type {
   UserRecord,
@@ -639,10 +642,20 @@ export default function SiamPrism3DStudioPage() {
     fetchSession();
   };
 
+  const handleDirectGoogleLogin = async () => {
+    try {
+      const data = await triggerGooglePopupLogin();
+      handleLoginSuccess(data);
+    } catch (err: any) {
+      if (err?.code === "auth/popup-blocked") {
+        setAuthModalOpen(true);
+      }
+    }
+  };
+
   const handleLogout = async () => {
     await fetch("/api/auth/me", { method: "DELETE" });
     setUser(null);
-    setAuthModalOpen(true);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1042,7 +1055,7 @@ export default function SiamPrism3DStudioPage() {
                 {user.name}
               </span>
               <button
-                onClick={() => setAuthModalOpen(true)}
+                onClick={handleDirectGoogleLogin}
                 title="สลับบัญชี Google"
                 className="p-1 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition cursor-pointer"
               >
@@ -1058,10 +1071,11 @@ export default function SiamPrism3DStudioPage() {
             </div>
           ) : (
             <button
-              onClick={() => setAuthModalOpen(true)}
-              className="h-8 px-3.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white hover:brightness-110 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+              onClick={handleDirectGoogleLogin}
+              className="h-8 px-3.5 rounded-full bg-white text-zinc-900 hover:bg-zinc-100 font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.18)]"
             >
-              <span>Sign in with Google</span>
+              <GoogleLogoSvg className="w-3.5 h-3.5" />
+              <span>เข้าสู่ระบบด้วย Google</span>
             </button>
           )}
         </div>

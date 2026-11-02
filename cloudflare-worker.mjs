@@ -263,6 +263,20 @@ export default {
     const db = env.DB;
 
     // =========================================================================
+    // 0. /favicon.ico (Crimson 3D Cube Icon — zero 404 in browser console)
+    // =========================================================================
+    if (pathname === "/favicon.ico" || pathname === "/icon.svg") {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#090506"/><path d="M16 5L26 10.5V21.5L16 27L6 21.5V10.5L16 5Z" fill="#ef4444" fill-opacity="0.25" stroke="#ef4444" stroke-width="2"/><path d="M16 5V16M16 16L26 10.5M16 16L6 10.5M16 16V27" stroke="#f43f5e" stroke-width="1.8"/></svg>`;
+      return new Response(svg, {
+        status: 200,
+        headers: {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control": "public, max-age=86400",
+        },
+      });
+    }
+
+    // =========================================================================
     // 1. /api/settings (PromptPay EMVCo QR + Serverless GPU Config)
     // =========================================================================
     if (pathname === "/api/settings") {
