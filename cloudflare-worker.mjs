@@ -600,7 +600,7 @@ export default {
       const targetPolyCount = Number(body.targetPolyCount) || 18000;
       const topology = body.topology === "triangle" ? "triangle" : "quad";
       const hasRig = Boolean(body.hasRig);
-      const inputImageUrl = body.inputImageUrl || null;
+      let inputImageUrl = body.inputImageUrl || null;
 
       const engineCosts = { triposg: 2, hunyuan3d_2_1: 7, trellis_pbr: 10 };
       const costCredits =
@@ -735,6 +735,7 @@ export default {
             captionForShape = "";
           } else {
             const condImgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced.promptEn)}?width=512&height=512&nologo=true&seed=42`;
+            inputImageUrl = condImgUrl;
             fileDataObj = {
               path: condImgUrl,
               url: condImgUrl,

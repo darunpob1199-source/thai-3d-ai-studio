@@ -783,12 +783,18 @@ export default function Viewport3D({
               flatShading: isFlat,
             });
           } else if (effectiveShading === "base_color") {
-            const origColor =
-              (mesh.material as THREE.MeshStandardMaterial)?.color ||
-              new THREE.Color(pHex);
-            mesh.material = new THREE.MeshBasicMaterial({
-              color: origColor,
-            });
+            const prevMat = mesh.material as THREE.MeshStandardMaterial;
+            if (prevMat?.map) {
+              mesh.material = new THREE.MeshBasicMaterial({
+                map: prevMat.map,
+                color: "#ffffff",
+              });
+            } else {
+              const origColor = prevMat?.color || new THREE.Color(pHex);
+              mesh.material = new THREE.MeshBasicMaterial({
+                color: origColor,
+              });
+            }
           } else if (effectiveShading === "normal") {
             mesh.material = new THREE.MeshNormalMaterial({
               flatShading: isFlat,
@@ -895,13 +901,66 @@ export default function Viewport3D({
           const loadedRoot = new THREE.Group();
           loadedRoot.name = `AI_GLB_${currentTask.id}`;
 
-          // Compute vertex normals on all AI GLB meshes (Hunyuan3D / trimesh GLBs omit NORMAL attributes!)
+          // Convert OpenCV Z (-Z front) -> Three.js OpenGL Z (+Z front), compute normals & orthographic UVs
           let mIdx = 1;
           gltf.scene.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
               const m = child as THREE.Mesh;
               if (m.geometry) {
-                m.geometry.computeVertexNormals();
+                const geom = m.geometry;
+                const hadNormals = Boolean(geom.attributes.normal);
+                const posAttr = geom.attributes.position;
+
+                if (!hadNormals && posAttr) {
+                  // Hunyuan3D / trimesh GLB uses -Z as front; flip Z and reverse triangle winding
+                  for (let i = 0; i < posAttr.count; i++) {
+                    posAttr.setZ(i, -posAttr.getZ(i));
+                  }
+                  posAttr.needsUpdate = true;
+
+                  if (geom.index) {
+                    const idxArr = geom.index.array;
+                    for (let i = 0; i < idxArr.length; i += 3) {
+                      const tmp = idxArr[i + 1];
+                      idxArr[i + 1] = idxArr[i + 2];
+                      idxArr[i + 2] = tmp;
+                    }
+                    geom.index.needsUpdate = true;
+                  }
+                }
+
+                geom.computeVertexNormals();
+                geom.computeBoundingBox();
+
+                // Generate planar + back-cloak UV coordinates if geometry lacks UVs
+                if (!geom.attributes.uv && posAttr && geom.boundingBox) {
+                  const bb = geom.boundingBox;
+                  const spanX = Math.max(bb.max.x - bb.min.x, 0.001);
+                  const spanY = Math.max(bb.max.y - bb.min.y, 0.001);
+                  const normAttr = geom.attributes.normal;
+                  const uvs = new Float32Array(posAttr.count * 2);
+
+                  for (let i = 0; i < posAttr.count; i++) {
+                    const vx = posAttr.getX(i);
+                    const vy = posAttr.getY(i);
+                    const vz = posAttr.getZ(i);
+                    const nz = normAttr ? normAttr.getZ(i) : 1;
+
+                    let u = (vx - bb.min.x) / spanX;
+                    const v = Math.min(0.98, Math.max(0.02, (vy - bb.min.y) / spanY));
+
+                    // Back-facing vertices sample outer cloak/armor columns instead of front face
+                    if (vz < -0.06 && nz < -0.18) {
+                      u = vx < 0 ? 0.26 : 0.76;
+                    } else {
+                      u = Math.min(0.98, Math.max(0.02, u));
+                    }
+
+                    uvs[i * 2] = u;
+                    uvs[i * 2 + 1] = v;
+                  }
+                  geom.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+                }
               }
               if (!m.name) {
                 m.name = `AI_Mesh_Part_0${mIdx++}`;
@@ -936,6 +995,141 @@ export default function Viewport3D({
           }
 
           applyShadingToGroup(loadedRoot, true);
+
+          // Project 2D Reference Image Texture (foreground-cropped & edge-dilated) onto AI 3D Mesh
+          if (
+            currentTask.input_image_url &&
+            (effectiveShading === "pbr" || effectiveShading === "base_color")
+          ) {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+              const W = 512;
+              const H = 512;
+              const srcCanvas = document.createElement("canvas");
+              srcCanvas.width = W;
+              srcCanvas.height = H;
+              const ctx = srcCanvas.getContext("2d");
+              if (!ctx) return;
+              ctx.drawImage(img, 0, 0, W, H);
+              const imgData = ctx.getImageData(0, 0, W, H);
+              const d = imgData.data;
+
+              // Detect corner background color
+              const bgR = (d[0] + d[(W - 1) * 4] + d[(H - 1) * W * 4] + d[((H - 1) * W + (W - 1)) * 4]) * 0.25;
+              const bgG = (d[1] + d[(W - 1) * 4 + 1] + d[(H - 1) * W * 4 + 1] + d[((H - 1) * W + (W - 1)) * 4 + 1]) * 0.25;
+              const bgB = (d[2] + d[(W - 1) * 4 + 2] + d[(H - 1) * W * 4 + 2] + d[((H - 1) * W + (W - 1)) * 4 + 2]) * 0.25;
+              const bgA = (d[3] + d[(W - 1) * 4 + 3] + d[(H - 1) * W * 4 + 3] + d[((H - 1) * W + (W - 1)) * 4 + 3]) * 0.25;
+
+              let fgMinX = W;
+              let fgMaxX = 0;
+              let fgMinY = H;
+              let fgMaxY = 0;
+              const isFg = new Uint8Array(W * H);
+
+              for (let y = 0; y < H; y++) {
+                for (let x = 0; x < W; x++) {
+                  const idx = (y * W + x) * 4;
+                  const a = d[idx + 3];
+                  const dist =
+                    Math.abs(d[idx] - bgR) +
+                    Math.abs(d[idx + 1] - bgG) +
+                    Math.abs(d[idx + 2] - bgB);
+                  if (a > 30 && (bgA < 40 || dist > 42)) {
+                    isFg[y * W + x] = 1;
+                    if (x < fgMinX) fgMinX = x;
+                    if (x > fgMaxX) fgMaxX = x;
+                    if (y < fgMinY) fgMinY = y;
+                    if (y > fgMaxY) fgMaxY = y;
+                  }
+                }
+              }
+
+              // Horizontal color dilation so silhouette edges never sample dark background pixels
+              for (let y = 0; y < H; y++) {
+                let lastR = 140,
+                  lastG = 100,
+                  lastB = 75;
+                for (let x = 0; x < W; x++) {
+                  const p = y * W + x;
+                  const idx = p * 4;
+                  if (isFg[p]) {
+                    lastR = d[idx];
+                    lastG = d[idx + 1];
+                    lastB = d[idx + 2];
+                  } else {
+                    d[idx] = lastR;
+                    d[idx + 1] = lastG;
+                    d[idx + 2] = lastB;
+                    d[idx + 3] = 255;
+                  }
+                }
+                for (let x = W - 1; x >= 0; x--) {
+                  const p = y * W + x;
+                  const idx = p * 4;
+                  if (isFg[p]) {
+                    lastR = d[idx];
+                    lastG = d[idx + 1];
+                    lastB = d[idx + 2];
+                  } else {
+                    d[idx] = (d[idx] + lastR) >> 1;
+                    d[idx + 1] = (d[idx + 1] + lastG) >> 1;
+                    d[idx + 2] = (d[idx + 2] + lastB) >> 1;
+                  }
+                }
+              }
+              ctx.putImageData(imgData, 0, 0);
+
+              if (fgMaxX <= fgMinX + 16 || fgMaxY <= fgMinY + 16) {
+                fgMinX = 0;
+                fgMaxX = W - 1;
+                fgMinY = 0;
+                fgMaxY = H - 1;
+              }
+
+              const cropCanvas = document.createElement("canvas");
+              cropCanvas.width = W;
+              cropCanvas.height = H;
+              const cropCtx = cropCanvas.getContext("2d");
+              if (!cropCtx) return;
+              cropCtx.drawImage(
+                srcCanvas,
+                fgMinX,
+                fgMinY,
+                fgMaxX - fgMinX + 1,
+                fgMaxY - fgMinY + 1,
+                0,
+                0,
+                W,
+                H
+              );
+
+              const projTex = new THREE.CanvasTexture(cropCanvas);
+              projTex.colorSpace = THREE.SRGBColorSpace;
+              projTex.needsUpdate = true;
+
+              loadedRoot.traverse((obj) => {
+                if ((obj as THREE.Mesh).isMesh) {
+                  const m = obj as THREE.Mesh;
+                  if (effectiveShading === "base_color") {
+                    m.material = new THREE.MeshBasicMaterial({
+                      map: projTex,
+                      color: "#ffffff",
+                    });
+                  } else if (effectiveShading === "pbr") {
+                    m.material = new THREE.MeshStandardMaterial({
+                      map: projTex,
+                      color: "#ffffff",
+                      roughness: studioOverrides?.material.roughness ?? 0.45,
+                      metalness: studioOverrides?.material.metalness ?? 0.16,
+                      flatShading: isFlat,
+                    });
+                  }
+                }
+              });
+            };
+            img.src = currentTask.input_image_url;
+          }
 
           scene.remove(assetGroup);
           scene.add(loadedRoot);
