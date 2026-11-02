@@ -694,13 +694,53 @@ export default {
         }
       }
 
-      // Tier 2: Free Cloud ZeroGPU (Pollinations Flux 2D -> Tencent Hunyuan3D-2 ZeroGPU .GLB, ฟรี 0 บาท)
+      // Tier 2: Free Cloud ZeroGPU (Uploaded Image or Pollinations Flux 2D -> Tencent Hunyuan3D-2 ZeroGPU .GLB, ฟรี 0 บาท)
       if (!outputGlbUrl) {
         try {
-          const condImgUrl =
-            inputImageUrl && String(inputImageUrl).startsWith("http")
-              ? inputImageUrl
-              : `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced.promptEn)}?width=512&height=512&nologo=true&seed=42`;
+          let fileDataObj = null;
+          let captionForShape = enhanced.promptEn;
+
+          if (inputImageUrl && String(inputImageUrl).startsWith("data:image/")) {
+            const match = String(inputImageUrl).match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+            if (match) {
+              const mime = match[1];
+              const binaryStr = atob(match[2]);
+              const bytes = new Uint8Array(binaryStr.length);
+              for (let i = 0; i < binaryStr.length; i++) {
+                bytes[i] = binaryStr.charCodeAt(i);
+              }
+              const form = new FormData();
+              form.append("files", new Blob([bytes], { type: mime }), "upload.png");
+              const upRes = await fetch("https://tencent-hunyuan3d-2.hf.space/upload", {
+                method: "POST",
+                body: form,
+              });
+              if (upRes.ok) {
+                const upPaths = await upRes.json();
+                if (Array.isArray(upPaths) && upPaths[0]) {
+                  fileDataObj = {
+                    path: upPaths[0],
+                    meta: { _type: "gradio.FileData" },
+                  };
+                  captionForShape = "";
+                }
+              }
+            }
+          } else if (inputImageUrl && String(inputImageUrl).startsWith("http")) {
+            fileDataObj = {
+              path: inputImageUrl,
+              url: inputImageUrl,
+              meta: { _type: "gradio.FileData" },
+            };
+            captionForShape = "";
+          } else {
+            const condImgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced.promptEn)}?width=512&height=512&nologo=true&seed=42`;
+            fileDataObj = {
+              path: condImgUrl,
+              url: condImgUrl,
+              meta: { _type: "gradio.FileData" },
+            };
+          }
 
           const callRes = await fetch(
             "https://tencent-hunyuan3d-2.hf.space/call/shape_generation",
@@ -709,16 +749,16 @@ export default {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 data: [
-                  enhanced.promptEn,
-                  { path: condImgUrl, url: condImgUrl, meta: { _type: "gradio.FileData" } },
+                  captionForShape,
+                  fileDataObj,
                   null,
                   null,
                   null,
                   null,
-                  15,
-                  5,
+                  20,
+                  5.5,
                   1234,
-                  160,
+                  192,
                   true,
                   8000,
                   true,

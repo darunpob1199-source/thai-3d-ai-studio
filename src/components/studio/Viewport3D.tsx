@@ -684,18 +684,34 @@ export default function Viewport3D({
     const hdriRotRad = ((studioOverrides?.hdriRotation ?? 0) * Math.PI) / 180;
     const ambientLight = new THREE.AmbientLight(
       hdri === "outdoor" ? "#bae6fd" : hdri === "indoor" ? "#fde68a" : "#ffffff",
-      0.75 * lightIntensity
+      0.95 * lightIntensity
     );
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight("#ffffff", 2.1 * lightIntensity);
-    keyLight.position.set(Math.cos(hdriRotRad) * 5.5, 6, Math.sin(hdriRotRad) * 5.5);
+    const hemiLight = new THREE.HemisphereLight(
+      "#ffffff",
+      "#2a1215",
+      1.1 * lightIntensity
+    );
+    hemiLight.position.set(0, 8, 0);
+    scene.add(hemiLight);
+
+    const keyLight = new THREE.DirectionalLight("#ffffff", 2.4 * lightIntensity);
+    keyLight.position.set(
+      Math.cos(hdriRotRad) * 4.5 + 2.5,
+      6.0,
+      Math.sin(hdriRotRad) * 4.5 + 4.5
+    );
     scene.add(keyLight);
 
+    const fillLight = new THREE.DirectionalLight("#ffe4e6", 1.35 * lightIntensity);
+    fillLight.position.set(-3.5, 2.2, 5.0);
+    scene.add(fillLight);
+
     const rimColor =
-      hdri === "cyber" ? "#ec4899" : hdri === "outdoor" ? "#38bdf8" : "#06b6d4";
-    const rimLight = new THREE.DirectionalLight(rimColor, 1.35 * lightIntensity);
-    rimLight.position.set(-Math.cos(hdriRotRad) * 5, 3, -Math.sin(hdriRotRad) * 4);
+      hdri === "cyber" ? "#ec4899" : hdri === "outdoor" ? "#38bdf8" : "#f43f5e";
+    const rimLight = new THREE.DirectionalLight(rimColor, 1.45 * lightIntensity);
+    rimLight.position.set(-Math.cos(hdriRotRad) * 5, 3.5, -4.5);
     scene.add(rimLight);
 
     const currentTask: GenerationTaskRecord = activeTask || {
@@ -842,10 +858,19 @@ export default function Viewport3D({
           } else if (applyPbrColors) {
             const stdMat = mesh.material as THREE.MeshStandardMaterial;
             if (!stdMat || !stdMat.map) {
+              const aiColor =
+                studioOverrides?.material.primaryColor ||
+                (currentTask.output_glb_url ? "#d6d3d1" : pHex);
+              const aiRoughness =
+                studioOverrides?.material.roughness ??
+                (currentTask.output_glb_url ? 0.42 : rVal);
+              const aiMetalness =
+                studioOverrides?.material.metalness ??
+                (currentTask.output_glb_url ? 0.18 : Math.min(mVal, 0.35));
               mesh.material = new THREE.MeshStandardMaterial({
-                color: new THREE.Color(pHex),
-                roughness: rVal,
-                metalness: mVal,
+                color: new THREE.Color(aiColor),
+                roughness: aiRoughness,
+                metalness: aiMetalness,
                 flatShading: isFlat,
               });
             }
@@ -861,12 +886,28 @@ export default function Viewport3D({
     applyShadingToGroup(assetGroup, false);
 
     if (currentTask.output_glb_url) {
+      // Hide procedural fallback while loading real AI .GLB so it never flashes a dummy robot
+      assetGroup.visible = false;
       const loader = new GLTFLoader();
       loader.load(
         currentTask.output_glb_url,
         (gltf) => {
           const loadedRoot = new THREE.Group();
           loadedRoot.name = `AI_GLB_${currentTask.id}`;
+
+          // Compute vertex normals on all AI GLB meshes (Hunyuan3D / trimesh GLBs omit NORMAL attributes!)
+          let mIdx = 1;
+          gltf.scene.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              const m = child as THREE.Mesh;
+              if (m.geometry) {
+                m.geometry.computeVertexNormals();
+              }
+              if (!m.name) {
+                m.name = `AI_Mesh_Part_0${mIdx++}`;
+              }
+            }
+          });
 
           // Normalize bounding box of loaded AI GLB mesh to fit studio viewport cleanly
           const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -883,13 +924,6 @@ export default function Viewport3D({
             -center.z * normScale
           );
           gltf.scene.scale.setScalar(normScale);
-
-          let mIdx = 1;
-          gltf.scene.traverse((child) => {
-            if ((child as THREE.Mesh).isMesh && !child.name) {
-              child.name = `AI_Mesh_Part_0${mIdx++}`;
-            }
-          });
 
           loadedRoot.add(gltf.scene);
 
@@ -920,7 +954,9 @@ export default function Viewport3D({
           }
         },
         undefined,
-        () => {}
+        () => {
+          assetGroup.visible = true;
+        }
       );
     }
 

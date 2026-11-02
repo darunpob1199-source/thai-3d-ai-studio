@@ -423,9 +423,7 @@ export default function SiamPrism3DStudioPage() {
   );
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
 
-  const [prompt, setPrompt] = useState<string>(
-    "หุ่นยนต์ยักษ์วัดแจ้งเกราะมรกตไซเบอร์พังก์ถือดาบพลังงานแสงนีออน"
-  );
+  const [prompt, setPrompt] = useState<string>("");
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [multiViewImages, setMultiViewImages] = useState<{
     front: string | null;
@@ -532,10 +530,14 @@ export default function SiamPrism3DStudioPage() {
   useEffect(() => {
     if (!activeTask) return;
     setMaterialState({
-      primaryColor: activeTask.primary_color || "#ef4444",
+      primaryColor: activeTask.output_glb_url
+        ? activeTask.primary_color || "#d6d3d1"
+        : activeTask.primary_color || "#ef4444",
       accentColor: activeTask.accent_color || "#f59e0b",
-      roughness: activeTask.roughness ?? 0.22,
-      metalness: activeTask.metalness ?? 0.85,
+      roughness: activeTask.output_glb_url ? 0.42 : activeTask.roughness ?? 0.35,
+      metalness: activeTask.output_glb_url
+        ? 0.18
+        : Math.min(activeTask.metalness ?? 0.25, 0.28),
       emissiveIntensity: 0.25,
       polyMultiplier: 1,
     });
@@ -578,7 +580,9 @@ export default function SiamPrism3DStudioPage() {
         setUser(data.user);
         if (Array.isArray(data.tasks) && data.tasks.length > 0) {
           setTasks(data.tasks);
-          setActiveTask((prev) => prev || data.tasks[0]);
+          setActiveTask((prev) =>
+            !prev || prev.id.startsWith("showcase_") ? data.tasks[0] : prev
+          );
         }
         if (Array.isArray(data.transactions)) {
           setTransactions(data.transactions);
@@ -991,7 +995,7 @@ export default function SiamPrism3DStudioPage() {
             className="h-8 px-3.5 rounded-full text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] flex items-center gap-1.5 transition cursor-pointer"
           >
             <FolderOpen className="w-3.5 h-3.5 text-rose-400" />
-            <span>Assets ({tasks.length + CURATED_SHOWCASE.length})</span>
+            <span>Assets ({tasks.length > 0 ? tasks.length : CURATED_SHOWCASE.length})</span>
           </button>
         </nav>
 
@@ -3627,7 +3631,7 @@ export default function SiamPrism3DStudioPage() {
               <div className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-slate-400 font-medium">
-                    All Assets ({[...tasks, ...CURATED_SHOWCASE].length})
+                    All Assets ({(tasks.length > 0 ? tasks : CURATED_SHOWCASE).length})
                   </span>
                   <button
                     onClick={() => setRightTab("property")}
@@ -3655,7 +3659,7 @@ export default function SiamPrism3DStudioPage() {
                     </span>
                   </label>
 
-                  {[...tasks, ...CURATED_SHOWCASE].map((item) => {
+                  {(tasks.length > 0 ? tasks : CURATED_SHOWCASE).map((item) => {
                     const isSelected = activeTask?.id === item.id;
                     return (
                       <div
