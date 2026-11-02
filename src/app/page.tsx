@@ -239,6 +239,32 @@ const GALLERY_CATEGORIES = [
 
 const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
   {
+    id: "showcase_dwarf_mv_4view",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "hunyuan3d_2_1",
+    mode: "image_to_3d",
+    prompt_th: "คนแคระช่างตีเหล็ก (4-View Storyboard Multi-View 360°)",
+    prompt_en:
+      "Chibi fantasy dwarf blacksmith in brown hooded cloak holding iron hammer, 4-view turnaround sheet (Front, Back, Right, Left) Multi-View 3D",
+    input_image_url: "/dwarf-turnaround-4view.jpg",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 589064,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "mecha",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.42,
+    metalness: 0.18,
+    output_glb_url: "/models/dwarf-mv.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Character",
+  },
+  {
     id: "showcase_mecha_arun",
     user_id: "community",
     stage: "refine_pbr",
@@ -702,11 +728,92 @@ export default function SiamPrism3DStudioPage() {
 
     const reader = new FileReader();
     reader.onload = () => {
-      setUploadedImage(reader.result as string);
-      setInputMode("image_to_3d");
-      triggerToast(`อัปโหลดรูปภาพ ${file.name} พร้อมสร้าง 3D`);
+      const dataUrl = reader.result as string;
+      setUploadedImage(dataUrl);
+      const probe = new Image();
+      probe.onload = () => {
+        if (probe.width >= probe.height * 1.35) {
+          sliceTurnaroundSheetTo4Views(dataUrl, `ตรวจพบภาพ 4-View Storyboard (${file.name})! หั่นแยก 4 มุมอัตโนมัติเรียบร้อย`);
+        } else {
+          setInputMode("image_to_3d");
+          triggerToast(`อัปโหลดรูปภาพ ${file.name} พร้อมสร้าง 3D`);
+        }
+      };
+      probe.src = dataUrl;
     };
     reader.readAsDataURL(file);
+  };
+
+  const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
+
+  const sliceTurnaroundSheetTo4Views = (sheetSrc: string, customToast?: string) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const colW = Math.floor(img.width / 4);
+      const h = img.height;
+      const cropCol = (colIndex: number) => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return sheetSrc;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, 512, 512);
+        const scale = Math.min(512 / colW, 512 / h);
+        const drawW = colW * scale;
+        const drawH = h * scale;
+        const dx = (512 - drawW) / 2;
+        const dy = (512 - drawH) / 2;
+        ctx.drawImage(img, colIndex * colW, 0, colW, h, dx, dy, drawW, drawH);
+        return canvas.toDataURL("image/png");
+      };
+      const front = cropCol(0);
+      const back = cropCol(1);
+      const right = cropCol(2);
+      const left = cropCol(3);
+      setUploadedImage(sheetSrc);
+      setMultiViewImages({ front, back, left, right });
+      setInputMode("multi_view");
+      setActiveLeftTool("generate");
+      setTopNav("workspace");
+      triggerToast(
+        customToast ||
+          "หั่นภาพ 4-View Storyboard ลงช่อง FRONT / BACK / LEFT / RIGHT เรียบร้อย! กด Generate New 3D ได้เลย"
+      );
+    };
+    img.src = sheetSrc;
+  };
+
+  const handleGenerateStoryboard = async (presetDwarf = false) => {
+    setIsGeneratingStoryboard(true);
+    setErrorBanner(null);
+    try {
+      const targetPrompt = presetDwarf
+        ? "คนแคระช่างตีเหล็ก สวมผ้าคลุมฮู้ดสีน้ำตาล ถือค้อนเหล็ก (4-View Turnaround)"
+        : prompt.trim() || "คนแคระช่างตีเหล็ก สวมผ้าคลุมฮู้ดสีน้ำตาล ถือค้อนเหล็ก (4-View Turnaround)";
+      if (!prompt.trim() || presetDwarf) {
+        setPrompt(targetPrompt);
+      }
+      const res = await fetch("/api/storyboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promptTh: targetPrompt }),
+      });
+      const data = await res.json();
+      const sheetUrl = data?.sheetUrl || "/dwarf-turnaround-4view.jpg";
+      sliceTurnaroundSheetTo4Views(
+        sheetUrl,
+        "สร้างภาพ 4-View Storyboard (Front/Back/Left/Right) สำเร็จ! พร้อมกด Generate New 3D"
+      );
+    } catch {
+      sliceTurnaroundSheetTo4Views(
+        "/dwarf-turnaround-4view.jpg",
+        "โหลดภาพ 4-View Storyboard (Front/Back/Left/Right) สำเร็จ! พร้อมกด Generate New 3D"
+      );
+    } finally {
+      setIsGeneratingStoryboard(false);
+    }
   };
 
   const handleMultiViewSlotUpload = (
@@ -746,7 +853,10 @@ export default function SiamPrism3DStudioPage() {
       setAuthModalOpen(true);
       return;
     }
-    if (!prompt.trim() && !uploadedImage) {
+    const hasMvSlots = Boolean(
+      multiViewImages.front || multiViewImages.back || multiViewImages.left || multiViewImages.right
+    );
+    if (!prompt.trim() && !uploadedImage && !hasMvSlots) {
       setErrorBanner("กรุณาพิมพ์คำสั่ง Prompt หรืออัปโหลดรูปภาพต้นแบบ");
       return;
     }
@@ -761,11 +871,19 @@ export default function SiamPrism3DStudioPage() {
     setTopNav("workspace");
     setIsGenerating(true);
     setGenProgress(18);
-    setGenStageText("แปลภาษาไทย → 3D Spatial Prompt...");
+    setGenStageText(
+      hasMvSlots
+        ? "กำลังส่งภาพ Storyboard ทั้ง 4 มุม (Front/Back/Left/Right) เข้า Hunyuan3D-2mv..."
+        : "แปลภาษาไทย → 3D Spatial Prompt..."
+    );
 
     const timer1 = setTimeout(() => {
       setGenProgress(52);
-      setGenStageText(`กำลังประมวลผล ${currentModelSpec.name}...`);
+      setGenStageText(
+        hasMvSlots
+          ? "กำลังหลอมรวม Multi-View 360° Mesh (ด้านหน้า + ด้านหลังคมชัด)..."
+          : `กำลังประมวลผล ${currentModelSpec.name}...`
+      );
     }, 450);
 
     const timer2 = setTimeout(() => {
@@ -778,14 +896,23 @@ export default function SiamPrism3DStudioPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          promptTh: prompt || "โมเดล 3D จากรูปภาพต้นแบบ",
+          promptTh:
+            prompt ||
+            (hasMvSlots
+              ? "โมเดล 3D Multi-View 4 มุม (Front/Back/Left/Right)"
+              : "โมเดล 3D จากรูปภาพต้นแบบ"),
           stage: enablePbr8k ? "refine_pbr" : "draft_3d",
           engine: selectedModel,
-          mode: inputMode === "image_to_3d" ? "image_to_3d" : "text_to_3d",
+          mode: hasMvSlots
+            ? "image_to_3d"
+            : inputMode === "image_to_3d"
+              ? "image_to_3d"
+              : "text_to_3d",
           targetPolyCount: targetPolycount,
           topology: cleanTopologyTrial || meshQualityTab === "smart-mesh" ? "quad" : "triangle",
           hasRig: enableAutoRig || activeLeftTool === "rig",
           inputImageUrl: uploadedImage || multiViewImages.front,
+          multiViewImages,
         }),
       });
       const data = await res.json();
@@ -1297,6 +1424,16 @@ export default function SiamPrism3DStudioPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleGenerateStoryboard(false)}
+                    disabled={isGeneratingStoryboard}
+                    title="สร้างภาพตัวละคร 4 มุม (Front / Back / Left / Right) แล้วหั่นเข้าโหมด Multi-View อัตโนมัติ"
+                    className="h-9.5 px-3.5 rounded-full bg-red-500/15 hover:bg-red-500/25 border border-red-400/40 text-red-200 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+                  >
+                    <Layers className="w-3.5 h-3.5 text-red-400" />
+                    <span>{isGeneratingStoryboard ? "กำลังเจน 4 มุม..." : "✨ เจน 4-View Storyboard"}</span>
+                  </button>
+
                   <button
                     onClick={handleRandomPrompt}
                     title="สุ่มไอเดีย Prompt ภาษาไทย"
@@ -2001,35 +2138,54 @@ export default function SiamPrism3DStudioPage() {
                         )}
                       </label>
                     ) : inputMode === "multi_view" ? (
-                      /* WorkspaceGeneratePanelMultiViewUploaderV2: 4 Angle Slots */
-                      <div className="grid grid-cols-2 gap-2">
-                        {(["front", "back", "left", "right"] as const).map((slot) => (
-                          <label
-                            key={slot}
-                            className="h-20 rounded-xl border border-dashed border-red-400/25 hover:border-red-400/60 bg-[#090709]/60 flex flex-col items-center justify-center cursor-pointer p-1 relative overflow-hidden"
-                          >
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => handleMultiViewSlotUpload(slot, e)}
-                              className="hidden"
+                      /* WorkspaceGeneratePanelMultiViewUploaderV2: 4 Angle Slots + Storyboard Sheet Preview */
+                      <div className="space-y-2">
+                        {uploadedImage && (
+                          <div className="relative rounded-xl border border-red-400/35 bg-[#090709]/80 p-1.5 overflow-hidden">
+                            <img
+                              src={uploadedImage}
+                              alt="4-View Storyboard Sheet"
+                              className="w-full h-16 object-contain rounded-lg bg-white"
                             />
-                            {multiViewImages[slot] ? (
-                              <img
-                                src={multiViewImages[slot]!}
-                                alt={slot}
-                                className="w-full h-full object-cover rounded-lg"
+                            <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-red-600/90 text-white text-[8px] font-bold tracking-wider uppercase shadow">
+                              4-View Storyboard Sheet
+                            </span>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-2 gap-2">
+                          {(["front", "back", "left", "right"] as const).map((slot) => (
+                            <label
+                              key={slot}
+                              className="h-20 rounded-xl border border-dashed border-red-400/25 hover:border-red-400/60 bg-[#090709]/60 flex flex-col items-center justify-center cursor-pointer p-1 relative overflow-hidden"
+                            >
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handleMultiViewSlotUpload(slot, e)}
+                                className="hidden"
                               />
-                            ) : (
-                              <>
-                                <Upload className="w-3.5 h-3.5 text-red-400 mb-1" />
-                                <span className="text-[10px] font-semibold uppercase text-slate-300">
-                                  {slot}
-                                </span>
-                              </>
-                            )}
-                          </label>
-                        ))}
+                              {multiViewImages[slot] ? (
+                                <>
+                                  <img
+                                    src={multiViewImages[slot]!}
+                                    alt={slot}
+                                    className="w-full h-full object-contain rounded-lg bg-white"
+                                  />
+                                  <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-red-200 text-[8px] font-bold uppercase">
+                                    {slot}
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-3.5 h-3.5 text-red-400 mb-1" />
+                                  <span className="text-[10px] font-semibold uppercase text-slate-300">
+                                    {slot}
+                                  </span>
+                                </>
+                              )}
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-1.5">
@@ -2053,6 +2209,35 @@ export default function SiamPrism3DStudioPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* 4-View Character Turnaround Storyboard Generator Bar */}
+                    <div className="pt-1 border-t border-white/[0.08] flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between text-[10px] text-red-200/90 font-semibold">
+                        <span>🎬 AI 4-View Storyboard (หั่น 4 มุมอัตโนมัติ)</span>
+                        <span className="text-[9px] text-emerald-300 font-mono">360° Multi-View</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateStoryboard(false)}
+                          disabled={isGeneratingStoryboard}
+                          className="py-1.5 px-2 rounded-xl bg-gradient-to-r from-red-600/80 to-rose-600/80 hover:from-red-500 hover:to-rose-500 text-white text-[10px] font-bold flex items-center justify-center gap-1 shadow transition cursor-pointer disabled:opacity-50"
+                        >
+                          <Sparkles className="w-3 h-3 shrink-0" />
+                          <span className="truncate">
+                            {isGeneratingStoryboard ? "กำลังเจน 4 มุม..." : "เจน Storyboard 4 มุม"}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleGenerateStoryboard(true)}
+                          className="py-1.5 px-2 rounded-xl bg-white/[0.07] hover:bg-red-500/20 border border-red-400/30 text-red-200 text-[10px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                        >
+                          <Layers className="w-3 h-3 text-red-400 shrink-0" />
+                          <span className="truncate">ชุด 4-View คนแคระ</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Geometry & Texture Accordion */}

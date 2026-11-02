@@ -6,7 +6,7 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start --port 3000",
-    "cf:deploy": "npm run build && rm -rf .cloudflare-assets && mkdir -p .cloudflare-assets/_next && cp .next/server/app/index.html .cloudflare-assets/index.html && cp .next/server/app/_not-found.html .cloudflare-assets/404.html && cp -R .next/static .cloudflare-assets/_next/static && npx wrangler deploy",
+    "cf:deploy": "npm run build && rm -rf .cloudflare-assets && mkdir -p .cloudflare-assets/_next && cp -R public/* .cloudflare-assets/ 2>/dev/null || true && cp .next/server/app/index.html .cloudflare-assets/index.html && cp .next/server/app/_not-found.html .cloudflare-assets/404.html && cp -R .next/static .cloudflare-assets/_next/static && npx wrangler deploy",
     "db:init:d1": "wrangler d1 execute thai-3d-studio-db --local --file=./schema.sql",
     "db:deploy:d1": "wrangler d1 execute thai-3d-studio-db --remote --file=./schema.sql"
   },

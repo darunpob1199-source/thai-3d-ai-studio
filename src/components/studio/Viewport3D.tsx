@@ -913,7 +913,7 @@ export default function Viewport3D({
                 geom.computeVertexNormals();
                 geom.computeBoundingBox();
 
-                // Generate planar + back-cloak UV coordinates if geometry lacks UVs
+                // Generate Dual Front+Back Atlas UV coordinates if geometry lacks UVs
                 if (!geom.attributes.uv && posAttr && geom.boundingBox) {
                   const bb = geom.boundingBox;
                   const spanX = Math.max(bb.max.x - bb.min.x, 0.001);
@@ -927,15 +927,14 @@ export default function Viewport3D({
                     const vz = posAttr.getZ(i);
                     const nz = normAttr ? normAttr.getZ(i) : 1;
 
-                    let u = (vx - bb.min.x) / spanX;
+                    const normX = Math.min(0.98, Math.max(0.02, (vx - bb.min.x) / spanX));
                     const v = Math.min(0.98, Math.max(0.02, (vy - bb.min.y) / spanY));
 
-                    // Back-facing vertices (vz < 0, nz < -0.15) sample cloak/armor tones instead of front face
-                    if (vz < -0.05 && nz < -0.15) {
-                      u = vx < 0 ? 0.24 : 0.78;
-                    } else {
-                      u = Math.min(0.98, Math.max(0.02, u));
-                    }
+                    // Front half of atlas (u: 0.01..0.49) = Front View; Right half (u: 0.51..0.99) = Back View
+                    const isBack = vz < -0.04 && nz < -0.12;
+                    const u = isBack
+                      ? 0.51 + (1.0 - normX) * 0.48
+                      : 0.01 + normX * 0.48;
 
                     uvs[i * 2] = u;
                     uvs[i * 2 + 1] = v;
@@ -985,107 +984,187 @@ export default function Viewport3D({
             const img = new Image();
             img.crossOrigin = "anonymous";
             img.onload = () => {
-              const W = Math.min(1024, Math.max(256, img.naturalWidth || 512));
-              const H = Math.min(1024, Math.max(256, img.naturalHeight || 512));
-              const srcCanvas = document.createElement("canvas");
-              srcCanvas.width = W;
-              srcCanvas.height = H;
-              const ctx = srcCanvas.getContext("2d");
-              if (!ctx) return;
-              ctx.drawImage(img, 0, 0, W, H);
-              const imgData = ctx.getImageData(0, 0, W, H);
-              const d = imgData.data;
+              const natW = img.naturalWidth || 512;
+              const natH = img.naturalHeight || 512;
+              const isTurnaroundSheet = natW > natH * 1.35;
 
-              // Detect corner background color
-              const bgR = (d[0] + d[(W - 1) * 4] + d[(H - 1) * W * 4] + d[((H - 1) * W + (W - 1)) * 4]) * 0.25;
-              const bgG = (d[1] + d[(W - 1) * 4 + 1] + d[(H - 1) * W * 4 + 1] + d[((H - 1) * W + (W - 1)) * 4 + 1]) * 0.25;
-              const bgB = (d[2] + d[(W - 1) * 4 + 2] + d[(H - 1) * W * 4 + 2] + d[((H - 1) * W + (W - 1)) * 4 + 2]) * 0.25;
-              const bgA = (d[3] + d[(W - 1) * 4 + 3] + d[(H - 1) * W * 4 + 3] + d[((H - 1) * W + (W - 1)) * 4 + 3]) * 0.25;
+              const extractSubViewToCanvas = (
+                sx: number,
+                sy: number,
+                sw: number,
+                sh: number,
+                forBackFallback: boolean
+              ) => {
+                const W = 512;
+                const H = 512;
+                const c = document.createElement("canvas");
+                c.width = W;
+                c.height = H;
+                const ctx = c.getContext("2d");
+                if (!ctx) return c;
+                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+                const imgData = ctx.getImageData(0, 0, W, H);
+                const d = imgData.data;
 
-              let fgMinX = W;
-              let fgMaxX = 0;
-              let fgMinY = H;
-              let fgMaxY = 0;
-              const isFg = new Uint8Array(W * H);
+                const bgR =
+                  (d[0] +
+                    d[(W - 1) * 4] +
+                    d[(H - 1) * W * 4] +
+                    d[((H - 1) * W + (W - 1)) * 4]) *
+                  0.25;
+                const bgG =
+                  (d[1] +
+                    d[(W - 1) * 4 + 1] +
+                    d[(H - 1) * W * 4 + 1] +
+                    d[((H - 1) * W + (W - 1)) * 4 + 1]) *
+                  0.25;
+                const bgB =
+                  (d[2] +
+                    d[(W - 1) * 4 + 2] +
+                    d[(H - 1) * W * 4 + 2] +
+                    d[((H - 1) * W + (W - 1)) * 4 + 2]) *
+                  0.25;
+                const bgA =
+                  (d[3] +
+                    d[(W - 1) * 4 + 3] +
+                    d[(H - 1) * W * 4 + 3] +
+                    d[((H - 1) * W + (W - 1)) * 4 + 3]) *
+                  0.25;
 
-              for (let y = 0; y < H; y++) {
-                for (let x = 0; x < W; x++) {
-                  const idx = (y * W + x) * 4;
-                  const a = d[idx + 3];
-                  const dist =
-                    Math.abs(d[idx] - bgR) +
-                    Math.abs(d[idx + 1] - bgG) +
-                    Math.abs(d[idx + 2] - bgB);
-                  if (a > 30 && (bgA < 40 || dist > 42)) {
-                    isFg[y * W + x] = 1;
-                    if (x < fgMinX) fgMinX = x;
-                    if (x > fgMaxX) fgMaxX = x;
-                    if (y < fgMinY) fgMinY = y;
-                    if (y > fgMaxY) fgMaxY = y;
+                let fgMinX = W;
+                let fgMaxX = 0;
+                let fgMinY = H;
+                let fgMaxY = 0;
+                const isFg = new Uint8Array(W * H);
+
+                for (let y = 0; y < H; y++) {
+                  for (let x = 0; x < W; x++) {
+                    const idx = (y * W + x) * 4;
+                    const a = d[idx + 3];
+                    const dist =
+                      Math.abs(d[idx] - bgR) +
+                      Math.abs(d[idx + 1] - bgG) +
+                      Math.abs(d[idx + 2] - bgB);
+                    if (a > 30 && (bgA < 40 || dist > 42)) {
+                      isFg[y * W + x] = 1;
+                      if (x < fgMinX) fgMinX = x;
+                      if (x > fgMaxX) fgMaxX = x;
+                      if (y < fgMinY) fgMinY = y;
+                      if (y > fgMaxY) fgMaxY = y;
+                    }
                   }
                 }
-              }
 
-              // Horizontal color dilation so silhouette edges never sample dark background pixels
-              for (let y = 0; y < H; y++) {
-                let lastR = 140,
-                  lastG = 100,
-                  lastB = 75;
-                for (let x = 0; x < W; x++) {
-                  const p = y * W + x;
-                  const idx = p * 4;
-                  if (isFg[p]) {
-                    lastR = d[idx];
-                    lastG = d[idx + 1];
-                    lastB = d[idx + 2];
-                  } else {
-                    d[idx] = lastR;
-                    d[idx + 1] = lastG;
-                    d[idx + 2] = lastB;
-                    d[idx + 3] = 255;
+                // Horizontal color dilation so silhouette edges never sample background pixels
+                for (let y = 0; y < H; y++) {
+                  let lastR = 140,
+                    lastG = 90,
+                    lastB = 70;
+                  for (let x = 0; x < W; x++) {
+                    const p = y * W + x;
+                    const idx = p * 4;
+                    if (isFg[p]) {
+                      lastR = d[idx];
+                      lastG = d[idx + 1];
+                      lastB = d[idx + 2];
+                    } else {
+                      d[idx] = lastR;
+                      d[idx + 1] = lastG;
+                      d[idx + 2] = lastB;
+                      d[idx + 3] = 255;
+                    }
+                  }
+                  for (let x = W - 1; x >= 0; x--) {
+                    const p = y * W + x;
+                    const idx = p * 4;
+                    if (isFg[p]) {
+                      lastR = d[idx];
+                      lastG = d[idx + 1];
+                      lastB = d[idx + 2];
+                    } else {
+                      d[idx] = (d[idx] + lastR) >> 1;
+                      d[idx + 1] = (d[idx + 1] + lastG) >> 1;
+                      d[idx + 2] = (d[idx + 2] + lastB) >> 1;
+                    }
                   }
                 }
-                for (let x = W - 1; x >= 0; x--) {
-                  const p = y * W + x;
-                  const idx = p * 4;
-                  if (isFg[p]) {
-                    lastR = d[idx];
-                    lastG = d[idx + 1];
-                    lastB = d[idx + 2];
-                  } else {
-                    d[idx] = (d[idx] + lastR) >> 1;
-                    d[idx + 1] = (d[idx + 1] + lastG) >> 1;
-                    d[idx + 2] = (d[idx + 2] + lastB) >> 1;
+
+                if (forBackFallback) {
+                  // For single-view images without a back view, fill center column with outer cloak/armor color
+                  for (let y = 0; y < H; y++) {
+                    const leftIdx = (y * W + Math.floor(W * 0.24)) * 4;
+                    const rightIdx = (y * W + Math.floor(W * 0.76)) * 4;
+                    for (let x = Math.floor(W * 0.25); x <= Math.floor(W * 0.75); x++) {
+                      const t = (x - W * 0.25) / (W * 0.5);
+                      const idx = (y * W + x) * 4;
+                      d[idx] = Math.round(d[leftIdx] * (1 - t) + d[rightIdx] * t);
+                      d[idx + 1] = Math.round(d[leftIdx + 1] * (1 - t) + d[rightIdx + 1] * t);
+                      d[idx + 2] = Math.round(d[leftIdx + 2] * (1 - t) + d[rightIdx + 2] * t);
+                    }
                   }
                 }
+
+                ctx.putImageData(imgData, 0, 0);
+
+                if (fgMaxX <= fgMinX + 16 || fgMaxY <= fgMinY + 16) {
+                  fgMinX = 0;
+                  fgMaxX = W - 1;
+                  fgMinY = 0;
+                  fgMaxY = H - 1;
+                }
+
+                const out = document.createElement("canvas");
+                out.width = W;
+                out.height = H;
+                const outCtx = out.getContext("2d");
+                if (outCtx) {
+                  outCtx.drawImage(
+                    c,
+                    fgMinX,
+                    fgMinY,
+                    fgMaxX - fgMinX + 1,
+                    fgMaxY - fgMinY + 1,
+                    0,
+                    0,
+                    W,
+                    H
+                  );
+                }
+                return out;
+              };
+
+              const atlasCanvas = document.createElement("canvas");
+              atlasCanvas.width = 1024;
+              atlasCanvas.height = 512;
+              const atlasCtx = atlasCanvas.getContext("2d");
+              if (!atlasCtx) return;
+
+              if (isTurnaroundSheet) {
+                // 4-View Turnaround Sheet: Column 1 (0.01..0.30) = Front, Column 2 (0.30..0.57) = Back
+                const frontCrop = extractSubViewToCanvas(
+                  natW * 0.01,
+                  natH * 0.05,
+                  natW * 0.29,
+                  natH * 0.9,
+                  false
+                );
+                const backCrop = extractSubViewToCanvas(
+                  natW * 0.3,
+                  natH * 0.05,
+                  natW * 0.27,
+                  natH * 0.9,
+                  false
+                );
+                atlasCtx.drawImage(frontCrop, 0, 0, 512, 512);
+                atlasCtx.drawImage(backCrop, 512, 0, 512, 512);
+              } else {
+                const frontCrop = extractSubViewToCanvas(0, 0, natW, natH, false);
+                const backCrop = extractSubViewToCanvas(0, 0, natW, natH, true);
+                atlasCtx.drawImage(frontCrop, 0, 0, 512, 512);
+                atlasCtx.drawImage(backCrop, 512, 0, 512, 512);
               }
-              ctx.putImageData(imgData, 0, 0);
 
-              if (fgMaxX <= fgMinX + 16 || fgMaxY <= fgMinY + 16) {
-                fgMinX = 0;
-                fgMaxX = W - 1;
-                fgMinY = 0;
-                fgMaxY = H - 1;
-              }
-
-              const cropCanvas = document.createElement("canvas");
-              cropCanvas.width = W;
-              cropCanvas.height = H;
-              const cropCtx = cropCanvas.getContext("2d");
-              if (!cropCtx) return;
-              cropCtx.drawImage(
-                srcCanvas,
-                fgMinX,
-                fgMinY,
-                fgMaxX - fgMinX + 1,
-                fgMaxY - fgMinY + 1,
-                0,
-                0,
-                W,
-                H
-              );
-
-              const projTex = new THREE.CanvasTexture(cropCanvas);
+              const projTex = new THREE.CanvasTexture(atlasCanvas);
               projTex.colorSpace = THREE.SRGBColorSpace;
               projTex.needsUpdate = true;
 

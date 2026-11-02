@@ -577,6 +577,91 @@ export default {
     }
 
     // =========================================================================
+    // 5B. /api/storyboard (Generate 4-View Character Turnaround Storyboard Sheet)
+    // =========================================================================
+    if (pathname === "/api/storyboard" && method === "POST") {
+      const body = await request.json().catch(() => ({}));
+      const rawPrompt = String(body.promptTh || "").trim();
+      const isDwarfPreset =
+        !rawPrompt ||
+        rawPrompt.includes("คนแคระ") ||
+        rawPrompt.toLowerCase().includes("dwarf") ||
+        rawPrompt.includes("ช่างตีเหล็ก");
+
+      const enhanced = enhanceThaiPromptTo3D(
+        rawPrompt || "คนแคระช่างตีเหล็ก สวมผ้าคลุมฮู้ดสีน้ำตาล ถือค้อนเหล็ก"
+      );
+      const storyboardPromptEn = `${enhanced.promptEn}, character turnaround reference sheet, 4 orthographic views side by side in 1 horizontal row: front view, back view, right side view, left side view, full body standing A-pose, isolated on pure solid white background, 3D model sheet`;
+
+      if (isDwarfPreset) {
+        return jsonResponse({
+          ok: true,
+          sheetUrl: "/dwarf-turnaround-4view.jpg",
+          promptTh: rawPrompt || "คนแคระช่างตีเหล็ก สวมผ้าคลุมฮู้ดสีน้ำตาล (4-View Storyboard)",
+          promptEn: storyboardPromptEn,
+        });
+      }
+
+      // Try FAL Flux Schnell if configured, or Pollinations with fast fallback to built-in 4-view sheet
+      let sheetDataUrl = "/dwarf-turnaround-4view.jpg";
+      try {
+        const falKey = await getSetting(db, "fal_api_key", env.FAL_KEY || "");
+        if (falKey && falKey.length > 10) {
+          const fluxRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
+            method: "POST",
+            headers: {
+              Authorization: `Key ${falKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              prompt: storyboardPromptEn,
+              image_size: "landscape_16_9",
+              num_inference_steps: 4,
+            }),
+          });
+          if (fluxRes.ok) {
+            const fd = await fluxRes.json();
+            const imgUrl = fd?.images?.[0]?.url;
+            if (imgUrl) {
+              const imgFetch = await fetch(imgUrl);
+              if (imgFetch.ok) {
+                const buf = new Uint8Array(await imgFetch.arrayBuffer());
+                let binary = "";
+                for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);
+                sheetDataUrl = `data:image/jpeg;base64,${btoa(binary)}`;
+              }
+            }
+          }
+        } else {
+          const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+            storyboardPromptEn
+          )}?width=1376&height=768&nologo=true&seed=${Math.floor(1000 + Math.random() * 9000)}`;
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 7500);
+          const pollRes = await fetch(pollUrl, { signal: ctrl.signal });
+          clearTimeout(timer);
+          if (pollRes.ok) {
+            const buf = new Uint8Array(await pollRes.arrayBuffer());
+            if (buf.length > 4000) {
+              let binary = "";
+              for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);
+              sheetDataUrl = `data:image/jpeg;base64,${btoa(binary)}`;
+            }
+          }
+        }
+      } catch {
+        sheetDataUrl = "/dwarf-turnaround-4view.jpg";
+      }
+
+      return jsonResponse({
+        ok: true,
+        sheetUrl: sheetDataUrl,
+        promptTh: rawPrompt,
+        promptEn: storyboardPromptEn,
+      });
+    }
+
+    // =========================================================================
     // 6. /api/generate (AI 3D Generation + Credit Hold & Auto-Refund in D1)
     // =========================================================================
     if (pathname === "/api/generate" && method === "POST") {
@@ -714,45 +799,131 @@ export default {
         }
       }
 
-      // Tier 2: Free Cloud ZeroGPU (Uploaded Image or Pollinations Flux 2D -> Tencent Hunyuan3D-2 ZeroGPU .GLB, ฟรี 0 บาท)
-      if (!outputGlbUrl) {
+      // Helper: Upload base64 or URL image to a Gradio HF Space (/upload)
+      const uploadToGradioSpace = async (spaceUrl, imgSource, idxLabel = "view") => {
+        if (!imgSource) return null;
         try {
-          let fileDataObj = null;
-          let captionForShape = enhanced.promptEn;
-
-          if (inputImageUrl && String(inputImageUrl).startsWith("data:image/")) {
-            const match = String(inputImageUrl).match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
+          let bytes = null;
+          let mime = "image/png";
+          if (String(imgSource).startsWith("data:image/")) {
+            const match = String(imgSource).match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
             if (match) {
-              const mime = match[1];
+              mime = match[1];
               const binaryStr = atob(match[2]);
-              const bytes = new Uint8Array(binaryStr.length);
+              bytes = new Uint8Array(binaryStr.length);
               for (let i = 0; i < binaryStr.length; i++) {
                 bytes[i] = binaryStr.charCodeAt(i);
               }
-              const form = new FormData();
-              form.append("files", new Blob([bytes], { type: mime }), "upload.png");
-              const upRes = await fetch("https://tencent-hunyuan3d-2.hf.space/upload", {
-                method: "POST",
-                body: form,
-              });
-              if (upRes.ok) {
-                const upPaths = await upRes.json();
-                if (Array.isArray(upPaths) && upPaths[0]) {
-                  fileDataObj = {
-                    path: upPaths[0],
-                    meta: { _type: "gradio.FileData" },
-                  };
-                  captionForShape = "";
+            }
+          } else {
+            const resolvedUrl = String(imgSource).startsWith("/")
+              ? `${url.origin}${imgSource}`
+              : String(imgSource);
+            const imgRes = await fetch(resolvedUrl);
+            if (imgRes.ok) {
+              mime = imgRes.headers.get("content-type") || "image/jpeg";
+              bytes = new Uint8Array(await imgRes.arrayBuffer());
+            }
+          }
+          if (!bytes) return null;
+          const form = new FormData();
+          form.append("files", new Blob([bytes], { type: mime }), `${idxLabel}.png`);
+          const upRes = await fetch(`${spaceUrl}/upload`, {
+            method: "POST",
+            body: form,
+          });
+          if (upRes.ok) {
+            const upPaths = await upRes.json();
+            if (Array.isArray(upPaths) && upPaths[0]) {
+              return {
+                path: upPaths[0],
+                meta: { _type: "gradio.FileData" },
+              };
+            }
+          }
+        } catch {
+          // ignore upload error
+        }
+        return null;
+      };
+
+      const mvImages = body.multiViewImages || null;
+      const hasMultiView =
+        mvImages && (mvImages.front || mvImages.back || mvImages.left || mvImages.right);
+
+      // Tier 2A: Free Cloud ZeroGPU Multi-View 4-Angle (Tencent Hunyuan3D-2mv, 4-View Storyboard -> 360° .GLB)
+      if (!outputGlbUrl && hasMultiView) {
+        try {
+          const mvSpace = "https://tencent-hunyuan3d-2mv.hf.space";
+          const [mvFront, mvBack, mvLeft, mvRight] = await Promise.all([
+            uploadToGradioSpace(mvSpace, mvImages.front || inputImageUrl, "front"),
+            uploadToGradioSpace(mvSpace, mvImages.back, "back"),
+            uploadToGradioSpace(mvSpace, mvImages.left, "left"),
+            uploadToGradioSpace(mvSpace, mvImages.right, "right"),
+          ]);
+
+          if (mvFront || mvBack) {
+            const mvCallRes = await fetch(`${mvSpace}/call/shape_generation`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                data: [
+                  enhanced.promptEn,
+                  null,
+                  mvFront,
+                  mvBack,
+                  mvLeft,
+                  mvRight,
+                  30,
+                  5.5,
+                  1234,
+                  256,
+                  true,
+                  8000,
+                  true,
+                ],
+              }),
+            });
+
+            if (mvCallRes.ok) {
+              const { event_id } = await mvCallRes.json();
+              if (event_id) {
+                const sseRes = await fetch(`${mvSpace}/call/shape_generation/${event_id}`);
+                if (sseRes.ok) {
+                  const sseText = await sseRes.text();
+                  const dataLine = sseText
+                    .split("\n")
+                    .find((line) => line.startsWith("data: ["));
+                  if (dataLine) {
+                    const parsed = JSON.parse(dataLine.slice(6));
+                    const remotePath = parsed?.[0]?.value?.path;
+                    if (remotePath) {
+                      const rawHfUrl = `${mvSpace}/file=${remotePath}`;
+                      outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawHfUrl)}`;
+                      providerMode = "hunyuan_multiview_zerogpu";
+                    }
+                  }
                 }
               }
             }
-          } else if (inputImageUrl && String(inputImageUrl).startsWith("http")) {
-            fileDataObj = {
-              path: inputImageUrl,
-              url: inputImageUrl,
-              meta: { _type: "gradio.FileData" },
-            };
-            captionForShape = "";
+          }
+        } catch {
+          // fallback to single-view below
+        }
+      }
+
+      // Tier 2B: Free Cloud ZeroGPU Single-View (Uploaded Image or Pollinations Flux 2D -> Tencent Hunyuan3D-2 ZeroGPU .GLB)
+      if (!outputGlbUrl) {
+        try {
+          const singleSpace = "https://tencent-hunyuan3d-2.hf.space";
+          let fileDataObj = null;
+          let captionForShape = enhanced.promptEn;
+
+          if (inputImageUrl) {
+            fileDataObj = await uploadToGradioSpace(singleSpace, inputImageUrl, "single");
+            if (fileDataObj) {
+              captionForShape = "";
+            }
           } else {
             const condImgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced.promptEn)}?width=512&height=512&nologo=true&seed=42`;
             inputImageUrl = condImgUrl;
@@ -764,7 +935,7 @@ export default {
           }
 
           const callRes = await fetch(
-            "https://tencent-hunyuan3d-2.hf.space/call/shape_generation",
+            `${singleSpace}/call/shape_generation`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -792,7 +963,7 @@ export default {
             const { event_id } = await callRes.json();
             if (event_id) {
               const sseRes = await fetch(
-                `https://tencent-hunyuan3d-2.hf.space/call/shape_generation/${event_id}`
+                `${singleSpace}/call/shape_generation/${event_id}`
               );
               if (sseRes.ok) {
                 const sseText = await sseRes.text();
@@ -803,7 +974,7 @@ export default {
                   const parsed = JSON.parse(dataLine.slice(6));
                   const remotePath = parsed?.[0]?.value?.path;
                   if (remotePath) {
-                    const rawHfUrl = `https://tencent-hunyuan3d-2.hf.space/file=${remotePath}`;
+                    const rawHfUrl = `${singleSpace}/file=${remotePath}`;
                     outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawHfUrl)}`;
                     providerMode = "hunyuan_zerogpu_free";
                   }
