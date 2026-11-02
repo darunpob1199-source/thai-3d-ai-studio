@@ -891,7 +891,12 @@ export default function Viewport3D({
 
     applyShadingToGroup(assetGroup, false);
 
-    if (currentTask.output_glb_url) {
+    const isSpecialArtMode =
+      studioOverrides?.artStyleMode === "relief" ||
+      studioOverrides?.artStyleMode === "text3d" ||
+      studioOverrides?.artStyleMode === "voxel";
+
+    if (currentTask.output_glb_url && !isSpecialArtMode) {
       // Hide procedural fallback while loading real AI .GLB so it never flashes a dummy robot
       assetGroup.visible = false;
       const loader = new GLTFLoader();
@@ -904,9 +909,11 @@ export default function Viewport3D({
           // Keep native +Z front of GLB, preserve native baked UV textures when present
           let mIdx = 1;
           let hasNativeTexture = false;
+          const meshList: THREE.Mesh[] = [];
           gltf.scene.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
               const m = child as THREE.Mesh;
+              meshList.push(m);
               const mat = m.material as THREE.MeshStandardMaterial;
               if (mat && mat.map) {
                 hasNativeTexture = true;
@@ -956,6 +963,93 @@ export default function Viewport3D({
             }
           });
 
+          // Semantic Auto-Split: Partition single-mesh GLB into 5 anatomical sub-meshes (Head, Torso, Left Arm, Right Arm, Legs)
+          if (meshList.length === 1 && meshList[0].geometry?.boundingBox) {
+            const srcMesh = meshList[0];
+            const srcGeom = srcMesh.geometry;
+            const posAttr = srcGeom.attributes.position;
+            const bb = srcGeom.boundingBox!;
+            const minX = bb.min.x;
+            const spanX = Math.max(bb.max.x - bb.min.x, 0.001);
+            const minY = bb.min.y;
+            const spanY = Math.max(bb.max.y - bb.min.y, 0.001);
+
+            const buckets: number[][] = [[], [], [], [], []];
+            const idxAttr = srcGeom.index;
+            const triCount = idxAttr ? Math.floor(idxAttr.count / 3) : Math.floor(posAttr.count / 3);
+
+            for (let t = 0; t < triCount; t++) {
+              const i0 = idxAttr ? idxAttr.getX(t * 3) : t * 3;
+              const i1 = idxAttr ? idxAttr.getX(t * 3 + 1) : t * 3 + 1;
+              const i2 = idxAttr ? idxAttr.getX(t * 3 + 2) : t * 3 + 2;
+
+              const cx = (posAttr.getX(i0) + posAttr.getX(i1) + posAttr.getX(i2)) / 3;
+              const cy = (posAttr.getY(i0) + posAttr.getY(i1) + posAttr.getY(i2)) / 3;
+              const nx = (cx - minX) / spanX; // 0..1
+              const ny = (cy - minY) / spanY; // 0..1
+
+              let bIdx = 1; // Torso default
+              if (ny > 0.62) {
+                bIdx = 0; // Part_01_Head_Hood
+              } else if (ny < 0.26) {
+                bIdx = 4; // Part_05_Lower_Legs
+              } else if (nx < 0.28) {
+                bIdx = 2; // Part_03_Left_Arm
+              } else if (nx > 0.72) {
+                bIdx = 3; // Part_04_Right_Arm_Weapon
+              }
+              buckets[bIdx].push(i0, i1, i2);
+            }
+
+            const partSpecs = [
+              { name: "Part_01_Head_Hood", explodeDir: new THREE.Vector3(0, 0.55, 0) },
+              { name: "Part_02_Torso_Cloak", explodeDir: new THREE.Vector3(0, 0.05, 0.25) },
+              { name: "Part_03_Left_Arm", explodeDir: new THREE.Vector3(-0.55, 0.1, 0) },
+              { name: "Part_04_Right_Arm_Weapon", explodeDir: new THREE.Vector3(0.55, 0.1, 0) },
+              { name: "Part_05_Legs_Boots", explodeDir: new THREE.Vector3(0, -0.5, 0) },
+            ];
+
+            const parentNode = srcMesh.parent || gltf.scene;
+            const explodeAmt = studioOverrides?.explodeFactor || 0;
+            const hiddenSet = new Set(studioOverrides?.hiddenParts || []);
+            const pose = studioOverrides?.posePreset || "bind";
+
+            buckets.forEach((indices, pIdx) => {
+              if (indices.length === 0) return;
+              const subGeom = new THREE.BufferGeometry();
+              subGeom.setAttribute("position", posAttr);
+              if (srcGeom.attributes.normal) {
+                subGeom.setAttribute("normal", srcGeom.attributes.normal);
+              }
+              if (srcGeom.attributes.uv) {
+                subGeom.setAttribute("uv", srcGeom.attributes.uv);
+              }
+              if (srcGeom.attributes.color) {
+                subGeom.setAttribute("color", srcGeom.attributes.color);
+              }
+              subGeom.setIndex(indices);
+
+              const subMat = Array.isArray(srcMesh.material)
+                ? srcMesh.material[0].clone()
+                : srcMesh.material.clone();
+              const subMesh = new THREE.Mesh(subGeom, subMat);
+              subMesh.name = partSpecs[pIdx].name;
+              subMesh.visible = !hiddenSet.has(pIdx);
+
+              if (explodeAmt > 0) {
+                subMesh.position.addScaledVector(partSpecs[pIdx].explodeDir, explodeAmt);
+              }
+              if (pose !== "bind" && (pIdx === 2 || pIdx === 3)) {
+                const sign = pIdx === 2 ? -1 : 1;
+                if (pose === "t_pose") subMesh.rotation.z = sign * 0.28;
+                else if (pose === "a_pose") subMesh.rotation.z = sign * 0.15;
+                else if (pose === "battle") subMesh.rotation.x = -0.25;
+              }
+              parentNode.add(subMesh);
+            });
+            parentNode.remove(srcMesh);
+          }
+
           // Normalize bounding box of loaded AI GLB mesh to fit studio viewport cleanly
           const box = new THREE.Box3().setFromObject(gltf.scene);
           const size = new THREE.Vector3();
@@ -973,6 +1067,69 @@ export default function Viewport3D({
           gltf.scene.scale.setScalar(normScale);
 
           loadedRoot.add(gltf.scene);
+
+          // Attach Fill Parts, 3D Print Base Platform, and 3D Decal onto loadedRoot so all 14 tools work on real GLBs
+          const addonAccentMat = new THREE.MeshStandardMaterial({
+            color: studioOverrides?.material.accentColor || currentTask.accent_color || "#f59e0b",
+            roughness: 0.25,
+            metalness: 0.85,
+          });
+          const addonDarkMat = new THREE.MeshStandardMaterial({
+            color: "#1e293b",
+            roughness: 0.45,
+            metalness: 0.35,
+          });
+          if (studioOverrides?.filledParts.auraRing) {
+            const haloGeo = new THREE.TorusGeometry(1.15, 0.04, 16, 48);
+            const halo = new THREE.Mesh(haloGeo, addonAccentMat);
+            halo.name = "Part_Filled_Cyber_Halo_Ring";
+            halo.position.set(0, 0.45, -0.35);
+            loadedRoot.add(halo);
+          }
+          if (studioOverrides?.filledParts.backWings) {
+            for (const side of [-1, 1]) {
+              const wingGeo = new THREE.BoxGeometry(0.85, 0.95, 0.07);
+              const wing = new THREE.Mesh(wingGeo, addonAccentMat.clone());
+              wing.name = side < 0 ? "Part_Filled_Left_Wing" : "Part_Filled_Right_Wing";
+              wing.position.set(side * 0.95, 0.4, -0.4);
+              wing.rotation.z = side * 0.35;
+              wing.rotation.y = side * -0.25;
+              loadedRoot.add(wing);
+            }
+          }
+          if (studioOverrides?.filledParts.pedestal) {
+            const pedGeo = new THREE.CylinderGeometry(1.25, 1.4, 0.16, 32);
+            const ped = new THREE.Mesh(pedGeo, addonDarkMat);
+            ped.name = "Part_Filled_Display_Pedestal";
+            ped.position.set(0, -0.98, 0);
+            loadedRoot.add(ped);
+          }
+          if (studioOverrides?.addPrintBase) {
+            const basePlatGeo = new THREE.CylinderGeometry(1.35, 1.5, 0.2, 48);
+            const basePlat = new THREE.Mesh(basePlatGeo, addonDarkMat.clone());
+            basePlat.name = "AddBaseStlPlatform";
+            basePlat.position.set(0, -1.0, 0);
+            loadedRoot.add(basePlat);
+          }
+          if (studioOverrides?.decalEnabled) {
+            const dScale = studioOverrides.decalScale ?? 1.0;
+            const dRot = ((studioOverrides.decalRotation ?? 0) * Math.PI) / 180;
+            const dColor = studioOverrides.decalColor || "#22d3ee";
+            const decalMat = new THREE.MeshStandardMaterial({
+              color: dColor,
+              emissive: new THREE.Color(dColor),
+              emissiveIntensity: 0.45,
+              roughness: 0.2,
+              metalness: 0.6,
+            });
+            const badgeGeo = new THREE.CylinderGeometry(0.22 * dScale, 0.22 * dScale, 0.04, 6);
+            badgeGeo.rotateX(Math.PI / 2);
+            const badge = new THREE.Mesh(badgeGeo, decalMat);
+            badge.name = "Part_Decal_Projected_Emblem";
+            badge.position.set(0, 0.15, 0.68);
+            badge.rotation.z = dRot;
+            loadedRoot.add(badge);
+          }
 
           if (studioOverrides?.transform) {
             loadedRoot.scale.set(
@@ -1177,18 +1334,32 @@ export default function Viewport3D({
               projTex.colorSpace = THREE.SRGBColorSpace;
               projTex.needsUpdate = true;
 
+              const customPrimary = studioOverrides?.material.primaryColor;
+              const useCustomTint =
+                customPrimary &&
+                customPrimary.toLowerCase() !== "#d6d3d1" &&
+                customPrimary.toLowerCase() !== "#ffffff";
+
               loadedRoot.traverse((obj) => {
                 if ((obj as THREE.Mesh).isMesh) {
                   const m = obj as THREE.Mesh;
+                  if (
+                    m.name.startsWith("Part_Filled_") ||
+                    m.name.startsWith("AddBaseStlPlatform") ||
+                    m.name.startsWith("Part_Decal_")
+                  ) {
+                    return;
+                  }
+                  const tintColor = useCustomTint ? customPrimary : "#ffffff";
                   if (effectiveShading === "base_color") {
                     m.material = new THREE.MeshBasicMaterial({
                       map: projTex,
-                      color: "#ffffff",
+                      color: tintColor,
                     });
                   } else if (effectiveShading === "pbr") {
                     m.material = new THREE.MeshStandardMaterial({
                       map: projTex,
-                      color: "#ffffff",
+                      color: tintColor,
                       roughness: studioOverrides?.material.roughness ?? 0.45,
                       metalness: studioOverrides?.material.metalness ?? 0.16,
                       flatShading: isFlat,
