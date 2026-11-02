@@ -592,9 +592,9 @@ export default function Viewport3D({
   onPartNamesChangeRef.current = onPartNamesChange;
 
   const [shadingMode, setShadingMode] = useState<RenderShadingMode>("pbr");
-  const [autoRotate, setAutoRotate] = useState<boolean>(true);
+  const [autoRotate, setAutoRotate] = useState<boolean>(false);
   const [showRigBones, setShowRigBones] = useState<boolean>(false);
-  const [lightIntensity, setLightIntensity] = useState<number>(1.3);
+  const [lightIntensity, setLightIntensity] = useState<number>(1.0);
   const [selectedPart, setSelectedPart] = useState<{ index: number; name: string } | null>(
     null
   );
@@ -658,22 +658,22 @@ export default function Viewport3D({
             : "#090709";
     scene.background = new THREE.Color(bgHex);
 
-    const fov = studioOverrides?.cameraFov ?? 40;
+    const fov = studioOverrides?.cameraFov ?? 38;
     const camera = new THREE.PerspectiveCamera(fov, width / height, 0.1, 100);
-    camera.position.set(3.2, 2.2, 4.2);
+    camera.position.set(0.35, 1.15, 4.35);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.0;
     container.innerHTML = "";
     container.appendChild(renderer.domElement);
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.target.set(0, 0.45, 0);
+    controls.target.set(0, 0.15, 0);
 
     if (studioOverrides?.showGrid !== false) {
       const grid = new THREE.GridHelper(12, 24, "#3b1219", "#17090c");
@@ -684,34 +684,34 @@ export default function Viewport3D({
     const hdriRotRad = ((studioOverrides?.hdriRotation ?? 0) * Math.PI) / 180;
     const ambientLight = new THREE.AmbientLight(
       hdri === "outdoor" ? "#bae6fd" : hdri === "indoor" ? "#fde68a" : "#ffffff",
-      0.95 * lightIntensity
+      0.24 * lightIntensity
     );
     scene.add(ambientLight);
 
     const hemiLight = new THREE.HemisphereLight(
       "#ffffff",
-      "#2a1215",
-      1.1 * lightIntensity
+      "#18090c",
+      0.38 * lightIntensity
     );
     hemiLight.position.set(0, 8, 0);
     scene.add(hemiLight);
 
-    const keyLight = new THREE.DirectionalLight("#ffffff", 2.4 * lightIntensity);
+    const keyLight = new THREE.DirectionalLight("#ffffff", 1.85 * lightIntensity);
     keyLight.position.set(
-      Math.cos(hdriRotRad) * 4.5 + 2.5,
-      6.0,
-      Math.sin(hdriRotRad) * 4.5 + 4.5
+      Math.cos(hdriRotRad) * 3.5 + 2.2,
+      4.8,
+      Math.sin(hdriRotRad) * 3.5 + 4.2
     );
     scene.add(keyLight);
 
-    const fillLight = new THREE.DirectionalLight("#ffe4e6", 1.35 * lightIntensity);
-    fillLight.position.set(-3.5, 2.2, 5.0);
+    const fillLight = new THREE.DirectionalLight("#ffe4e6", 0.35 * lightIntensity);
+    fillLight.position.set(-3.5, 1.5, 3.0);
     scene.add(fillLight);
 
     const rimColor =
       hdri === "cyber" ? "#ec4899" : hdri === "outdoor" ? "#38bdf8" : "#f43f5e";
-    const rimLight = new THREE.DirectionalLight(rimColor, 1.45 * lightIntensity);
-    rimLight.position.set(-Math.cos(hdriRotRad) * 5, 3.5, -4.5);
+    const rimLight = new THREE.DirectionalLight(rimColor, 0.75 * lightIntensity);
+    rimLight.position.set(-Math.cos(hdriRotRad) * 4, 3.0, -4.0);
     scene.add(rimLight);
 
     const currentTask: GenerationTaskRecord = activeTask || {
@@ -901,33 +901,14 @@ export default function Viewport3D({
           const loadedRoot = new THREE.Group();
           loadedRoot.name = `AI_GLB_${currentTask.id}`;
 
-          // Convert OpenCV Z (-Z front) -> Three.js OpenGL Z (+Z front), compute normals & orthographic UVs
+          // Keep native +Z front of Hunyuan3D GLB, compute crisp normals & orthographic UVs
           let mIdx = 1;
           gltf.scene.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
               const m = child as THREE.Mesh;
               if (m.geometry) {
                 const geom = m.geometry;
-                const hadNormals = Boolean(geom.attributes.normal);
                 const posAttr = geom.attributes.position;
-
-                if (!hadNormals && posAttr) {
-                  // Hunyuan3D / trimesh GLB uses -Z as front; flip Z and reverse triangle winding
-                  for (let i = 0; i < posAttr.count; i++) {
-                    posAttr.setZ(i, -posAttr.getZ(i));
-                  }
-                  posAttr.needsUpdate = true;
-
-                  if (geom.index) {
-                    const idxArr = geom.index.array;
-                    for (let i = 0; i < idxArr.length; i += 3) {
-                      const tmp = idxArr[i + 1];
-                      idxArr[i + 1] = idxArr[i + 2];
-                      idxArr[i + 2] = tmp;
-                    }
-                    geom.index.needsUpdate = true;
-                  }
-                }
 
                 geom.computeVertexNormals();
                 geom.computeBoundingBox();
@@ -949,9 +930,9 @@ export default function Viewport3D({
                     let u = (vx - bb.min.x) / spanX;
                     const v = Math.min(0.98, Math.max(0.02, (vy - bb.min.y) / spanY));
 
-                    // Back-facing vertices sample outer cloak/armor columns instead of front face
-                    if (vz < -0.06 && nz < -0.18) {
-                      u = vx < 0 ? 0.26 : 0.76;
+                    // Back-facing vertices (vz < 0, nz < -0.15) sample cloak/armor tones instead of front face
+                    if (vz < -0.05 && nz < -0.15) {
+                      u = vx < 0 ? 0.24 : 0.78;
                     } else {
                       u = Math.min(0.98, Math.max(0.02, u));
                     }
@@ -1004,8 +985,8 @@ export default function Viewport3D({
             const img = new Image();
             img.crossOrigin = "anonymous";
             img.onload = () => {
-              const W = 512;
-              const H = 512;
+              const W = Math.min(1024, Math.max(256, img.naturalWidth || 512));
+              const H = Math.min(1024, Math.max(256, img.naturalHeight || 512));
               const srcCanvas = document.createElement("canvas");
               srcCanvas.width = W;
               srcCanvas.height = H;
