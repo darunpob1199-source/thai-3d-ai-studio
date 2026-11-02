@@ -901,19 +901,27 @@ export default function Viewport3D({
           const loadedRoot = new THREE.Group();
           loadedRoot.name = `AI_GLB_${currentTask.id}`;
 
-          // Keep native +Z front of Hunyuan3D GLB, compute crisp normals & orthographic UVs
+          // Keep native +Z front of GLB, preserve native baked UV textures when present
           let mIdx = 1;
+          let hasNativeTexture = false;
           gltf.scene.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
               const m = child as THREE.Mesh;
+              const mat = m.material as THREE.MeshStandardMaterial;
+              if (mat && mat.map) {
+                hasNativeTexture = true;
+              }
               if (m.geometry) {
                 const geom = m.geometry;
                 const posAttr = geom.attributes.position;
+                if (geom.attributes.color) {
+                  hasNativeTexture = true;
+                }
 
                 geom.computeVertexNormals();
                 geom.computeBoundingBox();
 
-                // Generate Dual Front+Back Atlas UV coordinates if geometry lacks UVs
+                // Generate Dual Front+Back Atlas UV coordinates ONLY if geometry lacks UVs
                 if (!geom.attributes.uv && posAttr && geom.boundingBox) {
                   const bb = geom.boundingBox;
                   const spanX = Math.max(bb.max.x - bb.min.x, 0.001);
@@ -976,8 +984,9 @@ export default function Viewport3D({
 
           applyShadingToGroup(loadedRoot, true);
 
-          // Project 2D Reference Image Texture (foreground-cropped & edge-dilated) onto AI 3D Mesh
+          // Project 2D Reference Image Texture ONLY for untextured clay GLBs (!hasNativeTexture)
           if (
+            !hasNativeTexture &&
             currentTask.input_image_url &&
             (effectiveShading === "pbr" || effectiveShading === "base_color")
           ) {
@@ -1140,19 +1149,19 @@ export default function Viewport3D({
               if (!atlasCtx) return;
 
               if (isTurnaroundSheet) {
-                // 4-View Turnaround Sheet: Column 1 (0.01..0.30) = Front, Column 2 (0.30..0.57) = Back
+                // 4-View Turnaround Sheet: Column 1 (0.00..0.25) = Front, Column 2 (0.25..0.50) = Back
                 const frontCrop = extractSubViewToCanvas(
-                  natW * 0.01,
-                  natH * 0.05,
-                  natW * 0.29,
-                  natH * 0.9,
+                  0,
+                  natH * 0.04,
+                  natW * 0.25,
+                  natH * 0.92,
                   false
                 );
                 const backCrop = extractSubViewToCanvas(
-                  natW * 0.3,
-                  natH * 0.05,
-                  natW * 0.27,
-                  natH * 0.9,
+                  natW * 0.25,
+                  natH * 0.04,
+                  natW * 0.25,
+                  natH * 0.92,
                   false
                 );
                 atlasCtx.drawImage(frontCrop, 0, 0, 512, 512);

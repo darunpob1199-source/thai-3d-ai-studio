@@ -730,10 +730,17 @@ export default {
       let outputGlbUrl = null;
       let providerMode = "sandbox";
 
+      const mvImages = body.multiViewImages || null;
+      const hasMultiView =
+        mvImages && (mvImages.front || mvImages.back || mvImages.left || mvImages.right);
+
       const falKey = await getSetting(db, "fal_api_key", env.FAL_KEY || "");
       if (falKey && falKey.length > 10) {
         try {
-          let condImg = inputImageUrl;
+          let condImg = mvImages?.front || inputImageUrl;
+          if (condImg && String(condImg).startsWith("/")) {
+            condImg = `${url.origin}${condImg}`;
+          }
           if (!condImg) {
             const fluxRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
               method: "POST",
@@ -752,24 +759,51 @@ export default {
               condImg = fd?.images?.[0]?.url || null;
             }
           }
-          const primaryEndpoint =
-            engine === "trellis_pbr"
-              ? "https://fal.run/fal-ai/tripo3d/v2.5/image-to-3d"
-              : "https://fal.run/fal-ai/trellis";
-          let gpuRes = await fetch(primaryEndpoint, {
-            method: "POST",
-            headers: {
-              Authorization: `Key ${falKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              prompt: enhanced.promptEn,
-              image_url: condImg || undefined,
-              texture: "standard",
-            }),
-          });
-          if (!gpuRes.ok && primaryEndpoint !== "https://fal.run/fal-ai/trellis") {
-            gpuRes = await fetch("https://fal.run/fal-ai/trellis", {
+
+          let gpuRes = null;
+          if (hasMultiView && mvImages.front && mvImages.back) {
+            if (engine === "trellis_pbr") {
+              gpuRes = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/multiview-to-3d", {
+                method: "POST",
+                headers: {
+                  Authorization: `Key ${falKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  front_image_url: mvImages.front,
+                  back_image_url: mvImages.back,
+                  left_image_url: mvImages.left || undefined,
+                  right_image_url: mvImages.right || undefined,
+                  texture: "standard",
+                }),
+              });
+            } else {
+              const imgList = [
+                mvImages.front,
+                mvImages.back,
+                mvImages.left,
+                mvImages.right,
+              ].filter(Boolean);
+              gpuRes = await fetch("https://fal.run/fal-ai/trellis/multi", {
+                method: "POST",
+                headers: {
+                  Authorization: `Key ${falKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  image_urls: imgList,
+                  texture_size: 1024,
+                }),
+              });
+            }
+          }
+
+          if (!gpuRes || !gpuRes.ok) {
+            const primaryEndpoint =
+              engine === "trellis_pbr"
+                ? "https://fal.run/fal-ai/tripo3d/v2.5/image-to-3d"
+                : "https://fal.run/fal-ai/trellis";
+            gpuRes = await fetch(primaryEndpoint, {
               method: "POST",
               headers: {
                 Authorization: `Key ${falKey}`,
@@ -778,10 +812,25 @@ export default {
               body: JSON.stringify({
                 prompt: enhanced.promptEn,
                 image_url: condImg || undefined,
+                texture: "standard",
               }),
             });
+            if (!gpuRes.ok && primaryEndpoint !== "https://fal.run/fal-ai/trellis") {
+              gpuRes = await fetch("https://fal.run/fal-ai/trellis", {
+                method: "POST",
+                headers: {
+                  Authorization: `Key ${falKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  prompt: enhanced.promptEn,
+                  image_url: condImg || undefined,
+                }),
+              });
+            }
           }
-          if (gpuRes.ok) {
+
+          if (gpuRes && gpuRes.ok) {
             const gd = await gpuRes.json();
             const rawGlb =
               gd?.model_mesh?.url ||
@@ -846,10 +895,6 @@ export default {
         }
         return null;
       };
-
-      const mvImages = body.multiViewImages || null;
-      const hasMultiView =
-        mvImages && (mvImages.front || mvImages.back || mvImages.left || mvImages.right);
 
       // Tier 2A: Free Cloud ZeroGPU Multi-View 4-Angle (Tencent Hunyuan3D-2mv, 4-View Storyboard -> 360° .GLB)
       if (!outputGlbUrl && hasMultiView) {
