@@ -738,14 +738,186 @@ export default function Viewport3D({
       }
     }
 
+    // Apply Meshy ViewSwitcher Channel & Shading Smoothness Overrides
+    const uvCheckerTex =
+      effectiveShading === "uv_checker" ? createUvCheckerTexture() : null;
+    const smoothness = studioOverrides?.shadingSmoothness || "auto";
+    const isFlat = smoothness === "flat";
+
+    const applyShadingToGroup = (targetGrp: THREE.Object3D, applyPbrColors = false) => {
+      let partIdx = 0;
+      const pHex = studioOverrides?.material.primaryColor || currentTask.primary_color || "#ef4444";
+      const rVal = studioOverrides?.material.roughness ?? currentTask.roughness ?? 0.25;
+      const mVal = studioOverrides?.material.metalness ?? currentTask.metalness ?? 0.85;
+
+      targetGrp.traverse((obj) => {
+        if ((obj as THREE.Mesh).isMesh) {
+          const mesh = obj as THREE.Mesh;
+          if (effectiveShading === "wireframe") {
+            mesh.material = new THREE.MeshStandardMaterial({
+              color: "#f87171",
+              wireframe: true,
+              roughness: 0.4,
+            });
+          } else if (effectiveShading === "clay") {
+            mesh.material = new THREE.MeshStandardMaterial({
+              color: "#e2e8f0",
+              roughness: 0.58,
+              metalness: 0.08,
+              flatShading: isFlat,
+            });
+          } else if (effectiveShading === "base_color") {
+            const origColor =
+              (mesh.material as THREE.MeshStandardMaterial)?.color ||
+              new THREE.Color(pHex);
+            mesh.material = new THREE.MeshBasicMaterial({
+              color: origColor,
+            });
+          } else if (effectiveShading === "normal") {
+            mesh.material = new THREE.MeshNormalMaterial({
+              flatShading: isFlat,
+            });
+          } else if (effectiveShading === "metallic") {
+            const gray = Math.round(mVal * 255);
+            mesh.material = new THREE.MeshBasicMaterial({
+              color: new THREE.Color(`rgb(${gray},${gray},${gray})`),
+            });
+          } else if (effectiveShading === "roughness") {
+            const gray = Math.round(rVal * 255);
+            mesh.material = new THREE.MeshBasicMaterial({
+              color: new THREE.Color(`rgb(${gray},${gray},${gray})`),
+            });
+          } else if (effectiveShading === "ao_curvature") {
+            mesh.material = new THREE.MeshStandardMaterial({
+              color: "#cbd5e1",
+              roughness: 0.85,
+              metalness: 0.05,
+              emissive: new THREE.Color("#0f172a"),
+              emissiveIntensity: 0.35,
+              flatShading: true,
+            });
+          } else if (effectiveShading === "uv_checker" && uvCheckerTex) {
+            mesh.material = new THREE.MeshStandardMaterial({
+              map: uvCheckerTex,
+              roughness: 0.4,
+              metalness: 0.1,
+            });
+          } else if (effectiveShading === "segment") {
+            const segColor = SEGMENT_PALETTE[partIdx % SEGMENT_PALETTE.length];
+            partIdx++;
+            mesh.material = new THREE.MeshStandardMaterial({
+              color: segColor,
+              roughness: 0.35,
+              metalness: 0.2,
+              emissive: new THREE.Color(segColor),
+              emissiveIntensity: 0.15,
+              flatShading: isFlat,
+            });
+          } else if (effectiveShading === "printability") {
+            const isOverhangCandidate = mesh.position.y > 0.35 && Math.abs(mesh.position.x) > 0.55;
+            mesh.material = new THREE.MeshStandardMaterial({
+              color: isOverhangCandidate ? "#f43f5e" : "#10b981",
+              roughness: 0.4,
+              metalness: 0.1,
+              emissive: new THREE.Color(isOverhangCandidate ? "#e11d48" : "#059669"),
+              emissiveIntensity: 0.22,
+              flatShading: true,
+            });
+          } else if (effectiveShading === "filament_sim") {
+            const filPreset = studioOverrides?.filamentPreset || "pla";
+            const filColor = studioOverrides?.filamentColor || "#ef4444";
+            mesh.material = new THREE.MeshStandardMaterial({
+              color: filColor,
+              roughness:
+                filPreset === "silk"
+                  ? 0.16
+                  : filPreset === "petg"
+                    ? 0.28
+                    : filPreset === "resin"
+                      ? 0.35
+                      : 0.55,
+              metalness: filPreset === "silk" ? 0.65 : 0.08,
+              flatShading: isFlat,
+            });
+          } else if (applyPbrColors) {
+            const stdMat = mesh.material as THREE.MeshStandardMaterial;
+            if (!stdMat || !stdMat.map) {
+              mesh.material = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(pHex),
+                roughness: rVal,
+                metalness: mVal,
+                flatShading: isFlat,
+              });
+            }
+          } else if (isFlat && (mesh.material as THREE.MeshStandardMaterial).isMeshStandardMaterial) {
+            const stdMat = mesh.material as THREE.MeshStandardMaterial;
+            stdMat.flatShading = true;
+            stdMat.needsUpdate = true;
+          }
+        }
+      });
+    };
+
+    applyShadingToGroup(assetGroup, false);
+
     if (currentTask.output_glb_url) {
       const loader = new GLTFLoader();
       loader.load(
         currentTask.output_glb_url,
         (gltf) => {
+          const loadedRoot = new THREE.Group();
+          loadedRoot.name = `AI_GLB_${currentTask.id}`;
+
+          // Normalize bounding box of loaded AI GLB mesh to fit studio viewport cleanly
+          const box = new THREE.Box3().setFromObject(gltf.scene);
+          const size = new THREE.Vector3();
+          const center = new THREE.Vector3();
+          box.getSize(size);
+          box.getCenter(center);
+          const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+          const normScale = 2.1 / maxDim;
+
+          gltf.scene.position.set(
+            -center.x * normScale,
+            -box.min.y * normScale - 0.9,
+            -center.z * normScale
+          );
+          gltf.scene.scale.setScalar(normScale);
+
+          let mIdx = 1;
+          gltf.scene.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh && !child.name) {
+              child.name = `AI_Mesh_Part_0${mIdx++}`;
+            }
+          });
+
+          loadedRoot.add(gltf.scene);
+
+          if (studioOverrides?.transform) {
+            loadedRoot.scale.set(
+              studioOverrides.transform.scaleX,
+              studioOverrides.transform.scaleY,
+              studioOverrides.transform.scaleZ
+            );
+          }
+
+          applyShadingToGroup(loadedRoot, true);
+
           scene.remove(assetGroup);
-          scene.add(gltf.scene);
-          meshGroupRef.current = gltf.scene;
+          scene.add(loadedRoot);
+          meshGroupRef.current = loadedRoot;
+
+          if (onPartNamesChangeRef.current) {
+            const meshNames: string[] = [];
+            loadedRoot.traverse((c) => {
+              if ((c as THREE.Mesh).isMesh) {
+                meshNames.push(c.name || `AI_Mesh_${meshNames.length + 1}`);
+              }
+            });
+            if (meshNames.length > 0) {
+              onPartNamesChangeRef.current(meshNames);
+            }
+          }
         },
         undefined,
         () => {}
@@ -763,27 +935,27 @@ export default function Viewport3D({
     const jointNodes: [number, number, number][] =
       charType === "quadruped_dog" || charType === "quadruped_cat"
         ? [
-            [0, 0.25, -0.55], // Pelvis
-            [0, 0.32, 0.0], // Spine Mid
-            [0, 0.42, 0.55], // Chest
-            [0, 0.85, 0.85], // Head
-            [-0.35, -0.45, 0.55], // Front_L_Paw
-            [0.35, -0.45, 0.55], // Front_R_Paw
-            [-0.35, -0.45, -0.55], // Back_L_Paw
-            [0.35, -0.45, -0.55], // Back_R_Paw
-            [0, 0.48, -0.95], // Tail_Tip
+            [0, 0.25, -0.55],
+            [0, 0.32, 0.0],
+            [0, 0.42, 0.55],
+            [0, 0.85, 0.85],
+            [-0.35, -0.45, 0.55],
+            [0.35, -0.45, 0.55],
+            [-0.35, -0.45, -0.55],
+            [0.35, -0.45, -0.55],
+            [0, 0.48, -0.95],
           ]
         : [
-            [0, -0.6, 0], // Pelvis
-            [0, 0.1, 0], // Spine
-            [0, 0.85, 0], // Chest
-            [0, 1.45, 0], // Head
-            [-0.75, 0.85, 0], // L_Shoulder
-            [0.75, 0.85, 0], // R_Shoulder
-            [-0.85, 0.15, 0], // L_Hand
-            [0.85, 0.15, 0], // R_Hand
-            [-0.35, -0.95, 0], // L_Foot
-            [0.35, -0.95, 0], // R_Foot
+            [0, -0.6, 0],
+            [0, 0.1, 0],
+            [0, 0.85, 0],
+            [0, 1.45, 0],
+            [-0.75, 0.85, 0],
+            [0.75, 0.85, 0],
+            [-0.85, 0.15, 0],
+            [0.85, 0.15, 0],
+            [-0.35, -0.95, 0],
+            [0.35, -0.95, 0],
           ];
     for (const [jx, jy, jz] of jointNodes) {
       const joint = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), boneMat);
@@ -791,17 +963,16 @@ export default function Viewport3D({
       rigGroup.add(joint);
     }
 
-    // Meshy 6-Point Symmetry Auto-Rigging Markers (Chin, Wrists, Elbows, Knees, Groin)
     if (studioOverrides?.showRigMarkers) {
       const markerDefs: { pos: [number, number, number]; color: string }[] = [
-        { pos: [0, 1.15, 0.35], color: "#22d3ee" }, // Chin
-        { pos: [0, -0.15, 0.32], color: "#f59e0b" }, // Groin
-        { pos: [-0.62, 0.65, 0.2], color: "#10b981" }, // L_Elbow
-        { pos: [0.62, 0.65, 0.2], color: "#10b981" }, // R_Elbow
-        { pos: [-0.88, 0.25, 0.25], color: "#ec4899" }, // L_Wrist
-        { pos: [0.88, 0.25, 0.25], color: "#ec4899" }, // R_Wrist
-        { pos: [-0.32, -0.55, 0.25], color: "#a855f7" }, // L_Knee
-        { pos: [0.32, -0.55, 0.25], color: "#a855f7" }, // R_Knee
+        { pos: [0, 1.15, 0.35], color: "#ef4444" },
+        { pos: [0, -0.15, 0.32], color: "#f59e0b" },
+        { pos: [-0.62, 0.65, 0.2], color: "#10b981" },
+        { pos: [0.62, 0.65, 0.2], color: "#10b981" },
+        { pos: [-0.88, 0.25, 0.25], color: "#ec4899" },
+        { pos: [0.88, 0.25, 0.25], color: "#ec4899" },
+        { pos: [-0.32, -0.55, 0.25], color: "#a855f7" },
+        { pos: [0.32, -0.55, 0.25], color: "#a855f7" },
       ];
       for (const mk of markerDefs) {
         const mMat = new THREE.MeshBasicMaterial({
@@ -817,113 +988,6 @@ export default function Viewport3D({
     rigGroup.visible = effectiveShowRig || !!studioOverrides?.showRigMarkers;
     scene.add(rigGroup);
     rigHelperRef.current = rigGroup;
-
-    // Apply Meshy ViewSwitcher Channel & Shading Smoothness Overrides
-    const uvCheckerTex =
-      effectiveShading === "uv_checker" ? createUvCheckerTexture() : null;
-    const smoothness = studioOverrides?.shadingSmoothness || "auto";
-    const isFlat = smoothness === "flat";
-
-    let partIdx = 0;
-    assetGroup.traverse((obj) => {
-      if ((obj as THREE.Mesh).isMesh) {
-        const mesh = obj as THREE.Mesh;
-        if (effectiveShading === "wireframe") {
-          mesh.material = new THREE.MeshStandardMaterial({
-            color: "#f87171",
-            wireframe: true,
-            roughness: 0.4,
-          });
-        } else if (effectiveShading === "clay") {
-          mesh.material = new THREE.MeshStandardMaterial({
-            color: "#e2e8f0",
-            roughness: 0.58,
-            metalness: 0.08,
-            flatShading: isFlat,
-          });
-        } else if (effectiveShading === "base_color") {
-          const origColor =
-            (mesh.material as THREE.MeshStandardMaterial)?.color ||
-            new THREE.Color("#06b6d4");
-          mesh.material = new THREE.MeshBasicMaterial({
-            color: origColor,
-          });
-        } else if (effectiveShading === "normal") {
-          mesh.material = new THREE.MeshNormalMaterial({
-            flatShading: isFlat,
-          });
-        } else if (effectiveShading === "metallic") {
-          const mVal = studioOverrides?.material.metalness ?? 0.85;
-          const gray = Math.round(mVal * 255);
-          mesh.material = new THREE.MeshBasicMaterial({
-            color: new THREE.Color(`rgb(${gray},${gray},${gray})`),
-          });
-        } else if (effectiveShading === "roughness") {
-          const rVal = studioOverrides?.material.roughness ?? 0.25;
-          const gray = Math.round(rVal * 255);
-          mesh.material = new THREE.MeshBasicMaterial({
-            color: new THREE.Color(`rgb(${gray},${gray},${gray})`),
-          });
-        } else if (effectiveShading === "ao_curvature") {
-          mesh.material = new THREE.MeshStandardMaterial({
-            color: "#cbd5e1",
-            roughness: 0.85,
-            metalness: 0.05,
-            emissive: new THREE.Color("#0f172a"),
-            emissiveIntensity: 0.35,
-            flatShading: true,
-          });
-        } else if (effectiveShading === "uv_checker" && uvCheckerTex) {
-          mesh.material = new THREE.MeshStandardMaterial({
-            map: uvCheckerTex,
-            roughness: 0.4,
-            metalness: 0.1,
-          });
-        } else if (effectiveShading === "segment") {
-          const segColor = SEGMENT_PALETTE[partIdx % SEGMENT_PALETTE.length];
-          partIdx++;
-          mesh.material = new THREE.MeshStandardMaterial({
-            color: segColor,
-            roughness: 0.35,
-            metalness: 0.2,
-            emissive: new THREE.Color(segColor),
-            emissiveIntensity: 0.15,
-            flatShading: isFlat,
-          });
-        } else if (effectiveShading === "printability") {
-          // Highlight potential overhangs vs safe manifold zones
-          const isOverhangCandidate = mesh.position.y > 0.35 && Math.abs(mesh.position.x) > 0.55;
-          mesh.material = new THREE.MeshStandardMaterial({
-            color: isOverhangCandidate ? "#f43f5e" : "#10b981",
-            roughness: 0.4,
-            metalness: 0.1,
-            emissive: new THREE.Color(isOverhangCandidate ? "#e11d48" : "#059669"),
-            emissiveIntensity: 0.22,
-            flatShading: true,
-          });
-        } else if (effectiveShading === "filament_sim") {
-          const filPreset = studioOverrides?.filamentPreset || "pla";
-          const filColor = studioOverrides?.filamentColor || "#06b6d4";
-          mesh.material = new THREE.MeshStandardMaterial({
-            color: filColor,
-            roughness:
-              filPreset === "silk"
-                ? 0.16
-                : filPreset === "petg"
-                  ? 0.28
-                  : filPreset === "resin"
-                    ? 0.35
-                    : 0.55,
-            metalness: filPreset === "silk" ? 0.65 : 0.08,
-            flatShading: isFlat,
-          });
-        } else if (isFlat && (mesh.material as THREE.MeshStandardMaterial).isMeshStandardMaterial) {
-          const stdMat = mesh.material as THREE.MeshStandardMaterial;
-          stdMat.flatShading = true;
-          stdMat.needsUpdate = true;
-        }
-      }
-    });
 
     let frameId = 0;
     const clock = new THREE.Clock();

@@ -680,6 +680,67 @@ export default {
         }
       }
 
+      // Tier 2: Free Cloud ZeroGPU (Pollinations Flux 2D -> Tencent Hunyuan3D-2 ZeroGPU .GLB, ฟรี 0 บาท)
+      if (!outputGlbUrl) {
+        try {
+          const condImgUrl =
+            inputImageUrl && String(inputImageUrl).startsWith("http")
+              ? inputImageUrl
+              : `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced.promptEn)}?width=512&height=512&nologo=true&seed=42`;
+
+          const callRes = await fetch(
+            "https://tencent-hunyuan3d-2.hf.space/call/shape_generation",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                data: [
+                  enhanced.promptEn,
+                  { path: condImgUrl, url: condImgUrl, meta: { _type: "gradio.FileData" } },
+                  null,
+                  null,
+                  null,
+                  null,
+                  15,
+                  5,
+                  1234,
+                  160,
+                  true,
+                  8000,
+                  true,
+                ],
+              }),
+            }
+          );
+
+          if (callRes.ok) {
+            const { event_id } = await callRes.json();
+            if (event_id) {
+              const sseRes = await fetch(
+                `https://tencent-hunyuan3d-2.hf.space/call/shape_generation/${event_id}`
+              );
+              if (sseRes.ok) {
+                const sseText = await sseRes.text();
+                const dataLine = sseText
+                  .split("\n")
+                  .find((line) => line.startsWith("data: ["));
+                if (dataLine) {
+                  const parsed = JSON.parse(dataLine.slice(6));
+                  const remotePath = parsed?.[0]?.value?.path;
+                  if (remotePath) {
+                    const rawHfUrl = `https://tencent-hunyuan3d-2.hf.space/file=${remotePath}`;
+                    outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawHfUrl)}`;
+                    providerMode = "hunyuan_zerogpu_free";
+                  }
+                }
+              }
+            }
+          }
+        } catch {
+          providerMode = "sandbox";
+        }
+      }
+
       await db
         .prepare(
           `INSERT INTO generation_tasks (
@@ -776,6 +837,28 @@ export default {
           .run();
         return jsonResponse({ ok: true, deletedId: taskId });
       }
+    }
+
+    // =========================================================================
+    // 7B. /api/glb-proxy (Same-Origin Binary GLB Stream Proxy for Three.js GLTFLoader)
+    // =========================================================================
+    if (pathname === "/api/glb-proxy" && method === "GET") {
+      const remoteUrl = url.searchParams.get("url");
+      if (!remoteUrl || !remoteUrl.startsWith("https://")) {
+        return jsonResponse({ error: "Invalid GLB URL" }, 400);
+      }
+      const upstream = await fetch(remoteUrl);
+      if (!upstream.ok) {
+        return jsonResponse({ error: "Upstream GLB not found" }, upstream.status);
+      }
+      return new Response(upstream.body, {
+        status: 200,
+        headers: {
+          "Content-Type": "model/gltf-binary",
+          "Cache-Control": "public, max-age=86400",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
     }
 
     // =========================================================================

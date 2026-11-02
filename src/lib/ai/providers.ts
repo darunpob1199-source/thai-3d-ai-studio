@@ -233,7 +233,7 @@ export async function dispatchToServerlessGpu(params: {
   promptTh: string;
   inputImageUrl?: string | null;
 }): Promise<{
-  providerMode: "sandbox" | "fal_live" | "runpod_live";
+  providerMode: "sandbox" | "fal_live" | "runpod_live" | "hunyuan_zerogpu_free";
   promptEn: string;
   presetType: PresetArchetype;
   primaryColor: string;
@@ -244,12 +244,12 @@ export async function dispatchToServerlessGpu(params: {
 }> {
   const enhanced = enhanceThaiPromptTo3D(params.promptTh);
 
+  // Tier 1: VIP Serverless GPU (FAL.ai: Flux Schnell -> TRELLIS / Hunyuan3D-2.1)
   const falKey = (getAppSetting("fal_api_key") || process.env.FAL_KEY || "").trim();
   if (falKey.length > 10) {
     try {
       let conditioningImageUrl = params.inputImageUrl || null;
 
-      // Stage 1: If Text-to-3D (no image uploaded), generate clean 2D reference image via Flux Schnell
       if (!conditioningImageUrl) {
         const fluxRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
           method: "POST",
@@ -269,7 +269,6 @@ export async function dispatchToServerlessGpu(params: {
         }
       }
 
-      // Stage 2: Dispatch conditioning image to TRELLIS / Hunyuan3D-2.1 / TripoSR
       const endpoint =
         params.engine === "trellis_pbr"
           ? "https://fal.run/fal-ai/trellis"
@@ -302,11 +301,72 @@ export async function dispatchToServerlessGpu(params: {
         };
       }
     } catch {
-      // Fallback to sandbox if network fails
+      // Fall through to Tier 2 Free Cloud ZeroGPU
     }
   }
 
-  // Sandbox Mode (ฟรี 0 บาท): สร้างโมเดล 3D แบบ Procedural PBR ใน Three.js พร้อมดาวน์โหลดเป็นไฟล์ .GLB จริงได้ทันที
+  // Tier 2: Free Cloud ZeroGPU (Pollinations Flux 2D -> Tencent Hunyuan3D-2 ZeroGPU .GLB, ฟรี 0 บาท)
+  try {
+    const condImgUrl =
+      params.inputImageUrl && params.inputImageUrl.startsWith("http")
+        ? params.inputImageUrl
+        : `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced.promptEn)}?width=512&height=512&nologo=true&seed=42`;
+
+    const callRes = await fetch("https://tencent-hunyuan3d-2.hf.space/call/shape_generation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        data: [
+          enhanced.promptEn,
+          { path: condImgUrl, url: condImgUrl, meta: { _type: "gradio.FileData" } },
+          null,
+          null,
+          null,
+          null,
+          15,
+          5,
+          1234,
+          160,
+          true,
+          8000,
+          true,
+        ],
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+
+    if (callRes.ok) {
+      const { event_id } = await callRes.json();
+      if (event_id) {
+        const sseRes = await fetch(
+          `https://tencent-hunyuan3d-2.hf.space/call/shape_generation/${event_id}`,
+          { signal: AbortSignal.timeout(22000) }
+        );
+        if (sseRes.ok) {
+          const sseText = await sseRes.text();
+          const dataLine = sseText
+            .split("\n")
+            .find((line) => line.startsWith("data: ["));
+          if (dataLine) {
+            const parsed = JSON.parse(dataLine.slice(6));
+            const remotePath = parsed?.[0]?.value?.path;
+            if (remotePath) {
+              const glbUrl = `https://tencent-hunyuan3d-2.hf.space/file=${remotePath}`;
+              return {
+                providerMode: "hunyuan_zerogpu_free",
+                ...enhanced,
+                outputGlbUrl: glbUrl,
+              };
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // Fall through to Tier 3 Procedural Sandbox if ZeroGPU queue is full
+  }
+
+  // Tier 3: Sandbox Mode (ฟรี 0 บาท): สร้างโมเดล 3D แบบ Procedural PBR ใน Three.js ทันที
   return {
     providerMode: "sandbox",
     ...enhanced,
