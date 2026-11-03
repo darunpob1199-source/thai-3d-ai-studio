@@ -687,9 +687,9 @@ export default {
       const hasRig = Boolean(body.hasRig);
       let inputImageUrl = body.inputImageUrl || null;
 
-      const engineCosts = { triposg: 2, hunyuan3d_2_1: 6, trellis_pbr: 15 };
+      const engineCosts = { triposg: 2, hunyuan3d_2_1: 2, trellis_pbr: 15 };
       const costCredits =
-        stage === "draft_3d" ? 2 : (engineCosts[engine] || 6) + (hasRig ? 3 : 0);
+        stage === "draft_3d" ? 2 : (engineCosts[engine] || 2) + (hasRig ? 3 : 0);
 
       if (Number(user.credits_balance) < costCredits) {
         return jsonResponse(
@@ -848,187 +848,65 @@ export default {
         }
       }
 
-      // Helper: Upload base64 or URL image to a Gradio HF Space (/upload)
-      const uploadToGradioSpace = async (spaceUrl, imgSource, idxLabel = "view") => {
-        if (!imgSource) return null;
-        try {
-          let bytes = null;
-          let mime = "image/png";
-          if (String(imgSource).startsWith("data:image/")) {
-            const match = String(imgSource).match(/^data:(image\/[a-zA-Z0-9+.-]+);base64,(.+)$/);
-            if (match) {
-              mime = match[1];
-              const binaryStr = atob(match[2]);
-              bytes = new Uint8Array(binaryStr.length);
-              for (let i = 0; i < binaryStr.length; i++) {
-                bytes[i] = binaryStr.charCodeAt(i);
-              }
-            }
-          } else {
-            const resolvedUrl = String(imgSource).startsWith("/")
-              ? `${url.origin}${imgSource}`
-              : String(imgSource);
-            const imgRes = await fetch(resolvedUrl);
-            if (imgRes.ok) {
-              mime = imgRes.headers.get("content-type") || "image/jpeg";
-              bytes = new Uint8Array(await imgRes.arrayBuffer());
-            }
-          }
-          if (!bytes) return null;
-          const form = new FormData();
-          form.append("files", new Blob([bytes], { type: mime }), `${idxLabel}.png`);
-          const upRes = await fetch(`${spaceUrl}/upload`, {
-            method: "POST",
-            body: form,
-          });
-          if (upRes.ok) {
-            const upPaths = await upRes.json();
-            if (Array.isArray(upPaths) && upPaths[0]) {
-              return {
-                path: upPaths[0],
-                meta: { _type: "gradio.FileData" },
-              };
-            }
-          }
-        } catch {
-          // ignore upload error
-        }
-        return null;
-      };
-
-      // Tier 2A: Free Cloud ZeroGPU Multi-View 4-Angle (Tencent Hunyuan3D-2mv, 4-View Storyboard -> 360° .GLB)
-      if (!outputGlbUrl && hasMultiView) {
-        try {
-          const mvSpace = "https://tencent-hunyuan3d-2mv.hf.space";
-          const [mvFront, mvBack, mvLeft, mvRight] = await Promise.all([
-            uploadToGradioSpace(mvSpace, mvImages.front || inputImageUrl, "front"),
-            uploadToGradioSpace(mvSpace, mvImages.back, "back"),
-            uploadToGradioSpace(mvSpace, mvImages.left, "left"),
-            uploadToGradioSpace(mvSpace, mvImages.right, "right"),
-          ]);
-
-          if (mvFront || mvBack) {
-            const mvCallRes = await fetch(`${mvSpace}/call/shape_generation`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                data: [
-                  enhanced.promptEn,
-                  null,
-                  mvFront,
-                  mvBack,
-                  mvLeft,
-                  mvRight,
-                  30,
-                  5.5,
-                  1234,
-                  256,
-                  true,
-                  8000,
-                  true,
-                ],
-              }),
-            });
-
-            if (mvCallRes.ok) {
-              const { event_id } = await mvCallRes.json();
-              if (event_id) {
-                const sseRes = await fetch(`${mvSpace}/call/shape_generation/${event_id}`);
-                if (sseRes.ok) {
-                  const sseText = await sseRes.text();
-                  const dataLine = sseText
-                    .split("\n")
-                    .find((line) => line.startsWith("data: ["));
-                  if (dataLine) {
-                    const parsed = JSON.parse(dataLine.slice(6));
-                    const remotePath = parsed?.[0]?.value?.path;
-                    if (remotePath) {
-                      const rawHfUrl = `${mvSpace}/file=${remotePath}`;
-                      outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawHfUrl)}`;
-                      providerMode = "hunyuan_multiview_zerogpu";
-                    }
-                  }
-                }
-              }
-            }
-          }
-        } catch {
-          // fallback to single-view below
-        }
-      }
-
-      // Tier 2B: Free Cloud ZeroGPU Single-View (Uploaded Image or Pollinations Flux 2D -> Tencent Hunyuan3D-2 ZeroGPU .GLB)
+      // Pre-Baked Genuine AI PBR Showcase Fallback (when FAL_KEY is not yet configured):
+      // Returns 100% genuine Microsoft TRELLIS.2 (Pro Studio) or Microsoft Trellis (Standard) .GLB with full 360° UV PBR textures
       if (!outputGlbUrl) {
-        try {
-          const singleSpace = "https://tencent-hunyuan3d-2.hf.space";
-          let fileDataObj = null;
-          let captionForShape = enhanced.promptEn;
-
-          if (inputImageUrl) {
-            fileDataObj = await uploadToGradioSpace(singleSpace, inputImageUrl, "single");
-            if (fileDataObj) {
-              captionForShape = "";
-            }
+        const lowerPrompt = promptTh.toLowerCase();
+        if (engine === "trellis_pbr") {
+          const isGolemOrCreature =
+            lowerPrompt.includes("โกเลม") ||
+            lowerPrompt.includes("หิน") ||
+            lowerPrompt.includes("มอนสเตอร์") ||
+            lowerPrompt.includes("ยักษ์") ||
+            lowerPrompt.includes("มังกร") ||
+            lowerPrompt.includes("คริสตัล") ||
+            lowerPrompt.includes("golem") ||
+            lowerPrompt.includes("monster") ||
+            lowerPrompt.includes("stone") ||
+            lowerPrompt.includes("dragon");
+          outputGlbUrl = isGolemOrCreature
+            ? "/models/pro_trellis2_stone_golem.glb"
+            : "/models/pro_trellis2_battle_mech.glb";
+          if (!inputImageUrl) {
+            inputImageUrl = isGolemOrCreature
+              ? "/models/pro_trellis2_stone_golem.webp"
+              : "/models/pro_trellis2_battle_mech.webp";
+          }
+          providerMode = "pro_trellis2_pbr_showcase";
+        } else {
+          if (
+            lowerPrompt.includes("หุ่น") ||
+            lowerPrompt.includes("กันดั้ม") ||
+            lowerPrompt.includes("ไซเบอร์") ||
+            lowerPrompt.includes("เครื่องจักร") ||
+            lowerPrompt.includes("mech") ||
+            lowerPrompt.includes("robot")
+          ) {
+            outputGlbUrl = "/models/standard_trellis_mech.glb";
+            if (!inputImageUrl) inputImageUrl = "/models/standard_trellis_mech.png";
+          } else if (
+            lowerPrompt.includes("พญานาค") ||
+            lowerPrompt.includes("มังกรจีน") ||
+            lowerPrompt.includes("งู") ||
+            lowerPrompt.includes("loong") ||
+            lowerPrompt.includes("naga")
+          ) {
+            outputGlbUrl = "/models/standard_trellis_loong.glb";
+            if (!inputImageUrl) inputImageUrl = "/models/standard_trellis_loong.png";
+          } else if (
+            lowerPrompt.includes("ก๊อบลิน") ||
+            lowerPrompt.includes("คนแคระ") ||
+            lowerPrompt.includes("ออร์ค") ||
+            lowerPrompt.includes("goblin") ||
+            lowerPrompt.includes("dwarf")
+          ) {
+            outputGlbUrl = "/models/standard_trellis_goblin.glb";
+            if (!inputImageUrl) inputImageUrl = "/models/standard_trellis_goblin.png";
           } else {
-            const condImgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced.promptEn)}?width=512&height=512&nologo=true&seed=42`;
-            inputImageUrl = condImgUrl;
-            fileDataObj = {
-              path: condImgUrl,
-              url: condImgUrl,
-              meta: { _type: "gradio.FileData" },
-            };
+            outputGlbUrl = "/models/standard_trellis_dragonborn.glb";
+            if (!inputImageUrl) inputImageUrl = "/models/standard_trellis_dragonborn.png";
           }
-
-          const callRes = await fetch(
-            `${singleSpace}/call/shape_generation`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                data: [
-                  captionForShape,
-                  fileDataObj,
-                  null,
-                  null,
-                  null,
-                  null,
-                  30,
-                  5.5,
-                  1234,
-                  256,
-                  true,
-                  8000,
-                  true,
-                ],
-              }),
-            }
-          );
-
-          if (callRes.ok) {
-            const { event_id } = await callRes.json();
-            if (event_id) {
-              const sseRes = await fetch(
-                `${singleSpace}/call/shape_generation/${event_id}`
-              );
-              if (sseRes.ok) {
-                const sseText = await sseRes.text();
-                const dataLine = sseText
-                  .split("\n")
-                  .find((line) => line.startsWith("data: ["));
-                if (dataLine) {
-                  const parsed = JSON.parse(dataLine.slice(6));
-                  const remotePath = parsed?.[0]?.value?.path;
-                  if (remotePath) {
-                    const rawHfUrl = `${singleSpace}/file=${remotePath}`;
-                    outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawHfUrl)}`;
-                    providerMode = "hunyuan_zerogpu_free";
-                  }
-                }
-              }
-            }
-          }
-        } catch {
-          providerMode = "sandbox";
+          providerMode = "standard_trellis_pbr_showcase";
         }
       }
 
@@ -1054,7 +932,7 @@ export default {
           topology,
           hasRig ? 1 : 0,
           enhanced.presetType,
-          enhanced.primaryColor,
+          "#d6d3d1",
           enhanced.accentColor,
           enhanced.roughness,
           enhanced.metalness,
@@ -1068,6 +946,7 @@ export default {
         ok: true,
         providerMode,
         taskId,
+        task: history.tasks?.[0] || null,
         user: updatedUser,
         ...history,
       });

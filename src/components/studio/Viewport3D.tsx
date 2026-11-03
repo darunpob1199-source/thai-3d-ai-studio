@@ -890,6 +890,7 @@ export default function Viewport3D({
             });
           } else if (applyPbrColors) {
             const stdMat = mesh.material as THREE.MeshStandardMaterial;
+            const emInt = studioOverrides?.material.emissiveIntensity ?? 0;
             if (!stdMat || !stdMat.map) {
               const aiColor =
                 studioOverrides?.material.primaryColor ||
@@ -900,7 +901,6 @@ export default function Viewport3D({
               const aiMetalness =
                 studioOverrides?.material.metalness ??
                 (currentTask.output_glb_url ? 0.18 : Math.min(mVal, 0.35));
-              const emInt = studioOverrides?.material.emissiveIntensity ?? 0;
               mesh.material = new THREE.MeshStandardMaterial({
                 color: new THREE.Color(aiColor),
                 roughness: aiRoughness,
@@ -913,6 +913,29 @@ export default function Viewport3D({
                 emissiveIntensity: emInt > 0.08 ? emInt * 0.45 : 0,
                 flatShading: isFlat,
               });
+            } else {
+              // Native-textured GLB (Pro Studio / Standard PBR): preserve baked texture map while supporting live PBR/Tint overrides
+              const customTint = studioOverrides?.material.primaryColor;
+              const isDefaultTint =
+                !customTint ||
+                customTint.toLowerCase() === "#d6d3d1" ||
+                customTint.toLowerCase() === "#ffffff" ||
+                customTint.toLowerCase() === (currentTask.primary_color || "").toLowerCase();
+              stdMat.color.set(isDefaultTint ? "#ffffff" : customTint);
+              if (studioOverrides?.material.roughness !== undefined) {
+                stdMat.roughness = studioOverrides.material.roughness;
+              }
+              if (studioOverrides?.material.metalness !== undefined) {
+                stdMat.metalness = studioOverrides.material.metalness;
+              }
+              stdMat.emissive = new THREE.Color(
+                emInt > 0.08
+                  ? studioOverrides?.material.accentColor || "#f59e0b"
+                  : "#000000"
+              );
+              stdMat.emissiveIntensity = emInt > 0.08 ? emInt * 0.45 : 0;
+              stdMat.flatShading = isFlat;
+              stdMat.needsUpdate = true;
             }
           } else if (isFlat && (mesh.material as THREE.MeshStandardMaterial).isMeshStandardMaterial) {
             const stdMat = mesh.material as THREE.MeshStandardMaterial;
