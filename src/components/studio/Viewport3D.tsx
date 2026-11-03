@@ -599,6 +599,7 @@ export default function Viewport3D({
     null
   );
   const partPaintMapRef = useRef<Record<number, string>>({});
+  const [expandRefImg, setExpandRefImg] = useState(false);
   const decalHitPosRef = useRef<[number, number, number] | null>(null);
   const cameraStateRef = useRef<{
     taskId: string;
@@ -1948,6 +1949,43 @@ export default function Viewport3D({
             >
               ✕
             </button>
+          </div>
+        )}
+
+        {/* Picture-in-Picture 2D Original Input Image (ภาพต้นแบบ) */}
+        {activeTask?.input_image_url && !selectedPart && (
+          <div
+            onClick={() => setExpandRefImg(!expandRefImg)}
+            title="คลิกเพื่อขยาย/ย่อ ภาพต้นแบบ 2D ที่ใช้ปั้นโมเดล 3D นี้"
+            className={`absolute bottom-13 left-3 z-10 rounded-xl overflow-hidden bg-[#110b0e]/95 backdrop-blur-md border transition-all duration-200 cursor-pointer pointer-events-auto shadow-2xl ${
+              activeTask.engine === "trellis_pbr"
+                ? "border-amber-400/60 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                : "border-sky-400/40"
+            } ${expandRefImg ? "w-56" : "w-28"}`}
+          >
+            <div
+              className={`px-2 py-1 text-[9px] font-bold flex items-center justify-between ${
+                activeTask.engine === "trellis_pbr"
+                  ? "bg-gradient-to-r from-amber-500/25 to-red-500/25 text-amber-200"
+                  : "bg-sky-500/20 text-sky-200"
+              }`}
+            >
+              <span className="truncate">
+                {activeTask.engine === "trellis_pbr"
+                  ? "🏆 ต้นแบบตัวท็อป (Pro)"
+                  : "⚡ ต้นแบบตัวกลาง (Std)"}
+              </span>
+              <span className="text-[8px] opacity-80">{expandRefImg ? "ย่อ" : "ขยาย"}</span>
+            </div>
+            <div className="p-1.5 bg-black/50 flex items-center justify-center">
+              <img
+                src={activeTask.input_image_url}
+                alt="2D Input Reference"
+                className={`object-contain rounded-lg ${
+                  expandRefImg ? "w-52 h-52" : "w-24 h-24"
+                }`}
+              />
+            </div>
           </div>
         )}
 

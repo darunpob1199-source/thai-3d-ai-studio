@@ -258,30 +258,30 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     categoryTag: "Character",
   },
   {
-    id: "showcase_std_dragonborn",
+    id: "showcase_pro_dragon_armor",
     user_id: "community",
     stage: "refine_pbr",
-    engine: "hunyuan3d_2_1",
+    engine: "trellis_pbr",
     mode: "image_to_3d",
-    prompt_th: "[Standard 0.68฿] นักรบมังกร Dragonborn (Trellis PBR 360°)",
+    prompt_th: "[Pro Studio 6.80฿] เกราะอกมังกรทองคำจักรพรรดิ (Full PBR 360°)",
     prompt_en:
-      "Standard Microsoft Trellis ($0.02 / 0.68 THB) — Humanoid Dragonborn warrior character with 360° AI-baked UV texture",
-    input_image_url: "/models/standard_trellis_dragonborn.png",
+      "Pro Studio TRELLIS.2 4B Cascade — Ornate gold and steel dragon chest plate armor with full Metallic & Roughness PBR maps",
+    input_image_url: "/models/pro_trellis2_dragon_armor.webp",
     status: "completed",
-    cost_credits: 2,
+    cost_credits: 6,
     refunded: 0,
-    target_poly_count: 41000,
+    target_poly_count: 135000,
     topology: "quad",
     has_pbr: 1,
-    has_rig: 1,
-    preset_type: "mecha",
+    has_rig: 0,
+    preset_type: "sword",
     primary_color: "#d6d3d1",
-    accent_color: "#ef4444",
-    roughness: 0.42,
-    metalness: 0.25,
-    output_glb_url: "/models/standard_trellis_dragonborn.glb",
+    accent_color: "#f59e0b",
+    roughness: 0.25,
+    metalness: 0.85,
+    output_glb_url: "/models/pro_trellis2_dragon_armor.glb",
     created_at: new Date().toISOString(),
-    categoryTag: "Character",
+    categoryTag: "Props",
   },
   {
     id: "showcase_pro_stone_golem",
@@ -306,6 +306,32 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     roughness: 0.65,
     metalness: 0.15,
     output_glb_url: "/models/pro_trellis2_stone_golem.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Character",
+  },
+  {
+    id: "showcase_std_dragonborn",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "hunyuan3d_2_1",
+    mode: "image_to_3d",
+    prompt_th: "[Standard 0.68฿] นักรบมังกร Dragonborn (Trellis PBR 360°)",
+    prompt_en:
+      "Standard Microsoft Trellis ($0.02 / 0.68 THB) — Humanoid Dragonborn warrior character with 360° AI-baked UV texture",
+    input_image_url: "/models/standard_trellis_dragonborn.png",
+    status: "completed",
+    cost_credits: 2,
+    refunded: 0,
+    target_poly_count: 41000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "mecha",
+    primary_color: "#d6d3d1",
+    accent_color: "#ef4444",
+    roughness: 0.42,
+    metalness: 0.25,
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
   },
@@ -1656,17 +1682,33 @@ export default function SiamPrism3DStudioPage() {
                   className="h-[320px] rounded-[24px] bg-[#110b0e] border border-white/[0.07] hover:border-red-400/50 p-3.5 flex flex-col justify-between relative overflow-hidden group cursor-pointer transition"
                 >
                   <div className="flex-1 rounded-2xl bg-gradient-to-b from-[#1f0d13] to-[#0b080a] flex items-center justify-center relative overflow-hidden">
-                    <div
-                      className="w-24 h-24 rounded-3xl shadow-2xl flex items-center justify-center border border-white/20 transition-transform duration-400 group-hover:scale-110 group-hover:rotate-3"
-                      style={{
-                        background: `linear-gradient(135deg, ${item.primary_color}, ${item.accent_color})`,
-                      }}
-                    >
-                      <Box className="w-11 h-11 text-white drop-shadow" />
-                    </div>
+                    {item.input_image_url ? (
+                      <img
+                        src={item.input_image_url}
+                        alt={item.prompt_th}
+                        className="w-full h-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div
+                        className="w-24 h-24 rounded-3xl shadow-2xl flex items-center justify-center border border-white/20 transition-transform duration-400 group-hover:scale-110 group-hover:rotate-3"
+                        style={{
+                          background: `linear-gradient(135deg, ${item.primary_color}, ${item.accent_color})`,
+                        }}
+                      >
+                        <Box className="w-11 h-11 text-white drop-shadow" />
+                      </div>
+                    )}
 
-                    <span className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full bg-[#060608]/80 border border-red-400/30 text-[10px] font-bold text-red-300 uppercase">
-                      {item.preset_type}
+                    <span
+                      className={`absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                        item.engine === "trellis_pbr"
+                          ? "bg-amber-950/90 border-amber-400/60 text-amber-200"
+                          : "bg-sky-950/90 border-sky-400/50 text-sky-200"
+                      }`}
+                    >
+                      {item.engine === "trellis_pbr"
+                        ? "🏆 ตัวท็อป PRO (6.80฿)"
+                        : "⚡ ตัวกลาง STD (0.68฿)"}
                     </span>
 
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-0 bg-slate-950/65 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 p-3">
@@ -3909,29 +3951,48 @@ export default function SiamPrism3DStudioPage() {
 
                   {(tasks.length > 0 ? tasks : CURATED_SHOWCASE).map((item) => {
                     const isSelected = activeTask?.id === item.id;
+                    const isPro = item.engine === "trellis_pbr";
                     return (
                       <div
                         key={item.id}
                         onClick={() => setActiveTask(item)}
-                        className={`group aspect-square rounded-xl relative overflow-hidden cursor-pointer border transition flex flex-col items-center justify-center p-2 ${
+                        className={`group aspect-square rounded-xl relative overflow-hidden cursor-pointer border transition flex flex-col items-center justify-between p-1.5 ${
                           isSelected
                             ? "border-red-400 bg-red-500/15 shadow-[0_0_15px_rgba(239,68,68,0.22)]"
-                            : "border-white/[0.07] bg-[#160e12] hover:border-red-400/35"
+                            : isPro
+                              ? "border-amber-500/35 bg-[#160e12] hover:border-amber-400/70"
+                              : "border-white/[0.07] bg-[#160e12] hover:border-red-400/35"
                         }`}
                       >
-                        <div
-                          className="w-11 h-11 rounded-xl flex items-center justify-center shadow-md border border-white/20 group-hover:scale-105 transition"
-                          style={{
-                            background: `linear-gradient(135deg, ${item.primary_color}, ${item.accent_color})`,
-                          }}
-                        >
-                          <Box className="w-5 h-5 text-white" />
+                        <div className="w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden rounded-lg bg-black/40 mt-4">
+                          {item.input_image_url ? (
+                            <img
+                              src={item.input_image_url}
+                              alt={item.prompt_th}
+                              className="w-full h-full object-contain p-1 group-hover:scale-105 transition"
+                            />
+                          ) : (
+                            <div
+                              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md border border-white/20"
+                              style={{
+                                background: `linear-gradient(135deg, ${item.primary_color}, ${item.accent_color})`,
+                              }}
+                            >
+                              <Box className="w-5 h-5 text-white" />
+                            </div>
+                          )}
                         </div>
-                        <span className="text-[10px] text-slate-200 font-medium truncate w-full text-center mt-1.5">
-                          {item.prompt_th}
+                        <span className="text-[9.5px] text-slate-200 font-medium truncate w-full text-center mt-1">
+                          {item.prompt_th.replace(/^\[.*?\]\s*/, "")}
                         </span>
-                        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.2 rounded bg-slate-950/75 text-[8px] font-bold text-red-300 uppercase">
-                          {item.preset_type}
+                        <span
+                          className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                            isPro
+                              ? "bg-amber-500/90 text-slate-950"
+                              : "bg-sky-500/25 border border-sky-400/40 text-sky-200"
+                          }`}
+                        >
+                          {isPro ? "🏆 ตัวท็อป PRO 6.80฿" : "⚡ ตัวกลาง 0.68฿"}
                         </span>
                       </div>
                     );
