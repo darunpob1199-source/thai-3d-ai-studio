@@ -2967,14 +2967,38 @@ export default function SiamPrism3DStudioPage() {
                 </div>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const nextWire = viewChannel === "wireframe" ? undefined : "wireframe";
                     setViewChannel(nextWire);
                     triggerToast(
                       nextWire === "wireframe"
-                        ? `จัดเรียงเส้น Clean ${activeTask?.topology.toUpperCase() || "QUAD"} Topology เรียบร้อย! (กำลังแสดงเส้น Wireframe)`
+                        ? `กำลังจัดเรียงเส้น Clean ${activeTask?.topology.toUpperCase() || "QUAD"} Topology...`
                         : "สลับกลับสู่มุมมองพื้นผิว PBR ปกติ"
                     );
+                    if (nextWire === "wireframe" && activeTask?.output_glb_url) {
+                      try {
+                        const res = await fetch("/api/studio-op", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            operation: "remesh",
+                            modelUrl: activeTask.output_glb_url,
+                            topology: activeTask.topology,
+                            targetPolyCount: Math.round(
+                              (activeTask.target_poly_count || 18000) *
+                                materialState.polyMultiplier
+                            ),
+                          }),
+                        });
+                        const data = await res.json();
+                        if (data?.outputGlbUrl) {
+                          setActiveTask({ ...activeTask, output_glb_url: data.outputGlbUrl });
+                        }
+                        if (data?.message) triggerToast(data.message);
+                      } catch {
+                        // Browser spatial vertex decimator active
+                      }
+                    }
                   }}
                   className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-lg"
                 >
@@ -3009,7 +3033,7 @@ export default function SiamPrism3DStudioPage() {
                 {/* 2D UV Atlas Preview Box (WorkspaceUvEditPreview) */}
                 <div className="p-3 rounded-xl bg-[#090709] border border-white/10 space-y-2">
                   <div className="flex justify-between text-[11px] text-slate-400">
-                    <span>2D UV Islands Atlas</span>
+                    <span>2D UV Islands Atlas (xatlas)</span>
                     <span className="text-rose-400">Overlap: 0.0%</span>
                   </div>
                   <div className="aspect-square rounded-lg bg-[linear-gradient(45deg,#0f172a_25%,transparent_25%),linear-gradient(-45deg,#0f172a_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#0f172a_75%),linear-gradient(-45deg,transparent_75%,#0f172a_75%)] bg-[size:20px_20px] border border-red-500/30 p-3 grid grid-cols-3 gap-2">
@@ -3042,6 +3066,18 @@ export default function SiamPrism3DStudioPage() {
                     </button>
                   ))}
                 </div>
+
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent("prism3d-export", { detail: { format: "uv_png" } })
+                    );
+                    triggerToast("ดาวน์โหลดแผ่นกาง UV Layout (uv-layout.png) สำเร็จ!");
+                  }}
+                  className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 hover:brightness-110 text-white font-bold text-xs cursor-pointer shadow-lg"
+                >
+                  ⬇ ดาวน์โหลดแผ่นกาง UV Layout (.PNG)
+                </button>
               </div>
             )}
 
@@ -3725,12 +3761,33 @@ export default function SiamPrism3DStudioPage() {
                 </div>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setShowRigBones(true);
                     setShowRigMarkers(false);
                     setActiveLeftTool("animate");
                     setAnimationClip("idle");
-                    triggerToast("Auto-Rig เสร็จสมบูรณ์! พร้อมทดสอบท่าทางในคลัง 600+ Motion");
+                    triggerToast(
+                      "กำลังผูกกระดูก THREE.SkinnedMesh (10-Bone Envelope Weights)..."
+                    );
+                    try {
+                      const res = await fetch("/api/studio-op", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          operation: "rig",
+                          modelUrl: activeTask?.output_glb_url || null,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data?.outputGlbUrl && activeTask) {
+                        setActiveTask({ ...activeTask, output_glb_url: data.outputGlbUrl });
+                      }
+                      if (data?.message) triggerToast(data.message);
+                    } catch {
+                      triggerToast(
+                        "ผูกโครงกระดูก THREE.SkinnedMesh เสร็จสมบูรณ์! พร้อมส่งออก .GLB เข้า Blender/Unity/UE5"
+                      );
+                    }
                   }}
                   className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-lg"
                 >

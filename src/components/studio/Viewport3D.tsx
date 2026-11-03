@@ -1056,36 +1056,140 @@ export default function Viewport3D({
       const explodeAmt = studioOverrides?.explodeFactor || 0;
       const hiddenSet = new Set(studioOverrides?.hiddenParts || []);
       const pose = studioOverrides?.posePreset || "bind";
+      const invNormScale = baseTemplate.userData.invNormScale || 1;
 
-      let subIdx = 0;
+      // Build live 10-Bone Humanoid THREE.Skeleton if template has boneRestDefs
+      const boneRestDefs = baseTemplate.userData.boneRestDefs as
+        | { name: string; parent: number; pos: [number, number, number] }[]
+        | undefined;
+      let liveBones: THREE.Bone[] | null = null;
+      let liveSkeleton: THREE.Skeleton | null = null;
+
+      if (boneRestDefs && boneRestDefs.length > 0) {
+        liveBones = boneRestDefs.map((def) => {
+          const b = new THREE.Bone();
+          b.name = def.name;
+          return b;
+        });
+        boneRestDefs.forEach((def, idx) => {
+          const b = liveBones![idx];
+          if (def.parent === -1) {
+            b.position.set(def.pos[0], def.pos[1], def.pos[2]);
+          } else {
+            const pDef = boneRestDefs[def.parent];
+            b.position.set(
+              def.pos[0] - pDef.pos[0],
+              def.pos[1] - pDef.pos[1],
+              def.pos[2] - pDef.pos[2]
+            );
+            liveBones![def.parent].add(b);
+          }
+        });
+        sceneInstance.add(liveBones[0]);
+        sceneInstance.updateMatrixWorld(true);
+        liveSkeleton = new THREE.Skeleton(liveBones);
+        loadedRoot.userData.bones = liveBones;
+        loadedRoot.userData.skeleton = liveSkeleton;
+      }
+
+      const rawMeshes: THREE.Mesh[] = [];
       sceneInstance.traverse((obj) => {
         if ((obj as THREE.Mesh).isMesh) {
-          const m = obj as THREE.Mesh;
-          m.material = Array.isArray(m.material)
-            ? m.material[0].clone()
-            : m.material.clone();
-          const pIdx = subIdx++;
-          m.visible = !hiddenSet.has(pIdx);
-          if (pIdx < partSpecs.length) {
-            const [px, py, pz] = partSpecs[pIdx].pivot;
-            m.position.set(px, py, pz);
-            m.rotation.set(0, 0, 0);
-            m.userData.basePivot = [px, py, pz];
-            if (explodeAmt > 0) {
-              m.position.addScaledVector(partSpecs[pIdx].explodeDir, explodeAmt);
-            }
-            if (pose !== "bind" && (pIdx === 2 || pIdx === 3)) {
-              const sign = pIdx === 2 ? -1 : 1;
-              if (pose === "t_pose") m.rotation.z = sign * 0.42;
-              else if (pose === "a_pose") m.rotation.z = sign * 0.22;
-              else if (pose === "battle") {
-                m.rotation.x = -0.55;
-                m.rotation.z = sign * 0.15;
-              }
-            }
-          }
+          rawMeshes.push(obj as THREE.Mesh);
         }
       });
+
+      rawMeshes.forEach((m, pIdx) => {
+        let clonedMat = Array.isArray(m.material)
+          ? m.material[0].clone()
+          : m.material.clone();
+
+        // Wrap native texture map into an editable CanvasTexture for real 3D UV surface brush painting
+        const stdMat = clonedMat as THREE.MeshStandardMaterial;
+        if (stdMat && stdMat.map && stdMat.map.image) {
+          let paintEntry = texCacheRef.current.get(`paint_${currentTask.id}`);
+          if (!paintEntry) {
+            const img = stdMat.map.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap;
+            const w = (img as HTMLImageElement).width || 1024;
+            const h = (img as HTMLImageElement).height || 1024;
+            const c = document.createElement("canvas");
+            c.width = w;
+            c.height = h;
+            const ctx = c.getContext("2d");
+            if (ctx) {
+              try {
+                ctx.drawImage(img as CanvasImageSource, 0, 0, w, h);
+                const backup = document.createElement("canvas");
+                backup.width = w;
+                backup.height = h;
+                backup.getContext("2d")?.drawImage(c, 0, 0);
+                c.dataset.hasBackup = "1";
+                (c as unknown as { _backupCanvas?: HTMLCanvasElement })._backupCanvas = backup;
+              } catch {
+                // cross-origin fallback
+              }
+            }
+            paintEntry = new THREE.CanvasTexture(c);
+            paintEntry.colorSpace = THREE.SRGBColorSpace;
+            paintEntry.flipY = stdMat.map.flipY;
+            paintEntry.needsUpdate = true;
+            texCacheRef.current.set(`paint_${currentTask.id}`, paintEntry);
+          }
+          stdMat.map = paintEntry;
+          stdMat.needsUpdate = true;
+        }
+
+        let targetMesh: THREE.Mesh = m;
+        if (
+          liveSkeleton &&
+          m.geometry &&
+          m.geometry.attributes.skinIndex &&
+          m.geometry.attributes.skinWeight &&
+          m.parent
+        ) {
+          const skinned = new THREE.SkinnedMesh(m.geometry, clonedMat);
+          skinned.name = m.name;
+          skinned.bindMode = THREE.DetachedBindMode;
+          m.parent.add(skinned);
+          m.parent.remove(m);
+          skinned.updateMatrixWorld(true);
+          skinned.bind(liveSkeleton, skinned.matrixWorld);
+          targetMesh = skinned;
+        } else {
+          m.material = clonedMat;
+        }
+
+        targetMesh.visible = !hiddenSet.has(pIdx);
+        targetMesh.position.set(0, 0, 0);
+        targetMesh.rotation.set(0, 0, 0);
+
+        if (pIdx < partSpecs.length && explodeAmt > 0) {
+          targetMesh.position.addScaledVector(
+            partSpecs[pIdx].explodeDir,
+            explodeAmt * invNormScale
+          );
+        }
+      });
+
+      // Apply calibration pose to real THREE.Bone hierarchy if present
+      if (liveBones && liveBones.length >= 10 && pose !== "bind") {
+        const leftArm = liveBones[4];
+        const leftForeArm = liveBones[5];
+        const rightArm = liveBones[6];
+        const rightForeArm = liveBones[7];
+        if (pose === "t_pose") {
+          leftArm.rotation.set(0, 0, -0.46);
+          rightArm.rotation.set(0, 0, 0.46);
+        } else if (pose === "a_pose") {
+          leftArm.rotation.set(0, 0, -0.24);
+          rightArm.rotation.set(0, 0, 0.24);
+        } else if (pose === "battle") {
+          leftArm.rotation.set(-0.48, 0, -0.16);
+          leftForeArm.rotation.set(-0.45, 0, 0);
+          rightArm.rotation.set(-0.56, 0, 0.16);
+          rightForeArm.rotation.set(-0.52, 0, 0);
+        }
+      }
 
       if (studioOverrides?.artStyleMode === "relief") {
         const depth = studioOverrides.reliefDepth ?? 0.65;
@@ -1587,6 +1691,7 @@ export default function Viewport3D({
             box.getCenter(center);
             const maxDim = Math.max(size.x, size.y, size.z, 0.001);
             const normScale = 2.1 / maxDim;
+            gltf.scene.userData.invNormScale = 1 / normScale;
 
             gltf.scene.position.set(
               -center.x * normScale,
@@ -1595,7 +1700,7 @@ export default function Viewport3D({
             );
             gltf.scene.scale.setScalar(normScale);
 
-            // Semantic Auto-Split: Partition single-mesh GLB into 6 anatomical sub-meshes with true joint pivots
+            // Compute True 10-Bone Humanoid Envelope Skinning (JOINTS_0 & WEIGHTS_0) + 6-Part Semantic Segmentation
             if (meshList.length === 1 && meshList[0].geometry?.boundingBox) {
               const srcMesh = meshList[0];
               const srcGeom = srcMesh.geometry;
@@ -1605,6 +1710,94 @@ export default function Viewport3D({
               const spanX = Math.max(bb.max.x - bb.min.x, 0.001);
               const minY = bb.min.y;
               const spanY = Math.max(bb.max.y - bb.min.y, 0.001);
+              const minZ = bb.min.z;
+              const spanZ = Math.max(bb.max.z - bb.min.z, 0.001);
+              const midZ = minZ + spanZ * 0.5;
+
+              const toLocal = (nx: number, ny: number): [number, number, number] => [
+                minX + nx * spanX,
+                minY + ny * spanY,
+                midZ,
+              ];
+
+              // 10-Bone Humanoid Hierarchy (Mixamo / Meshy / Tripo Standard)
+              const boneRestDefs: {
+                name: string;
+                parent: number;
+                pos: [number, number, number];
+                segA: [number, number];
+                segB: [number, number];
+              }[] = [
+                { name: "Hips", parent: -1, pos: toLocal(0.5, 0.43), segA: [0.5, 0.41], segB: [0.5, 0.51] },
+                { name: "Spine", parent: 0, pos: toLocal(0.5, 0.53), segA: [0.5, 0.51], segB: [0.5, 0.61] },
+                { name: "Chest", parent: 1, pos: toLocal(0.5, 0.63), segA: [0.5, 0.61], segB: [0.5, 0.72] },
+                { name: "Head", parent: 2, pos: toLocal(0.5, 0.74), segA: [0.5, 0.73], segB: [0.5, 0.98] },
+                { name: "LeftArm", parent: 2, pos: toLocal(0.34, 0.65), segA: [0.34, 0.65], segB: [0.21, 0.56] },
+                { name: "LeftForeArm", parent: 4, pos: toLocal(0.21, 0.56), segA: [0.21, 0.56], segB: [0.04, 0.44] },
+                { name: "RightArm", parent: 2, pos: toLocal(0.66, 0.65), segA: [0.66, 0.65], segB: [0.79, 0.56] },
+                { name: "RightForeArm", parent: 6, pos: toLocal(0.79, 0.56), segA: [0.79, 0.56], segB: [0.96, 0.44] },
+                { name: "LeftUpLeg", parent: 0, pos: toLocal(0.41, 0.41), segA: [0.41, 0.41], segB: [0.38, 0.05] },
+                { name: "RightUpLeg", parent: 0, pos: toLocal(0.59, 0.41), segA: [0.59, 0.41], segB: [0.62, 0.05] },
+              ];
+              gltf.scene.userData.boneRestDefs = boneRestDefs;
+
+              const distToSegment2D = (
+                px: number,
+                py: number,
+                ax: number,
+                ay: number,
+                bx: number,
+                by: number
+              ) => {
+                const dx = bx - ax;
+                const dy = by - ay;
+                const lenSq = dx * dx + dy * dy;
+                let t = lenSq > 1e-6 ? ((px - ax) * dx + (py - ay) * dy) / lenSq : 0;
+                t = Math.max(0, Math.min(1, t));
+                return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+              };
+
+              const vCount = posAttr.count;
+              const skinIndices = new Uint16Array(vCount * 4);
+              const skinWeights = new Float32Array(vCount * 4);
+
+              for (let vi = 0; vi < vCount; vi++) {
+                const nx = (posAttr.getX(vi) - minX) / spanX;
+                const ny = (posAttr.getY(vi) - minY) / spanY;
+
+                const candidates: { b: number; w: number }[] = [];
+                for (let b = 0; b < boneRestDefs.length; b++) {
+                  // Anatomical region gating to prevent cross-limb pulling
+                  if ((b === 4 || b === 5) && (nx > 0.46 || ny < 0.32)) continue;
+                  if ((b === 6 || b === 7) && (nx < 0.54 || ny < 0.32)) continue;
+                  if (b === 8 && (nx > 0.53 || ny > 0.52)) continue;
+                  if (b === 9 && (nx < 0.47 || ny > 0.52)) continue;
+                  if (b === 3 && (ny < 0.65 || nx < 0.25 || nx > 0.75)) continue;
+
+                  const [ax, ay] = boneRestDefs[b].segA;
+                  const [bx, by] = boneRestDefs[b].segB;
+                  const d = distToSegment2D(nx, ny, ax, ay, bx, by);
+                  const w = 1 / Math.pow(d + 0.055, 3.8);
+                  candidates.push({ b, w });
+                }
+
+                candidates.sort((a, b) => b.w - a.w);
+                const top4 = candidates.slice(0, 4);
+                while (top4.length < 4) {
+                  top4.push({ b: 0, w: 0 });
+                }
+                const sumW =
+                  top4[0].w + top4[1].w + top4[2].w + top4[3].w || 1;
+
+                const base = vi * 4;
+                for (let k = 0; k < 4; k++) {
+                  skinIndices[base + k] = top4[k].b;
+                  skinWeights[base + k] = top4[k].w / sumW;
+                }
+              }
+
+              const skinIndexAttr = new THREE.Uint16BufferAttribute(skinIndices, 4);
+              const skinWeightAttr = new THREE.Float32BufferAttribute(skinWeights, 4);
 
               const buckets: number[][] = [[], [], [], [], [], []];
               const idxAttr = srcGeom.index;
@@ -1634,14 +1827,7 @@ export default function Viewport3D({
               buckets.forEach((indices, pIdx) => {
                 if (indices.length === 0) return;
                 const subGeom = new THREE.BufferGeometry();
-                const [px, py, pz] = partSpecs[pIdx].pivot;
-                const shiftedPos = new Float32Array(posAttr.count * 3);
-                for (let vi = 0; vi < posAttr.count; vi++) {
-                  shiftedPos[vi * 3] = posAttr.getX(vi) - px;
-                  shiftedPos[vi * 3 + 1] = posAttr.getY(vi) - py;
-                  shiftedPos[vi * 3 + 2] = posAttr.getZ(vi) - pz;
-                }
-                subGeom.setAttribute("position", new THREE.BufferAttribute(shiftedPos, 3));
+                subGeom.setAttribute("position", posAttr);
                 if (srcGeom.attributes.normal) {
                   subGeom.setAttribute("normal", srcGeom.attributes.normal);
                 }
@@ -1651,6 +1837,8 @@ export default function Viewport3D({
                 if (srcGeom.attributes.color) {
                   subGeom.setAttribute("color", srcGeom.attributes.color);
                 }
+                subGeom.setAttribute("skinIndex", skinIndexAttr);
+                subGeom.setAttribute("skinWeight", skinWeightAttr);
                 subGeom.setIndex(indices);
 
                 const subMat = Array.isArray(srcMesh.material)
@@ -1658,8 +1846,7 @@ export default function Viewport3D({
                   : srcMesh.material.clone();
                 const subMesh = new THREE.Mesh(subGeom, subMat);
                 subMesh.name = partSpecs[pIdx].name;
-                subMesh.position.set(px, py, pz);
-                subMesh.userData.basePivot = [px, py, pz];
+                subMesh.position.set(0, 0, 0);
                 parentNode.add(subMesh);
               });
               parentNode.remove(srcMesh);
@@ -1705,16 +1892,16 @@ export default function Viewport3D({
             [0, 0.48, -0.95], // 8: Tail
           ]
         : [
-            [0, -0.18, 0], // 0: Hips
-            [0, 0.2, 0], // 1: Spine
-            [0, 0.52, 0], // 2: Chest
-            [0, 0.88, 0], // 3: Head
-            [-0.45, 0.48, 0], // 4: L Shoulder
-            [0.45, 0.48, 0], // 5: R Shoulder
-            [-0.72, 0.08, 0], // 6: L Wrist
-            [0.72, 0.08, 0], // 7: R Wrist
-            [-0.25, -0.78, 0], // 8: L Ankle
-            [0.25, -0.78, 0], // 9: R Ankle
+            [0, -0.1, 0], // 0: Hips
+            [0, 0.16, 0], // 1: Spine
+            [0, 0.44, 0], // 2: Chest
+            [0, 0.72, 0], // 3: Head
+            [-0.28, 0.45, 0], // 4: L Shoulder
+            [-0.58, 0.18, 0], // 5: L ForeArm / Wrist
+            [0.28, 0.45, 0], // 6: R Shoulder
+            [0.58, 0.18, 0], // 7: R ForeArm / Wrist
+            [-0.18, -0.68, 0], // 8: L Leg
+            [0.18, -0.68, 0], // 9: R Leg
           ];
 
     const bonePairs: [number, number][] =
@@ -1734,30 +1921,35 @@ export default function Viewport3D({
             [1, 2],
             [2, 3],
             [2, 4],
-            [4, 6],
-            [2, 5],
-            [5, 7],
+            [4, 5],
+            [2, 6],
+            [6, 7],
             [0, 8],
             [0, 9],
           ];
 
+    const visualJointMeshes: THREE.Mesh[] = [];
     for (const [jx, jy, jz] of jointNodes) {
-      const joint = new THREE.Mesh(new THREE.OctahedronGeometry(0.085, 0), boneMat);
+      const joint = new THREE.Mesh(new THREE.OctahedronGeometry(0.075, 0), boneMat);
       joint.position.set(jx, jy, jz);
       rigGroup.add(joint);
+      visualJointMeshes.push(joint);
     }
 
     const upVec = new THREE.Vector3(0, 1, 0);
+    const visualLinkMeshes: { cyl: THREE.Mesh; aIdx: number; bIdx: number }[] = [];
     for (const [aIdx, bIdx] of bonePairs) {
       const pA = new THREE.Vector3(...jointNodes[aIdx]);
       const pB = new THREE.Vector3(...jointNodes[bIdx]);
-      const dist = pA.distanceTo(pB);
+      const dist = Math.max(0.01, pA.distanceTo(pB));
       const mid = pA.clone().add(pB).multiplyScalar(0.5);
       const dir = pB.clone().sub(pA).normalize();
-      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.032, dist, 6), linkMat);
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.032, 1, 6), linkMat);
+      cyl.scale.set(1, dist, 1);
       cyl.position.copy(mid);
       cyl.quaternion.setFromUnitVectors(upVec, dir);
       rigGroup.add(cyl);
+      visualLinkMeshes.push({ cyl, aIdx, bIdx });
     }
 
     const markerMeshes: THREE.Mesh[] = [];
@@ -1792,6 +1984,7 @@ export default function Viewport3D({
 
     let frameId = 0;
     const clock = new THREE.Clock();
+    const tmpWorldPos = new THREE.Vector3();
 
     const animate = () => {
       frameId = requestAnimationFrame(animate);
@@ -1808,102 +2001,138 @@ export default function Viewport3D({
         meshGroupRef.current.rotation.x = 0;
         meshGroupRef.current.rotation.z = 0;
 
-        const head = meshGroupRef.current.getObjectByName("Part_01_Head_Hood");
-        const leftArm = meshGroupRef.current.getObjectByName("Part_03_Left_Arm");
-        const rightArm = meshGroupRef.current.getObjectByName("Part_04_Right_Arm_Weapon");
-        const leftLeg =
-          meshGroupRef.current.getObjectByName("Part_05_Left_Leg") ||
-          meshGroupRef.current.getObjectByName("Part_05_Legs_Boots");
-        const rightLeg = meshGroupRef.current.getObjectByName("Part_06_Right_Leg");
+        const bones = meshGroupRef.current.userData.bones as THREE.Bone[] | undefined;
+        const baseArmZ = pose === "t_pose" ? 0.46 : pose === "a_pose" ? 0.24 : 0;
+        const baseArmX = pose === "battle" ? -0.5 : 0;
+        const baseForeArmX = pose === "battle" ? -0.48 : 0;
 
-        // Reset limb rotations to calibration pose before applying motion clip
-        const baseArmZ = pose === "t_pose" ? 0.42 : pose === "a_pose" ? 0.22 : 0;
-        const baseArmX = pose === "battle" ? -0.55 : 0;
-        if (leftArm) {
-          leftArm.rotation.set(baseArmX, 0, -baseArmZ);
-        }
-        if (rightArm) {
-          rightArm.rotation.set(baseArmX, 0, baseArmZ);
-        }
-        if (leftLeg) leftLeg.rotation.set(0, 0, 0);
-        if (rightLeg) rightLeg.rotation.set(0, 0, 0);
-        if (head) head.rotation.set(0, 0, 0);
+        if (bones && bones.length >= 10) {
+          // True THREE.SkinnedMesh Bone Hierarchy Animation
+          const [, bSpine, bChest, bHead, bLArm, bLForeArm, bRArm, bRForeArm, bLLeg, bRLeg] =
+            bones;
+          bSpine.rotation.set(0, 0, 0);
+          bChest.rotation.set(0, 0, 0);
+          bHead.rotation.set(0, 0, 0);
+          bLArm.rotation.set(baseArmX, 0, -baseArmZ);
+          bLForeArm.rotation.set(baseForeArmX, 0, 0);
+          bRArm.rotation.set(baseArmX, 0, baseArmZ);
+          bRForeArm.rotation.set(baseForeArmX, 0, 0);
+          bLLeg.rotation.set(0, 0, 0);
+          bRLeg.rotation.set(0, 0, 0);
 
-        if (clip === "idle") {
-          meshGroupRef.current.position.y = Math.sin(t * 2.5) * 0.06;
-          if (head) head.rotation.y = Math.sin(t * 1.5) * 0.12;
-          if (leftArm) leftArm.rotation.z = -baseArmZ - Math.sin(t * 2.5) * 0.05;
-          if (rightArm) rightArm.rotation.z = baseArmZ + Math.sin(t * 2.5) * 0.05;
-        } else if (clip === "walk") {
-          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 5)) * 0.11;
-          meshGroupRef.current.rotation.z = Math.sin(t * 5) * 0.05;
-          meshGroupRef.current.rotation.x = 0.06;
-          if (leftArm) leftArm.rotation.x = Math.sin(t * 5) * 0.35;
-          if (rightArm) rightArm.rotation.x = -Math.sin(t * 5) * 0.35;
-          if (leftLeg) leftLeg.rotation.x = -Math.sin(t * 5) * 0.38;
-          if (rightLeg) rightLeg.rotation.x = Math.sin(t * 5) * 0.38;
-          if (head) head.rotation.y = Math.sin(t * 2.5) * 0.08;
-          if (!inPlace) {
-            meshGroupRef.current.position.z = ((t * 1.2) % 4) - 2;
+          if (clip === "idle") {
+            meshGroupRef.current.position.y = Math.sin(t * 2.5) * 0.05;
+            bSpine.rotation.x = Math.sin(t * 2.5) * 0.04;
+            bHead.rotation.y = Math.sin(t * 1.5) * 0.14;
+            bLArm.rotation.z = -baseArmZ - Math.sin(t * 2.5) * 0.06;
+            bRArm.rotation.z = baseArmZ + Math.sin(t * 2.5) * 0.06;
+          } else if (clip === "walk") {
+            meshGroupRef.current.position.y = Math.abs(Math.sin(t * 5)) * 0.1;
+            bSpine.rotation.y = Math.sin(t * 5) * 0.12;
+            bChest.rotation.x = 0.06;
+            bLArm.rotation.x = Math.sin(t * 5) * 0.42;
+            bLForeArm.rotation.x = -0.25 - Math.max(0, Math.sin(t * 5)) * 0.25;
+            bRArm.rotation.x = -Math.sin(t * 5) * 0.42;
+            bRForeArm.rotation.x = -0.25 - Math.max(0, -Math.sin(t * 5)) * 0.25;
+            bLLeg.rotation.x = -Math.sin(t * 5) * 0.42;
+            bRLeg.rotation.x = Math.sin(t * 5) * 0.42;
+            bHead.rotation.y = -Math.sin(t * 5) * 0.08;
+            if (!inPlace) {
+              meshGroupRef.current.position.z = ((t * 1.2) % 4) - 2;
+            }
+          } else if (clip === "run") {
+            meshGroupRef.current.position.y = Math.abs(Math.sin(t * 9)) * 0.18;
+            bSpine.rotation.x = 0.16;
+            bChest.rotation.y = Math.sin(t * 9) * 0.18;
+            bLArm.rotation.x = Math.sin(t * 9) * 0.65;
+            bLForeArm.rotation.x = -0.58;
+            bRArm.rotation.x = -Math.sin(t * 9) * 0.65;
+            bRForeArm.rotation.x = -0.58;
+            bLLeg.rotation.x = -Math.sin(t * 9) * 0.62;
+            bRLeg.rotation.x = Math.sin(t * 9) * 0.62;
+            if (!inPlace) {
+              meshGroupRef.current.position.z = ((t * 2.6) % 5) - 2.5;
+            }
+          } else if (clip === "crouch") {
+            meshGroupRef.current.position.y = -0.2 + Math.abs(Math.sin(t * 3.5)) * 0.05;
+            bSpine.rotation.x = 0.28;
+            bLLeg.rotation.x = -0.42;
+            bRLeg.rotation.x = -0.42;
+            bLArm.rotation.x = -0.35;
+            bLForeArm.rotation.x = -0.45;
+            bRArm.rotation.x = -0.35;
+            bRForeArm.rotation.x = -0.45;
+          } else if (clip === "jump") {
+            const jumpPhase = Math.max(0, Math.sin(t * 4));
+            meshGroupRef.current.position.y = jumpPhase * 0.62;
+            bLArm.rotation.z = -0.52 * jumpPhase;
+            bRArm.rotation.z = 0.52 * jumpPhase;
+            bLLeg.rotation.x = -0.35 * jumpPhase;
+            bRLeg.rotation.x = 0.28 * jumpPhase;
+          } else if (clip === "attack") {
+            meshGroupRef.current.rotation.y = baseRotY + Math.sin(t * 6) * 0.42;
+            meshGroupRef.current.position.y = Math.abs(Math.sin(t * 6)) * 0.09;
+            bChest.rotation.y = Math.sin(t * 8) * 0.28;
+            bRArm.rotation.x = -0.5 + Math.sin(t * 8) * 0.72;
+            bRForeArm.rotation.x = -0.35 + Math.cos(t * 8) * 0.35;
+            bLArm.rotation.x = -0.25 - Math.sin(t * 8) * 0.32;
+            bLLeg.rotation.x = -0.24;
+            bRLeg.rotation.x = 0.24;
+          } else if (clip === "boxing") {
+            meshGroupRef.current.position.z = Math.sin(t * 8) * 0.12;
+            bChest.rotation.y = Math.sin(t * 8) * 0.32;
+            bLArm.rotation.x = -0.55 + Math.sin(t * 10) * 0.52;
+            bLForeArm.rotation.x = -0.6 + Math.sin(t * 10) * 0.4;
+            bRArm.rotation.x = -0.55 - Math.sin(t * 10) * 0.52;
+            bRForeArm.rotation.x = -0.6 - Math.sin(t * 10) * 0.4;
+          } else if (clip === "dance") {
+            meshGroupRef.current.position.y = Math.abs(Math.sin(t * 6)) * 0.16;
+            meshGroupRef.current.position.x = Math.sin(t * 3) * 0.18;
+            bSpine.rotation.z = Math.sin(t * 6) * 0.16;
+            bLArm.rotation.z = -0.38 + Math.sin(t * 6) * 0.38;
+            bLForeArm.rotation.z = Math.cos(t * 6) * 0.35;
+            bRArm.rotation.z = 0.38 + Math.cos(t * 6) * 0.38;
+            bRForeArm.rotation.z = -Math.sin(t * 6) * 0.35;
+            bLLeg.rotation.z = Math.sin(t * 6) * 0.22;
+            bRLeg.rotation.z = -Math.sin(t * 6) * 0.22;
+            bHead.rotation.z = -Math.sin(t * 6) * 0.16;
+          } else if (clip === "climb") {
+            meshGroupRef.current.position.y = ((t * 0.6) % 1.4) - 0.3;
+            bLArm.rotation.x = -0.65 + Math.sin(t * 6) * 0.42;
+            bRArm.rotation.x = -0.65 - Math.sin(t * 6) * 0.42;
+            bLLeg.rotation.x = -Math.sin(t * 6) * 0.38;
+            bRLeg.rotation.x = Math.sin(t * 6) * 0.38;
+          } else if (clip === "quad_gallop") {
+            meshGroupRef.current.position.y = Math.abs(Math.sin(t * 7)) * 0.22;
+            meshGroupRef.current.rotation.x = Math.cos(t * 7) * 0.22;
+            if (!inPlace) {
+              meshGroupRef.current.position.z = ((t * 2.2) % 4) - 2;
+            }
           }
-        } else if (clip === "run") {
-          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 9)) * 0.2;
-          meshGroupRef.current.rotation.z = Math.sin(t * 9) * 0.1;
-          meshGroupRef.current.rotation.x = 0.18;
-          if (leftArm) leftArm.rotation.x = Math.sin(t * 9) * 0.55;
-          if (rightArm) rightArm.rotation.x = -Math.sin(t * 9) * 0.55;
-          if (leftLeg) leftLeg.rotation.x = -Math.sin(t * 9) * 0.58;
-          if (rightLeg) rightLeg.rotation.x = Math.sin(t * 9) * 0.58;
-          if (!inPlace) {
-            meshGroupRef.current.position.z = ((t * 2.6) % 5) - 2.5;
-          }
-        } else if (clip === "crouch") {
-          meshGroupRef.current.position.y = -0.22 + Math.abs(Math.sin(t * 3.5)) * 0.06;
-          meshGroupRef.current.rotation.x = 0.25;
-          if (leftLeg) leftLeg.rotation.x = -0.35;
-          if (rightLeg) rightLeg.rotation.x = -0.35;
-          if (leftArm) leftArm.rotation.x = -0.3;
-          if (rightArm) rightArm.rotation.x = -0.3;
-        } else if (clip === "jump") {
-          const jumpPhase = Math.max(0, Math.sin(t * 4));
-          meshGroupRef.current.position.y = jumpPhase * 0.62;
-          if (leftArm) leftArm.rotation.z = -0.45 * jumpPhase;
-          if (rightArm) rightArm.rotation.z = 0.45 * jumpPhase;
-          if (leftLeg) leftLeg.rotation.x = -0.3 * jumpPhase;
-          if (rightLeg) rightLeg.rotation.x = 0.25 * jumpPhase;
-        } else if (clip === "attack") {
-          meshGroupRef.current.rotation.y = baseRotY + Math.sin(t * 6) * 0.45;
-          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 6)) * 0.1;
-          if (rightArm) rightArm.rotation.x = -0.45 + Math.sin(t * 8) * 0.65;
-          if (leftArm) leftArm.rotation.x = -0.2 - Math.sin(t * 8) * 0.3;
-          if (leftLeg) leftLeg.rotation.x = -0.2;
-          if (rightLeg) rightLeg.rotation.x = 0.2;
-        } else if (clip === "boxing") {
-          meshGroupRef.current.position.z = Math.sin(t * 8) * 0.14;
-          meshGroupRef.current.rotation.y = baseRotY + Math.sin(t * 8) * 0.28;
-          meshGroupRef.current.position.y = Math.abs(Math.cos(t * 8)) * 0.08;
-          if (leftArm) leftArm.rotation.x = -0.5 + Math.sin(t * 10) * 0.45;
-          if (rightArm) rightArm.rotation.x = -0.5 - Math.sin(t * 10) * 0.45;
-        } else if (clip === "dance") {
-          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 6)) * 0.18;
-          meshGroupRef.current.position.x = Math.sin(t * 3) * 0.2;
-          meshGroupRef.current.rotation.z = Math.sin(t * 6) * 0.14;
-          if (leftArm) leftArm.rotation.z = -0.35 + Math.sin(t * 6) * 0.35;
-          if (rightArm) rightArm.rotation.z = 0.35 + Math.cos(t * 6) * 0.35;
-          if (leftLeg) leftLeg.rotation.z = Math.sin(t * 6) * 0.2;
-          if (rightLeg) rightLeg.rotation.z = -Math.sin(t * 6) * 0.2;
-          if (head) head.rotation.z = -Math.sin(t * 6) * 0.15;
-        } else if (clip === "climb") {
-          meshGroupRef.current.position.y = ((t * 0.6) % 1.4) - 0.3;
-          if (leftArm) leftArm.rotation.x = -0.6 + Math.sin(t * 6) * 0.4;
-          if (rightArm) rightArm.rotation.x = -0.6 - Math.sin(t * 6) * 0.4;
-          if (leftLeg) leftLeg.rotation.x = -Math.sin(t * 6) * 0.35;
-          if (rightLeg) rightLeg.rotation.x = Math.sin(t * 6) * 0.35;
-        } else if (clip === "quad_gallop") {
-          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 7)) * 0.22;
-          meshGroupRef.current.rotation.x = Math.cos(t * 7) * 0.22;
-          if (!inPlace) {
-            meshGroupRef.current.position.z = ((t * 2.2) % 4) - 2;
+        } else {
+          // Procedural fallback part animation
+          const head = meshGroupRef.current.getObjectByName("Part_01_Head_Hood");
+          const leftArm = meshGroupRef.current.getObjectByName("Part_03_Left_Arm");
+          const rightArm = meshGroupRef.current.getObjectByName("Part_04_Right_Arm_Weapon");
+          const leftLeg =
+            meshGroupRef.current.getObjectByName("Part_05_Left_Leg") ||
+            meshGroupRef.current.getObjectByName("Part_05_Legs_Boots");
+          const rightLeg = meshGroupRef.current.getObjectByName("Part_06_Right_Leg");
+
+          if (leftArm) leftArm.rotation.set(baseArmX, 0, -baseArmZ);
+          if (rightArm) rightArm.rotation.set(baseArmX, 0, baseArmZ);
+          if (leftLeg) leftLeg.rotation.set(0, 0, 0);
+          if (rightLeg) rightLeg.rotation.set(0, 0, 0);
+          if (head) head.rotation.set(0, 0, 0);
+
+          if (clip === "walk" || clip === "run") {
+            const freq = clip === "run" ? 9 : 5;
+            const amp = clip === "run" ? 0.55 : 0.35;
+            meshGroupRef.current.position.y = Math.abs(Math.sin(t * freq)) * 0.14;
+            if (leftArm) leftArm.rotation.x = Math.sin(t * freq) * amp;
+            if (rightArm) rightArm.rotation.x = -Math.sin(t * freq) * amp;
+            if (leftLeg) leftLeg.rotation.x = -Math.sin(t * freq) * amp;
+            if (rightLeg) rightLeg.rotation.x = Math.sin(t * freq) * amp;
           }
         }
 
@@ -1914,11 +2143,36 @@ export default function Viewport3D({
             meshGroupRef.current.rotation.y = baseRotY;
           }
         }
-      }
 
-      if (rigHelperRef.current && rigHelperRef.current.visible && meshGroupRef.current) {
-        rigHelperRef.current.rotation.copy(meshGroupRef.current.rotation);
-        rigHelperRef.current.position.copy(meshGroupRef.current.position);
+        // Sync visual skeleton helper bones to live THREE.Bone world positions!
+        if (
+          rigHelperRef.current &&
+          rigHelperRef.current.visible &&
+          bones &&
+          bones.length === visualJointMeshes.length
+        ) {
+          meshGroupRef.current.updateMatrixWorld(true);
+          rigHelperRef.current.position.set(0, 0, 0);
+          rigHelperRef.current.rotation.set(0, 0, 0);
+          for (let i = 0; i < bones.length; i++) {
+            bones[i].getWorldPosition(tmpWorldPos);
+            visualJointMeshes[i].position.copy(tmpWorldPos);
+          }
+          for (const { cyl, aIdx, bIdx } of visualLinkMeshes) {
+            const pA = visualJointMeshes[aIdx].position;
+            const pB = visualJointMeshes[bIdx].position;
+            const dist = Math.max(0.01, pA.distanceTo(pB));
+            cyl.position.copy(pA).add(pB).multiplyScalar(0.5);
+            cyl.scale.set(1, dist, 1);
+            cyl.quaternion.setFromUnitVectors(
+              upVec,
+              tmpWorldPos.copy(pB).sub(pA).normalize()
+            );
+          }
+        } else if (rigHelperRef.current && rigHelperRef.current.visible) {
+          rigHelperRef.current.rotation.copy(meshGroupRef.current.rotation);
+          rigHelperRef.current.position.copy(meshGroupRef.current.position);
+        }
       }
 
       controls.update();
@@ -1926,44 +2180,120 @@ export default function Viewport3D({
     };
     animate();
 
-    // 3D Raycaster: Drag 6-Point Rig Markers OR Click on 3D Mesh to Select Part / Place 3D Decal
+    // 3D Raycaster: Drag 6-Point Rig Markers, Paint on 3D UV Texture Canvas, or Click Part / Place 3D Decal
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
     const dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const dragIntersect = new THREE.Vector3();
     let draggingMarker: THREE.Mesh | null = null;
+    let isBrushPainting = false;
     let downX = 0;
     let downY = 0;
+
+    const applyUvCanvasBrushAtHit = (hit: THREE.Intersection) => {
+      if (!hit.uv) return false;
+      const paintTex = texCacheRef.current.get(`paint_${currentTask.id}`);
+      if (!paintTex || !paintTex.image) return false;
+      const c = paintTex.image as HTMLCanvasElement;
+      const ctx = c.getContext("2d");
+      if (!ctx) return false;
+
+      const bTool = studioOverrides?.activeBrushTool;
+      const u = hit.uv.x;
+      const v = paintTex.flipY ? 1 - hit.uv.y : hit.uv.y;
+      const cx = u * c.width;
+      const cy = v * c.height;
+      const radius = Math.max(14, Math.round(c.width * 0.032));
+
+      if (bTool === "paint" || bTool === "lasso") {
+        const brushHex =
+          studioOverrides?.material.primaryColor &&
+          studioOverrides.material.primaryColor.toLowerCase() !== "#d6d3d1"
+            ? studioOverrides.material.primaryColor
+            : "#ef4444";
+        const grad = ctx.createRadialGradient(cx, cy, radius * 0.15, cx, cy, radius);
+        grad.addColorStop(0, brushHex);
+        grad.addColorStop(1, "rgba(239,68,68,0)");
+        ctx.save();
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        paintTex.needsUpdate = true;
+        return true;
+      } else if (bTool === "eraser" || bTool === "healing") {
+        const backup = (c as unknown as { _backupCanvas?: HTMLCanvasElement })._backupCanvas;
+        if (backup) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius * 1.2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(backup, 0, 0);
+          ctx.restore();
+          paintTex.needsUpdate = true;
+          return true;
+        }
+      }
+      return false;
+    };
 
     const onPointerDown = (e: PointerEvent) => {
       downX = e.clientX;
       downY = e.clientY;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
       if (markerMeshes.length > 0 && rigGroup.visible) {
-        const rect = renderer.domElement.getBoundingClientRect();
-        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-        raycaster.setFromCamera(pointer, camera);
         const hits = raycaster.intersectObjects(markerMeshes, false);
         if (hits.length > 0) {
           draggingMarker = hits[0].object as THREE.Mesh;
+          controls.enabled = false;
+          return;
+        }
+      }
+
+      const bTool = studioOverrides?.activeBrushTool;
+      if (
+        (bTool === "paint" || bTool === "eraser" || bTool === "healing") &&
+        meshGroupRef.current
+      ) {
+        const meshHits = raycaster.intersectObjects(meshGroupRef.current.children, true);
+        if (meshHits.length > 0 && applyUvCanvasBrushAtHit(meshHits[0])) {
+          isBrushPainting = true;
           controls.enabled = false;
         }
       }
     };
 
     const onPointerMove = (e: PointerEvent) => {
-      if (!draggingMarker) return;
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-      if (raycaster.ray.intersectPlane(dragPlane, dragIntersect)) {
-        draggingMarker.position.x = Math.max(-1.1, Math.min(1.1, dragIntersect.x));
-        draggingMarker.position.y = Math.max(-1.0, Math.min(1.2, dragIntersect.y));
-        const mirrorIdx = draggingMarker.userData.mirrorIdx;
-        if (typeof mirrorIdx === "number" && markerMeshes[mirrorIdx]) {
-          markerMeshes[mirrorIdx].position.x = -draggingMarker.position.x;
-          markerMeshes[mirrorIdx].position.y = draggingMarker.position.y;
+      if (draggingMarker) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        if (raycaster.ray.intersectPlane(dragPlane, dragIntersect)) {
+          draggingMarker.position.x = Math.max(-1.1, Math.min(1.1, dragIntersect.x));
+          draggingMarker.position.y = Math.max(-1.0, Math.min(1.2, dragIntersect.y));
+          const mirrorIdx = draggingMarker.userData.mirrorIdx;
+          if (typeof mirrorIdx === "number" && markerMeshes[mirrorIdx]) {
+            markerMeshes[mirrorIdx].position.x = -draggingMarker.position.x;
+            markerMeshes[mirrorIdx].position.y = draggingMarker.position.y;
+          }
+        }
+        return;
+      }
+
+      if (isBrushPainting && meshGroupRef.current) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const meshHits = raycaster.intersectObjects(meshGroupRef.current.children, true);
+        if (meshHits.length > 0) {
+          applyUvCanvasBrushAtHit(meshHits[0]);
         }
       }
     };
@@ -1973,6 +2303,10 @@ export default function Viewport3D({
         draggingMarker = null;
         controls.enabled = true;
         return;
+      }
+      if (isBrushPainting) {
+        isBrushPainting = false;
+        controls.enabled = true;
       }
       const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
       if (dist > 6 || !meshGroupRef.current) return;
@@ -2003,18 +2337,21 @@ export default function Viewport3D({
             setSelectedPart({ index: partIndex, name: partName });
             const bTool = studioOverrides?.activeBrushTool;
             if (bTool === "paint" || bTool === "lasso") {
-              const brushHex =
-                studioOverrides?.material.primaryColor &&
-                studioOverrides.material.primaryColor.toLowerCase() !== "#d6d3d1"
-                  ? studioOverrides.material.primaryColor
-                  : "#ef4444";
-              partPaintMapRef.current[partIndex] = brushHex;
-              const mat = hitMesh.material as THREE.MeshStandardMaterial;
-              if (mat && mat.color) {
-                mat.color.set(brushHex);
-                mat.needsUpdate = true;
+              if (!applyUvCanvasBrushAtHit(hit)) {
+                const brushHex =
+                  studioOverrides?.material.primaryColor &&
+                  studioOverrides.material.primaryColor.toLowerCase() !== "#d6d3d1"
+                    ? studioOverrides.material.primaryColor
+                    : "#ef4444";
+                partPaintMapRef.current[partIndex] = brushHex;
+                const mat = hitMesh.material as THREE.MeshStandardMaterial;
+                if (mat && mat.color) {
+                  mat.color.set(brushHex);
+                  mat.needsUpdate = true;
+                }
               }
             } else if (bTool === "eraser" || bTool === "healing") {
+              applyUvCanvasBrushAtHit(hit);
               delete partPaintMapRef.current[partIndex];
               const mat = hitMesh.material as THREE.MeshStandardMaterial;
               if (mat && mat.color) {
@@ -2025,7 +2362,11 @@ export default function Viewport3D({
           }
 
           // If Decal Sticker is enabled, snap the 3D Decal Emblem to the clicked surface point!
-          if (studioOverrides?.decalEnabled || studioOverrides?.activeBrushTool === "decal" || studioOverrides?.activeBrushTool === "stamp") {
+          if (
+            studioOverrides?.decalEnabled ||
+            studioOverrides?.activeBrushTool === "decal" ||
+            studioOverrides?.activeBrushTool === "stamp"
+          ) {
             const decalMesh = meshGroupRef.current.getObjectByName(
               "Part_Decal_Projected_Emblem"
             );
@@ -2190,10 +2531,93 @@ export default function Viewport3D({
     }
   };
 
+  const handleExportUvLayoutPng = () => {
+    const targetGroup = meshGroupRef.current;
+    if (!targetGroup) return;
+    const W = 1024;
+    const H = 1024;
+    const c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
+
+    ctx.fillStyle = "#0b090d";
+    ctx.fillRect(0, 0, W, H);
+
+    // Draw UDIM 0..1 Grid
+    ctx.strokeStyle = "rgba(244,63,94,0.18)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 8; i++) {
+      const p = (i / 8) * W;
+      ctx.beginPath();
+      ctx.moveTo(p, 0);
+      ctx.lineTo(p, H);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, p);
+      ctx.lineTo(W, p);
+      ctx.stroke();
+    }
+
+    // Draw actual UV island triangles from meshGroupRef
+    let partIdx = 0;
+    targetGroup.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh && obj.visible) {
+        const m = obj as THREE.Mesh;
+        const uvAttr = m.geometry?.attributes?.uv;
+        if (!uvAttr) return;
+        const idxAttr = m.geometry.index;
+        const triCount = idxAttr
+          ? Math.floor(idxAttr.count / 3)
+          : Math.floor(uvAttr.count / 3);
+        const stride = Math.max(1, Math.floor(triCount / 2200));
+        const strokeColor = SEGMENT_PALETTE[partIdx % SEGMENT_PALETTE.length];
+        partIdx++;
+
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 0.85;
+        ctx.beginPath();
+        for (let t = 0; t < triCount; t += stride) {
+          const i0 = idxAttr ? idxAttr.getX(t * 3) : t * 3;
+          const i1 = idxAttr ? idxAttr.getX(t * 3 + 1) : t * 3 + 1;
+          const i2 = idxAttr ? idxAttr.getX(t * 3 + 2) : t * 3 + 2;
+          const x0 = uvAttr.getX(i0) * W;
+          const y0 = (1 - uvAttr.getY(i0)) * H;
+          const x1 = uvAttr.getX(i1) * W;
+          const y1 = (1 - uvAttr.getY(i1)) * H;
+          const x2 = uvAttr.getX(i2) * W;
+          const y2 = (1 - uvAttr.getY(i2)) * H;
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.closePath();
+        }
+        ctx.stroke();
+      }
+    });
+
+    c.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `uv-layout-${activeTask?.id || "model"}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 20000);
+    }, "image/png");
+  };
+
   useEffect(() => {
     const onCustomExport = (e: Event) => {
-      const ce = e as CustomEvent<{ format?: "glb" | "obj" | "stl" }>;
-      handleExportFile(ce.detail?.format || "stl");
+      const ce = e as CustomEvent<{ format?: "glb" | "obj" | "stl" | "uv_png" }>;
+      if (ce.detail?.format === "uv_png") {
+        handleExportUvLayoutPng();
+      } else {
+        handleExportFile(ce.detail?.format || "stl");
+      }
     };
     window.addEventListener("prism3d-export", onCustomExport);
     return () => window.removeEventListener("prism3d-export", onCustomExport);
