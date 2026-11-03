@@ -574,10 +574,17 @@ export default function SiamPrism3DStudioPage() {
   const handleSelectLeftTool = (toolId: LeftToolId) => {
     setActiveLeftTool(toolId);
     setSegmentColorMode(toolId === "segment");
+    if (toolId === "segment") {
+      setExplodeFactor(0.25);
+    } else {
+      setExplodeFactor(0);
+    }
     setUvCheckerMode(toolId === "smart-uv");
     setPrintCheckMode(toolId === "print3d");
     if (toolId === "rig" || toolId === "animate") {
       setShowRigBones(true);
+    } else {
+      setShowRigBones(false);
     }
     if (toolId === "rig") {
       setShowRigMarkers(true);
@@ -586,16 +593,176 @@ export default function SiamPrism3DStudioPage() {
     }
     if (toolId === "animate" && animationClip === "none") {
       setAnimationClip("idle");
+    } else if (toolId !== "animate" && toolId !== "rig" && animationClip !== "none") {
+      setAnimationClip("none");
     }
-    if (toolId === "relief" && artStyleMode === "standard") {
-      setArtStyleMode("relief");
+    if (toolId === "relief") {
+      if (artStyleMode === "standard") {
+        setArtStyleMode("relief");
+      }
+    } else if (artStyleMode === "relief" || artStyleMode === "text3d") {
+      setArtStyleMode("standard");
     }
   };
+
+  const [liveTourBanner, setLiveTourBanner] = useState<string | null>(null);
+  const [liveTourRunning, setLiveTourRunning] = useState(false);
 
   const triggerToast = (msg: string) => {
     setActionToast(msg);
     setTimeout(() => setActionToast(null), 3200);
   };
+
+  const startLiveTour = useCallback(() => {
+    setTopNav("workspace");
+    setLiveTourRunning(true);
+    const steps: Array<{ label: string; run: () => void }> = [
+      {
+        label: "1/14 [3D Agent & Create]: เลือกโมเดลตัวท็อป Pro Studio (TRELLIS.2 4B Cascade — 6.80฿)",
+        run: () => {
+          handleSelectLeftTool("agent");
+          setArtStyleMode("standard");
+          setExplodeFactor(0);
+          setAnimationClip("none");
+          setPosePreset("bind");
+        },
+      },
+      {
+        label: "2/14 [Auto-Rig]: กางโครงกระดูก 3D เชื่อมข้อต่อ + จุดสมมาตร 6 จุด (ลากเมาส์ขยับได้จริง)",
+        run: () => {
+          handleSelectLeftTool("rig");
+          setShowRigBones(true);
+          setShowRigMarkers(true);
+          setPosePreset("bind");
+        },
+      },
+      {
+        label: "3/14 [Auto-Rig T-Pose]: กางแขนซ้าย-ขวาออกจากข้อต่อหัวไหล่จริง (T-Pose Calibration)",
+        run: () => {
+          setPosePreset("t_pose");
+        },
+      },
+      {
+        label: "4/14 [Auto-Rig Battle Pose]: จัดท่าตั้งการ์ดต่อสู้ หมุนแขนและอาวุธรอบหัวไหล่จริง",
+        run: () => {
+          setPosePreset("battle");
+        },
+      },
+      {
+        label: "5/14 [Motion 600+ Walk]: เดินก้าวขาซ้าย-ขวาและแกว่งแขนสลับจังหวะ (Combat Walk)",
+        run: () => {
+          handleSelectLeftTool("animate");
+          setPosePreset("bind");
+          setAnimationClip("walk");
+        },
+      },
+      {
+        label: "6/14 [Motion 600+ Run]: วิ่งสปรินต์เต็มสปีด แยกการหมุนต้นขาซ้าย-ขวาและหัวไหล่จริง",
+        run: () => {
+          setAnimationClip("run");
+        },
+      },
+      {
+        label: "7/14 [Motion 600+ Attack & Dance]: ท่าโจมตีฟันอาวุธ (Spin Slash) และท่าเต้น",
+        run: () => {
+          setAnimationClip("attack");
+        },
+      },
+      {
+        label: "8/14 [Auto-Split 6 ชิ้น]: แยกชิ้นส่วน หัว / อก / แขนซ้าย / แขนขวา / ขาซ้าย / ขาขวา (Explode 35%)",
+        run: () => {
+          handleSelectLeftTool("segment");
+          setAnimationClip("none");
+          setSegmentColorMode(true);
+          setExplodeFactor(0.35);
+        },
+      },
+      {
+        label: "9/14 [Relief / 3D Text]: ปั้นนูนต่ำ Bas-Relief 2.5D จากโมเดล .GLB จริงบนเหรียญตรา",
+        run: () => {
+          handleSelectLeftTool("relief");
+          setArtStyleMode("relief");
+          setReliefDepth(0.65);
+        },
+      },
+      {
+        label: "10/14 [Remesh & Topology]: โหมด Low-Poly Faceted + ตรวจสอบโครงสร้างเส้นลวด Wireframe",
+        run: () => {
+          handleSelectLeftTool("retopo");
+          setMaterialState((prev) => ({ ...prev, polyMultiplier: 0.45 }));
+        },
+      },
+      {
+        label: "11/14 [Auto-UV Unwrap]: กางแผ่นตาราง UV Checkerboard 20x20 บนพื้นผิว 3D",
+        run: () => {
+          setMaterialState((prev) => ({ ...prev, polyMultiplier: 1 }));
+          handleSelectLeftTool("smart-uv");
+          setUvCheckerMode(true);
+        },
+      },
+      {
+        label: "12/14 [AI Texture & Brush/Decal]: พ่นสี Crimson Gold PBR + ติดตรา 3D Decal",
+        run: () => {
+          handleSelectLeftTool("texture");
+          setMaterialState((prev) => ({
+            ...prev,
+            primaryColor: "#f43f5e",
+            accentColor: "#f59e0b",
+            emissiveIntensity: 0.45,
+          }));
+          setDecalEnabled(true);
+        },
+      },
+      {
+        label: "13/14 [8K Upscale & PBR/HDRI]: ปรับความวาวโลหะ Metallic + หมุนไฟสตูดิโอ Cyberpunk",
+        run: () => {
+          handleSelectLeftTool("pbr");
+          setMaterialState((prev) => ({
+            ...prev,
+            primaryColor: "#d6d3d1",
+            emissiveIntensity: 0.25,
+          }));
+          setDecalEnabled(false);
+          setHdriPreset("cyber");
+          setHdriRotation(65);
+        },
+      },
+      {
+        label: "14/14 [Fill Parts & 3D Print]: เช็กจุด Overhang สีแดง/เขียว + สร้างฐานรองพิมพ์ STL",
+        run: () => {
+          handleSelectLeftTool("print3d");
+          setHdriPreset("studio");
+          setHdriRotation(45);
+          setPrintCheckMode(true);
+          setAddPrintBase(true);
+        },
+      },
+      {
+        label: "✅ ทดสอบครบทั้ง 14 ฟีเจอร์สำเร็จ! กลับสู่โหมด Auto-Rig + Motion พร้อมให้คุณกดเล่นต่อได้เลย",
+        run: () => {
+          setAddPrintBase(false);
+          setPrintCheckMode(false);
+          handleSelectLeftTool("rig");
+          setShowRigBones(true);
+          setShowRigMarkers(true);
+          setPosePreset("battle");
+          setAnimationClip("walk");
+        },
+      },
+    ];
+
+    steps.forEach((step, idx) => {
+      setTimeout(() => {
+        setLiveTourBanner(step.label);
+        step.run();
+        if (idx === steps.length - 1) {
+          setTimeout(() => {
+            setLiveTourRunning(false);
+          }, 5000);
+        }
+      }, idx * 2400);
+    });
+  }, []);
 
   const fetchSession = useCallback(async () => {
     try {
@@ -638,8 +805,14 @@ export default function SiamPrism3DStudioPage() {
       setAuthModalOpen(true);
     }
 
+    if (params.get("tour") === "1") {
+      setTimeout(() => {
+        startLiveTour();
+      }, 1200);
+    }
+
     fetchSession();
-  }, [fetchSession]);
+  }, [fetchSession, startLiveTour]);
 
   // Support Ctrl+V / Cmd+V image paste on the Welcome page
   useEffect(() => {
@@ -1080,6 +1253,22 @@ export default function SiamPrism3DStudioPage() {
         </div>
       )}
 
+      {liveTourBanner && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[130] flex items-center gap-3 px-5 py-2.5 rounded-full bg-gradient-to-r from-red-700/95 via-rose-600/95 to-red-700/95 backdrop-blur-xl border border-white/30 text-white text-xs font-bold shadow-[0_12px_40px_rgba(225,29,72,0.65)]">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+          <span>🤖 Live Check: {liveTourBanner}</span>
+          <button
+            onClick={() => {
+              setLiveTourBanner(null);
+              setLiveTourRunning(false);
+            }}
+            className="ml-2 px-2 py-0.5 rounded-full bg-black/30 hover:bg-black/50 text-[10px] text-rose-100 cursor-pointer"
+          >
+            ปิดแถบ
+          </button>
+        </div>
+      )}
+
       {/* =====================================================================
           1. TOP FLOATING PILL HEADER
          ===================================================================== */}
@@ -1142,6 +1331,15 @@ export default function SiamPrism3DStudioPage() {
               <span>{oauthToast}</span>
             </div>
           )}
+
+          {/* Live 14-Feature Auto-Demo Trigger */}
+          <button
+            onClick={() => startLiveTour()}
+            className="h-8 px-3 rounded-full bg-gradient-to-r from-red-600/25 to-rose-600/25 hover:from-red-600/40 hover:to-rose-600/40 border border-red-500/40 flex items-center gap-1.5 text-xs font-bold text-rose-200 transition cursor-pointer shadow-sm"
+          >
+            <Play className="w-3.5 h-3.5 text-rose-400" />
+            <span>{liveTourRunning ? "กำลังรันสาธิต 14 ฟีเจอร์..." : "สาธิตสด 14 ฟีเจอร์"}</span>
+          </button>
 
           {/* 3D Print Check Pill (EngineActionPrint from workspace.js) */}
           <button

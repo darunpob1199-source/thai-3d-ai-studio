@@ -144,7 +144,7 @@ function createUvCheckerTexture(): THREE.CanvasTexture {
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(2, 2);
+  tex.repeat.set(20, 20);
   return tex;
 }
 
@@ -794,6 +794,9 @@ export default function Viewport3D({
       targetGrp.traverse((obj) => {
         if ((obj as THREE.Mesh).isMesh) {
           const mesh = obj as THREE.Mesh;
+          if (mesh.name === "Part_Relief_Medallion_Plate") {
+            return;
+          }
           if (effectiveShading === "wireframe") {
             mesh.material = new THREE.MeshStandardMaterial({
               color: "#f87171",
@@ -825,14 +828,24 @@ export default function Viewport3D({
               flatShading: isFlat,
             });
           } else if (effectiveShading === "metallic") {
+            const prevMat = mesh.material as THREE.MeshStandardMaterial;
             const gray = Math.round(mVal * 255);
-            mesh.material = new THREE.MeshBasicMaterial({
+            mesh.material = new THREE.MeshStandardMaterial({
+              map: prevMat?.metalnessMap || prevMat?.map || null,
               color: new THREE.Color(`rgb(${gray},${gray},${gray})`),
+              metalness: Math.max(0.65, mVal),
+              roughness: 0.22,
+              flatShading: isFlat,
             });
           } else if (effectiveShading === "roughness") {
+            const prevMat = mesh.material as THREE.MeshStandardMaterial;
             const gray = Math.round(rVal * 255);
-            mesh.material = new THREE.MeshBasicMaterial({
+            mesh.material = new THREE.MeshStandardMaterial({
+              map: prevMat?.roughnessMap || prevMat?.map || null,
               color: new THREE.Color(`rgb(${gray},${gray},${gray})`),
+              roughness: rVal,
+              metalness: 0.08,
+              flatShading: isFlat,
             });
           } else if (effectiveShading === "ao_curvature") {
             mesh.material = new THREE.MeshStandardMaterial({
@@ -929,13 +942,22 @@ export default function Viewport3D({
               if (studioOverrides?.material.metalness !== undefined) {
                 stdMat.metalness = studioOverrides.material.metalness;
               }
-              stdMat.emissive = new THREE.Color(
-                emInt > 0.08
-                  ? studioOverrides?.material.accentColor || "#f59e0b"
-                  : "#000000"
-              );
-              stdMat.emissiveIntensity = emInt > 0.08 ? emInt * 0.45 : 0;
-              stdMat.flatShading = isFlat;
+              const forceFaceted =
+                isFlat ||
+                studioOverrides?.artStyleMode === "voxel" ||
+                (studioOverrides?.material.polyMultiplier ?? 1) <= 0.5;
+              if (!isDefaultTint && customTint) {
+                stdMat.emissive = new THREE.Color(customTint);
+                stdMat.emissiveIntensity = Math.max(0.24, emInt * 0.5);
+              } else {
+                stdMat.emissive = new THREE.Color(
+                  emInt > 0.08
+                    ? studioOverrides?.material.accentColor || "#f59e0b"
+                    : "#000000"
+                );
+                stdMat.emissiveIntensity = emInt > 0.08 ? emInt * 0.45 : 0;
+              }
+              stdMat.flatShading = forceFaceted;
               stdMat.needsUpdate = true;
             }
           } else if (isFlat && (mesh.material as THREE.MeshStandardMaterial).isMeshStandardMaterial) {
@@ -949,17 +971,39 @@ export default function Viewport3D({
 
     applyShadingToGroup(assetGroup, false);
 
-    const isSpecialArtMode =
-      studioOverrides?.artStyleMode === "relief" ||
-      studioOverrides?.artStyleMode === "text3d" ||
-      studioOverrides?.artStyleMode === "voxel";
+    const isSpecialArtMode = studioOverrides?.artStyleMode === "text3d";
 
     const partSpecs = [
-      { name: "Part_01_Head_Hood", explodeDir: new THREE.Vector3(0, 0.55, 0) },
-      { name: "Part_02_Torso_Cloak", explodeDir: new THREE.Vector3(0, 0.05, 0.25) },
-      { name: "Part_03_Left_Arm", explodeDir: new THREE.Vector3(-0.55, 0.1, 0) },
-      { name: "Part_04_Right_Arm_Weapon", explodeDir: new THREE.Vector3(0.55, 0.1, 0) },
-      { name: "Part_05_Legs_Boots", explodeDir: new THREE.Vector3(0, -0.5, 0) },
+      {
+        name: "Part_01_Head_Hood",
+        explodeDir: new THREE.Vector3(0, 0.55, 0),
+        pivot: [0, 0.22, 0] as [number, number, number],
+      },
+      {
+        name: "Part_02_Torso_Cloak",
+        explodeDir: new THREE.Vector3(0, 0.05, 0.25),
+        pivot: [0, 0.02, 0] as [number, number, number],
+      },
+      {
+        name: "Part_03_Left_Arm",
+        explodeDir: new THREE.Vector3(-0.55, 0.1, 0),
+        pivot: [-0.18, 0.18, 0] as [number, number, number],
+      },
+      {
+        name: "Part_04_Right_Arm_Weapon",
+        explodeDir: new THREE.Vector3(0.55, 0.1, 0),
+        pivot: [0.18, 0.18, 0] as [number, number, number],
+      },
+      {
+        name: "Part_05_Left_Leg",
+        explodeDir: new THREE.Vector3(-0.28, -0.5, 0),
+        pivot: [-0.1, -0.15, 0] as [number, number, number],
+      },
+      {
+        name: "Part_06_Right_Leg",
+        explodeDir: new THREE.Vector3(0.28, -0.5, 0),
+        pivot: [0.1, -0.15, 0] as [number, number, number],
+      },
     ];
 
     const mountConfiguredGlbScene = (baseTemplate: THREE.Group) => {
@@ -982,18 +1026,41 @@ export default function Viewport3D({
           const pIdx = subIdx++;
           m.visible = !hiddenSet.has(pIdx);
           if (pIdx < partSpecs.length) {
+            const [px, py, pz] = partSpecs[pIdx].pivot;
+            m.position.set(px, py, pz);
+            m.rotation.set(0, 0, 0);
+            m.userData.basePivot = [px, py, pz];
             if (explodeAmt > 0) {
               m.position.addScaledVector(partSpecs[pIdx].explodeDir, explodeAmt);
             }
             if (pose !== "bind" && (pIdx === 2 || pIdx === 3)) {
               const sign = pIdx === 2 ? -1 : 1;
-              if (pose === "t_pose") m.rotation.z = sign * 0.28;
-              else if (pose === "a_pose") m.rotation.z = sign * 0.15;
-              else if (pose === "battle") m.rotation.x = -0.25;
+              if (pose === "t_pose") m.rotation.z = sign * 0.42;
+              else if (pose === "a_pose") m.rotation.z = sign * 0.22;
+              else if (pose === "battle") {
+                m.rotation.x = -0.55;
+                m.rotation.z = sign * 0.15;
+              }
             }
           }
         }
       });
+
+      if (studioOverrides?.artStyleMode === "relief") {
+        const depth = studioOverrides.reliefDepth ?? 0.65;
+        sceneInstance.scale.z *= 0.22 * depth;
+        const backingGeo = new THREE.CylinderGeometry(1.38, 1.44, 0.14, 64);
+        backingGeo.rotateX(Math.PI / 2);
+        const backingMat = new THREE.MeshStandardMaterial({
+          color: "#27171c",
+          roughness: 0.35,
+          metalness: 0.78,
+        });
+        const backing = new THREE.Mesh(backingGeo, backingMat);
+        backing.name = "Part_Relief_Medallion_Plate";
+        backing.position.set(0, 0.15, -0.18);
+        loadedRoot.add(backing);
+      }
 
       loadedRoot.add(sceneInstance);
 
@@ -1428,7 +1495,7 @@ export default function Viewport3D({
             );
             gltf.scene.scale.setScalar(normScale);
 
-            // Semantic Auto-Split: Partition single-mesh GLB into 5 anatomical sub-meshes
+            // Semantic Auto-Split: Partition single-mesh GLB into 6 anatomical sub-meshes with true joint pivots
             if (meshList.length === 1 && meshList[0].geometry?.boundingBox) {
               const srcMesh = meshList[0];
               const srcGeom = srcMesh.geometry;
@@ -1439,7 +1506,7 @@ export default function Viewport3D({
               const minY = bb.min.y;
               const spanY = Math.max(bb.max.y - bb.min.y, 0.001);
 
-              const buckets: number[][] = [[], [], [], [], []];
+              const buckets: number[][] = [[], [], [], [], [], []];
               const idxAttr = srcGeom.index;
               const triCount = idxAttr
                 ? Math.floor(idxAttr.count / 3)
@@ -1456,10 +1523,10 @@ export default function Viewport3D({
                 const ny = (cy - minY) / spanY;
 
                 let bIdx = 1;
-                if (ny > 0.62) bIdx = 0;
-                else if (ny < 0.26) bIdx = 4;
-                else if (nx < 0.28) bIdx = 2;
-                else if (nx > 0.72) bIdx = 3;
+                if (nx < 0.30 && ny > 0.34) bIdx = 2;
+                else if (nx > 0.70 && ny > 0.34) bIdx = 3;
+                else if (ny > 0.72 && nx >= 0.30 && nx <= 0.70) bIdx = 0;
+                else if (ny < 0.44) bIdx = nx < 0.5 ? 4 : 5;
                 buckets[bIdx].push(i0, i1, i2);
               }
 
@@ -1467,7 +1534,14 @@ export default function Viewport3D({
               buckets.forEach((indices, pIdx) => {
                 if (indices.length === 0) return;
                 const subGeom = new THREE.BufferGeometry();
-                subGeom.setAttribute("position", posAttr);
+                const [px, py, pz] = partSpecs[pIdx].pivot;
+                const shiftedPos = new Float32Array(posAttr.count * 3);
+                for (let vi = 0; vi < posAttr.count; vi++) {
+                  shiftedPos[vi * 3] = posAttr.getX(vi) - px;
+                  shiftedPos[vi * 3 + 1] = posAttr.getY(vi) - py;
+                  shiftedPos[vi * 3 + 2] = posAttr.getZ(vi) - pz;
+                }
+                subGeom.setAttribute("position", new THREE.BufferAttribute(shiftedPos, 3));
                 if (srcGeom.attributes.normal) {
                   subGeom.setAttribute("normal", srcGeom.attributes.normal);
                 }
@@ -1484,6 +1558,8 @@ export default function Viewport3D({
                   : srcMesh.material.clone();
                 const subMesh = new THREE.Mesh(subGeom, subMat);
                 subMesh.name = partSpecs[pIdx].name;
+                subMesh.position.set(px, py, pz);
+                subMesh.userData.basePivot = [px, py, pz];
                 parentNode.add(subMesh);
               });
               parentNode.remove(srcMesh);
@@ -1501,65 +1577,113 @@ export default function Viewport3D({
       }
     }
 
-    // Build Humanoid or Quadruped Rig Skeleton Helper + 6-Point Symmetry Markers
+    // Build Connected Humanoid or Quadruped Rig Skeleton + Draggable 6-Point Symmetry Markers
     const rigGroup = new THREE.Group();
     const boneMat = new THREE.MeshBasicMaterial({
       color: "#f43f5e",
       wireframe: true,
       depthTest: false,
     });
+    const linkMat = new THREE.MeshBasicMaterial({
+      color: "#fb7185",
+      depthTest: false,
+      transparent: true,
+      opacity: 0.85,
+    });
     const charType = studioOverrides?.rigCharacterType || "humanoid";
     const jointNodes: [number, number, number][] =
       charType === "quadruped_dog" || charType === "quadruped_cat"
         ? [
-            [0, 0.25, -0.55],
-            [0, 0.32, 0.0],
-            [0, 0.42, 0.55],
-            [0, 0.85, 0.85],
-            [-0.35, -0.45, 0.55],
-            [0.35, -0.45, 0.55],
-            [-0.35, -0.45, -0.55],
-            [0.35, -0.45, -0.55],
-            [0, 0.48, -0.95],
+            [0, 0.25, -0.55], // 0: Pelvis
+            [0, 0.32, 0.0], // 1: Spine
+            [0, 0.42, 0.55], // 2: Chest
+            [0, 0.85, 0.85], // 3: Head
+            [-0.35, -0.45, 0.55], // 4: Front L
+            [0.35, -0.45, 0.55], // 5: Front R
+            [-0.35, -0.45, -0.55], // 6: Back L
+            [0.35, -0.45, -0.55], // 7: Back R
+            [0, 0.48, -0.95], // 8: Tail
           ]
         : [
-            [0, -0.6, 0],
-            [0, 0.1, 0],
-            [0, 0.85, 0],
-            [0, 1.45, 0],
-            [-0.75, 0.85, 0],
-            [0.75, 0.85, 0],
-            [-0.85, 0.15, 0],
-            [0.85, 0.15, 0],
-            [-0.35, -0.95, 0],
-            [0.35, -0.95, 0],
+            [0, -0.18, 0], // 0: Hips
+            [0, 0.2, 0], // 1: Spine
+            [0, 0.52, 0], // 2: Chest
+            [0, 0.88, 0], // 3: Head
+            [-0.45, 0.48, 0], // 4: L Shoulder
+            [0.45, 0.48, 0], // 5: R Shoulder
+            [-0.72, 0.08, 0], // 6: L Wrist
+            [0.72, 0.08, 0], // 7: R Wrist
+            [-0.25, -0.78, 0], // 8: L Ankle
+            [0.25, -0.78, 0], // 9: R Ankle
           ];
+
+    const bonePairs: [number, number][] =
+      charType === "quadruped_dog" || charType === "quadruped_cat"
+        ? [
+            [0, 1],
+            [1, 2],
+            [2, 3],
+            [2, 4],
+            [2, 5],
+            [0, 6],
+            [0, 7],
+            [0, 8],
+          ]
+        : [
+            [0, 1],
+            [1, 2],
+            [2, 3],
+            [2, 4],
+            [4, 6],
+            [2, 5],
+            [5, 7],
+            [0, 8],
+            [0, 9],
+          ];
+
     for (const [jx, jy, jz] of jointNodes) {
-      const joint = new THREE.Mesh(new THREE.OctahedronGeometry(0.11, 0), boneMat);
+      const joint = new THREE.Mesh(new THREE.OctahedronGeometry(0.085, 0), boneMat);
       joint.position.set(jx, jy, jz);
       rigGroup.add(joint);
     }
 
+    const upVec = new THREE.Vector3(0, 1, 0);
+    for (const [aIdx, bIdx] of bonePairs) {
+      const pA = new THREE.Vector3(...jointNodes[aIdx]);
+      const pB = new THREE.Vector3(...jointNodes[bIdx]);
+      const dist = pA.distanceTo(pB);
+      const mid = pA.clone().add(pB).multiplyScalar(0.5);
+      const dir = pB.clone().sub(pA).normalize();
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.032, dist, 6), linkMat);
+      cyl.position.copy(mid);
+      cyl.quaternion.setFromUnitVectors(upVec, dir);
+      rigGroup.add(cyl);
+    }
+
+    const markerMeshes: THREE.Mesh[] = [];
     if (studioOverrides?.showRigMarkers) {
-      const markerDefs: { pos: [number, number, number]; color: string }[] = [
-        { pos: [0, 1.15, 0.35], color: "#ef4444" },
-        { pos: [0, -0.15, 0.32], color: "#f59e0b" },
-        { pos: [-0.62, 0.65, 0.2], color: "#10b981" },
-        { pos: [0.62, 0.65, 0.2], color: "#10b981" },
-        { pos: [-0.88, 0.25, 0.25], color: "#ec4899" },
-        { pos: [0.88, 0.25, 0.25], color: "#ec4899" },
-        { pos: [-0.32, -0.55, 0.25], color: "#a855f7" },
-        { pos: [0.32, -0.55, 0.25], color: "#a855f7" },
+      const markerDefs: { pos: [number, number, number]; color: string; mirrorIdx?: number }[] = [
+        { pos: [0, 0.65, 0.38], color: "#ef4444" }, // 0: Chin
+        { pos: [0, -0.15, 0.35], color: "#f59e0b" }, // 1: Groin
+        { pos: [-0.42, 0.45, 0.25], color: "#10b981", mirrorIdx: 3 }, // 2: L Shoulder
+        { pos: [0.42, 0.45, 0.25], color: "#10b981", mirrorIdx: 2 }, // 3: R Shoulder
+        { pos: [-0.68, 0.1, 0.28], color: "#ec4899", mirrorIdx: 5 }, // 4: L Wrist
+        { pos: [0.68, 0.1, 0.28], color: "#ec4899", mirrorIdx: 4 }, // 5: R Wrist
+        { pos: [-0.25, -0.58, 0.28], color: "#a855f7", mirrorIdx: 7 }, // 6: L Knee
+        { pos: [0.25, -0.58, 0.28], color: "#a855f7", mirrorIdx: 6 }, // 7: R Knee
       ];
-      for (const mk of markerDefs) {
+      markerDefs.forEach((mk, idx) => {
         const mMat = new THREE.MeshBasicMaterial({
           color: mk.color,
           depthTest: false,
         });
-        const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.085, 16, 16), mMat);
+        const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), mMat);
         sphere.position.set(mk.pos[0], mk.pos[1], mk.pos[2]);
+        sphere.userData.markerIdx = idx;
+        sphere.userData.mirrorIdx = mk.mirrorIdx;
         rigGroup.add(sphere);
-      }
+        markerMeshes.push(sphere);
+      });
     }
 
     rigGroup.visible = effectiveShowRig || !!studioOverrides?.showRigMarkers;
@@ -1577,69 +1701,104 @@ export default function Viewport3D({
       const clip = studioOverrides?.animationClip || "none";
       const inPlace = studioOverrides?.inPlaceAnimation ?? true;
       const baseRotY = ((studioOverrides?.transform.rotY || 0) * Math.PI) / 180;
+      const pose = studioOverrides?.posePreset || "bind";
 
       if (meshGroupRef.current) {
-        // Reset procedural animation offsets before applying clip
         meshGroupRef.current.position.set(0, 0, 0);
         meshGroupRef.current.rotation.x = 0;
         meshGroupRef.current.rotation.z = 0;
 
+        const head = meshGroupRef.current.getObjectByName("Part_01_Head_Hood");
         const leftArm = meshGroupRef.current.getObjectByName("Part_03_Left_Arm");
         const rightArm = meshGroupRef.current.getObjectByName("Part_04_Right_Arm_Weapon");
-        if (leftArm && rightArm) {
-          if (clip === "walk") {
-            leftArm.rotation.x = Math.sin(t * 5) * 0.14;
-            rightArm.rotation.x = -Math.sin(t * 5) * 0.18;
-          } else if (clip === "run") {
-            leftArm.rotation.x = Math.sin(t * 9) * 0.24;
-            rightArm.rotation.x = -Math.sin(t * 9) * 0.28;
-          } else if (clip === "attack" || clip === "boxing") {
-            leftArm.rotation.x = -0.15 + Math.sin(t * 8) * 0.22;
-            rightArm.rotation.x = -0.25 - Math.cos(t * 8) * 0.32;
-          } else if (clip === "dance") {
-            leftArm.rotation.z = -0.15 + Math.sin(t * 6) * 0.18;
-            rightArm.rotation.z = 0.15 - Math.sin(t * 6) * 0.18;
-          }
+        const leftLeg =
+          meshGroupRef.current.getObjectByName("Part_05_Left_Leg") ||
+          meshGroupRef.current.getObjectByName("Part_05_Legs_Boots");
+        const rightLeg = meshGroupRef.current.getObjectByName("Part_06_Right_Leg");
+
+        // Reset limb rotations to calibration pose before applying motion clip
+        const baseArmZ = pose === "t_pose" ? 0.42 : pose === "a_pose" ? 0.22 : 0;
+        const baseArmX = pose === "battle" ? -0.55 : 0;
+        if (leftArm) {
+          leftArm.rotation.set(baseArmX, 0, -baseArmZ);
         }
+        if (rightArm) {
+          rightArm.rotation.set(baseArmX, 0, baseArmZ);
+        }
+        if (leftLeg) leftLeg.rotation.set(0, 0, 0);
+        if (rightLeg) rightLeg.rotation.set(0, 0, 0);
+        if (head) head.rotation.set(0, 0, 0);
 
         if (clip === "idle") {
-          meshGroupRef.current.position.y = Math.sin(t * 2.5) * 0.08;
-          meshGroupRef.current.rotation.z = Math.sin(t * 1.25) * 0.03;
+          meshGroupRef.current.position.y = Math.sin(t * 2.5) * 0.06;
+          if (head) head.rotation.y = Math.sin(t * 1.5) * 0.12;
+          if (leftArm) leftArm.rotation.z = -baseArmZ - Math.sin(t * 2.5) * 0.05;
+          if (rightArm) rightArm.rotation.z = baseArmZ + Math.sin(t * 2.5) * 0.05;
         } else if (clip === "walk") {
-          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 5)) * 0.14;
-          meshGroupRef.current.rotation.z = Math.sin(t * 5) * 0.08;
-          meshGroupRef.current.rotation.x = 0.08;
+          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 5)) * 0.11;
+          meshGroupRef.current.rotation.z = Math.sin(t * 5) * 0.05;
+          meshGroupRef.current.rotation.x = 0.06;
+          if (leftArm) leftArm.rotation.x = Math.sin(t * 5) * 0.35;
+          if (rightArm) rightArm.rotation.x = -Math.sin(t * 5) * 0.35;
+          if (leftLeg) leftLeg.rotation.x = -Math.sin(t * 5) * 0.38;
+          if (rightLeg) rightLeg.rotation.x = Math.sin(t * 5) * 0.38;
+          if (head) head.rotation.y = Math.sin(t * 2.5) * 0.08;
           if (!inPlace) {
             meshGroupRef.current.position.z = ((t * 1.2) % 4) - 2;
           }
         } else if (clip === "run") {
-          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 9)) * 0.24;
-          meshGroupRef.current.rotation.z = Math.sin(t * 9) * 0.12;
-          meshGroupRef.current.rotation.x = 0.22;
+          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 9)) * 0.2;
+          meshGroupRef.current.rotation.z = Math.sin(t * 9) * 0.1;
+          meshGroupRef.current.rotation.x = 0.18;
+          if (leftArm) leftArm.rotation.x = Math.sin(t * 9) * 0.55;
+          if (rightArm) rightArm.rotation.x = -Math.sin(t * 9) * 0.55;
+          if (leftLeg) leftLeg.rotation.x = -Math.sin(t * 9) * 0.58;
+          if (rightLeg) rightLeg.rotation.x = Math.sin(t * 9) * 0.58;
           if (!inPlace) {
             meshGroupRef.current.position.z = ((t * 2.6) % 5) - 2.5;
           }
         } else if (clip === "crouch") {
-          meshGroupRef.current.position.y = -0.22 + Math.abs(Math.sin(t * 3.5)) * 0.07;
-          meshGroupRef.current.rotation.x = 0.28;
-          meshGroupRef.current.rotation.z = Math.sin(t * 3.5) * 0.06;
+          meshGroupRef.current.position.y = -0.22 + Math.abs(Math.sin(t * 3.5)) * 0.06;
+          meshGroupRef.current.rotation.x = 0.25;
+          if (leftLeg) leftLeg.rotation.x = -0.35;
+          if (rightLeg) rightLeg.rotation.x = -0.35;
+          if (leftArm) leftArm.rotation.x = -0.3;
+          if (rightArm) rightArm.rotation.x = -0.3;
         } else if (clip === "jump") {
-          meshGroupRef.current.position.y = Math.max(0, Math.sin(t * 4)) * 0.65;
-          meshGroupRef.current.rotation.x = Math.sin(t * 4) * 0.18;
+          const jumpPhase = Math.max(0, Math.sin(t * 4));
+          meshGroupRef.current.position.y = jumpPhase * 0.62;
+          if (leftArm) leftArm.rotation.z = -0.45 * jumpPhase;
+          if (rightArm) rightArm.rotation.z = 0.45 * jumpPhase;
+          if (leftLeg) leftLeg.rotation.x = -0.3 * jumpPhase;
+          if (rightLeg) rightLeg.rotation.x = 0.25 * jumpPhase;
         } else if (clip === "attack") {
-          meshGroupRef.current.rotation.y = baseRotY + t * 6.0;
-          meshGroupRef.current.position.y = Math.sin(t * 6) * 0.12;
+          meshGroupRef.current.rotation.y = baseRotY + Math.sin(t * 6) * 0.45;
+          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 6)) * 0.1;
+          if (rightArm) rightArm.rotation.x = -0.45 + Math.sin(t * 8) * 0.65;
+          if (leftArm) leftArm.rotation.x = -0.2 - Math.sin(t * 8) * 0.3;
+          if (leftLeg) leftLeg.rotation.x = -0.2;
+          if (rightLeg) rightLeg.rotation.x = 0.2;
         } else if (clip === "boxing") {
-          meshGroupRef.current.position.z = Math.sin(t * 8) * 0.18;
-          meshGroupRef.current.rotation.y = baseRotY + Math.sin(t * 8) * 0.35;
-          meshGroupRef.current.position.y = Math.abs(Math.cos(t * 8)) * 0.09;
+          meshGroupRef.current.position.z = Math.sin(t * 8) * 0.14;
+          meshGroupRef.current.rotation.y = baseRotY + Math.sin(t * 8) * 0.28;
+          meshGroupRef.current.position.y = Math.abs(Math.cos(t * 8)) * 0.08;
+          if (leftArm) leftArm.rotation.x = -0.5 + Math.sin(t * 10) * 0.45;
+          if (rightArm) rightArm.rotation.x = -0.5 - Math.sin(t * 10) * 0.45;
         } else if (clip === "dance") {
-          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 6)) * 0.22;
-          meshGroupRef.current.position.x = Math.sin(t * 3) * 0.25;
-          meshGroupRef.current.rotation.z = Math.sin(t * 6) * 0.18;
+          meshGroupRef.current.position.y = Math.abs(Math.sin(t * 6)) * 0.18;
+          meshGroupRef.current.position.x = Math.sin(t * 3) * 0.2;
+          meshGroupRef.current.rotation.z = Math.sin(t * 6) * 0.14;
+          if (leftArm) leftArm.rotation.z = -0.35 + Math.sin(t * 6) * 0.35;
+          if (rightArm) rightArm.rotation.z = 0.35 + Math.cos(t * 6) * 0.35;
+          if (leftLeg) leftLeg.rotation.z = Math.sin(t * 6) * 0.2;
+          if (rightLeg) rightLeg.rotation.z = -Math.sin(t * 6) * 0.2;
+          if (head) head.rotation.z = -Math.sin(t * 6) * 0.15;
         } else if (clip === "climb") {
           meshGroupRef.current.position.y = ((t * 0.6) % 1.4) - 0.3;
-          meshGroupRef.current.rotation.z = Math.sin(t * 5) * 0.09;
+          if (leftArm) leftArm.rotation.x = -0.6 + Math.sin(t * 6) * 0.4;
+          if (rightArm) rightArm.rotation.x = -0.6 - Math.sin(t * 6) * 0.4;
+          if (leftLeg) leftLeg.rotation.x = -Math.sin(t * 6) * 0.35;
+          if (rightLeg) rightLeg.rotation.x = Math.sin(t * 6) * 0.35;
         } else if (clip === "quad_gallop") {
           meshGroupRef.current.position.y = Math.abs(Math.sin(t * 7)) * 0.22;
           meshGroupRef.current.rotation.x = Math.cos(t * 7) * 0.22;
@@ -1667,18 +1826,54 @@ export default function Viewport3D({
     };
     animate();
 
-    // 3D Raycaster: Click on 3D Mesh to Select Part, Paint Surface, or Place 3D Decal
+    // 3D Raycaster: Drag 6-Point Rig Markers OR Click on 3D Mesh to Select Part / Place 3D Decal
     const raycaster = new THREE.Raycaster();
     const pointer = new THREE.Vector2();
+    const dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const dragIntersect = new THREE.Vector3();
+    let draggingMarker: THREE.Mesh | null = null;
     let downX = 0;
     let downY = 0;
 
     const onPointerDown = (e: PointerEvent) => {
       downX = e.clientX;
       downY = e.clientY;
+      if (markerMeshes.length > 0 && rigGroup.visible) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const hits = raycaster.intersectObjects(markerMeshes, false);
+        if (hits.length > 0) {
+          draggingMarker = hits[0].object as THREE.Mesh;
+          controls.enabled = false;
+        }
+      }
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!draggingMarker) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      if (raycaster.ray.intersectPlane(dragPlane, dragIntersect)) {
+        draggingMarker.position.x = Math.max(-1.1, Math.min(1.1, dragIntersect.x));
+        draggingMarker.position.y = Math.max(-1.0, Math.min(1.2, dragIntersect.y));
+        const mirrorIdx = draggingMarker.userData.mirrorIdx;
+        if (typeof mirrorIdx === "number" && markerMeshes[mirrorIdx]) {
+          markerMeshes[mirrorIdx].position.x = -draggingMarker.position.x;
+          markerMeshes[mirrorIdx].position.y = draggingMarker.position.y;
+        }
+      }
     };
 
     const onPointerUp = (e: PointerEvent) => {
+      if (draggingMarker) {
+        draggingMarker = null;
+        controls.enabled = true;
+        return;
+      }
       const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
       if (dist > 6 || !meshGroupRef.current) return;
 
@@ -1726,6 +1921,7 @@ export default function Viewport3D({
     };
 
     renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("pointermove", onPointerMove);
     renderer.domElement.addEventListener("pointerup", onPointerUp);
 
     const handleResize = () => {
@@ -1746,6 +1942,7 @@ export default function Viewport3D({
       };
       cancelAnimationFrame(frameId);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("pointermove", onPointerMove);
       renderer.domElement.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
@@ -1957,7 +2154,7 @@ export default function Viewport3D({
           <div
             onClick={() => setExpandRefImg(!expandRefImg)}
             title="คลิกเพื่อขยาย/ย่อ ภาพต้นแบบ 2D ที่ใช้ปั้นโมเดล 3D นี้"
-            className={`absolute bottom-13 left-3 z-10 rounded-xl overflow-hidden bg-[#110b0e]/95 backdrop-blur-md border transition-all duration-200 cursor-pointer pointer-events-auto shadow-2xl ${
+            className={`absolute bottom-14 left-3 z-10 rounded-xl overflow-hidden bg-[#110b0e]/95 backdrop-blur-md border transition-all duration-200 cursor-pointer pointer-events-auto shadow-2xl ${
               activeTask.engine === "trellis_pbr"
                 ? "border-amber-400/60 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
                 : "border-sky-400/40"
