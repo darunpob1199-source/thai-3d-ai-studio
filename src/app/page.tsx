@@ -884,7 +884,7 @@ export default function SiamPrism3DStudioPage() {
         has_pbr: 1,
         has_rig: 0,
         preset_type: "mecha",
-        primary_color: "#ef4444",
+        primary_color: "#d6d3d1",
         accent_color: "#f59e0b",
         roughness: 0.25,
         metalness: 0.8,
@@ -1199,6 +1199,7 @@ export default function SiamPrism3DStudioPage() {
       hdriRotation,
       cameraFov,
       showGrid,
+      activeBrushTool: activeLeftTool === "edit" ? activeBrushTool : undefined,
     }),
     [
       explodeFactor,
@@ -1233,6 +1234,8 @@ export default function SiamPrism3DStudioPage() {
       hdriRotation,
       cameraFov,
       showGrid,
+      activeLeftTool,
+      activeBrushTool,
     ]
   );
 
@@ -2057,8 +2060,19 @@ export default function SiamPrism3DStudioPage() {
                   setDecalEnabled(false);
                   setAddPrintBase(false);
                   setAnimationClip("none");
+                  setFilledParts({ auraRing: false, pedestal: false, backWings: false });
                   setTransformState({ scaleX: 1, scaleY: 1, scaleZ: 1, rotY: 0 });
-                  triggerToast("รีเซ็ตการตั้งค่า Viewport เรียบร้อย");
+                  setMaterialState({
+                    primaryColor: activeTask?.output_glb_url
+                      ? "#d6d3d1"
+                      : activeTask?.primary_color || "#ef4444",
+                    accentColor: activeTask?.accent_color || "#f59e0b",
+                    roughness: activeTask?.output_glb_url ? 0.42 : activeTask?.roughness ?? 0.35,
+                    metalness: activeTask?.output_glb_url ? 0.18 : activeTask?.metalness ?? 0.25,
+                    emissiveIntensity: 0.25,
+                    polyMultiplier: 1,
+                  });
+                  triggerToast("รีเซ็ตการตั้งค่า Viewport & สีวัสดุกลับสู่ค่าเริ่มต้นเรียบร้อย");
                 }}
                 title="Reset Tool Effects"
                 className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/10 text-slate-300 flex items-center gap-1 cursor-pointer shrink-0"
@@ -3300,6 +3314,34 @@ export default function SiamPrism3DStudioPage() {
                   <span className="text-xs font-semibold text-white">
                     Live Albedo & Accent Picker
                   </span>
+                  <div className="flex items-center gap-1.5 pt-0.5">
+                    {[
+                      "#ef4444",
+                      "#f59e0b",
+                      "#10b981",
+                      "#06b6d4",
+                      "#a855f7",
+                      "#ec4899",
+                      "#d6d3d1",
+                    ].map((hex) => (
+                      <button
+                        key={hex}
+                        onClick={() =>
+                          setMaterialState((prev) => ({
+                            ...prev,
+                            primaryColor: hex,
+                          }))
+                        }
+                        className={`w-5 h-5 rounded-full border cursor-pointer transition ${
+                          materialState.primaryColor.toLowerCase() === hex
+                            ? "ring-2 ring-white scale-110"
+                            : "border-white/25"
+                        }`}
+                        style={{ backgroundColor: hex }}
+                        title={hex === "#d6d3d1" ? "สีต้นฉบับ (Original GLB)" : `ทาสี ${hex}`}
+                      />
+                    ))}
+                  </div>
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-300">Primary Albedo</span>
                     <input
@@ -3931,17 +3973,27 @@ export default function SiamPrism3DStudioPage() {
 
                 <div className="grid grid-cols-2 gap-1.5">
                   <button
-                    onClick={() =>
-                      triggerToast("กำลังส่งไฟล์โมเดล 3MF Multi-Color ไปยัง Bambu Studio...")
-                    }
+                    onClick={() => {
+                      window.dispatchEvent(
+                        new CustomEvent("prism3d-export", { detail: { format: "stl" } })
+                      );
+                      triggerToast(
+                        "ดาวน์โหลดไฟล์ .STL พร้อมส่งเข้า Bambu Studio เรียบร้อยแล้ว!"
+                      );
+                    }}
                     className="py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-[11px] font-bold cursor-pointer"
                   >
                     🎋 Send to Bambu
                   </button>
                   <button
-                    onClick={() =>
-                      triggerToast("กำลังส่งไฟล์โมเดล STL ไปยัง Creality Print...")
-                    }
+                    onClick={() => {
+                      window.dispatchEvent(
+                        new CustomEvent("prism3d-export", { detail: { format: "stl" } })
+                      );
+                      triggerToast(
+                        "ดาวน์โหลดไฟล์ .STL พร้อมส่งเข้า Creality Print เรียบร้อยแล้ว!"
+                      );
+                    }}
                     className="py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/40 text-red-200 text-[11px] font-bold cursor-pointer"
                   >
                     🖨️ Creality Print

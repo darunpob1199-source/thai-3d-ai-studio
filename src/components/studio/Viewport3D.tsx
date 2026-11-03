@@ -104,6 +104,7 @@ export interface LiveStudioOverrides {
   hdriRotation?: number;
   cameraFov?: number;
   showGrid?: boolean;
+  activeBrushTool?: "paint" | "healing" | "decal" | "stamp" | "lasso" | "eraser";
 }
 
 interface Viewport3DProps {
@@ -509,22 +510,55 @@ function buildProceduralGameAsset(
     group.add(boss);
   } else if (overrides?.artStyleMode === "text3d") {
     const tDepth = overrides.text3dDepth ?? 0.45;
-    const labelLen = Math.max(3, Math.min(8, (overrides.text3dContent || "PRISM").length));
+    const rawText = (overrides.text3dContent || "PRISM3D").slice(0, 8).toUpperCase();
     group.clear();
-    const totalW = labelLen * 0.38;
-    for (let i = 0; i < labelLen; i++) {
-      const xPos = -totalW / 2 + i * 0.42 + 0.2;
-      const charGeo = new THREE.BoxGeometry(0.32, 0.72, tDepth);
-      const charMesh = new THREE.Mesh(charGeo, i % 2 === 0 ? mainMat.clone() : accentMat.clone());
-      charMesh.name = `Text3D_Glyph_${i + 1}`;
-      charMesh.position.set(xPos, 0.45, 0);
-      group.add(charMesh);
+
+    const cw = 84;
+    const ch = 24;
+    const cvs = document.createElement("canvas");
+    cvs.width = cw;
+    cvs.height = ch;
+    const ctx = cvs.getContext("2d");
+    if (ctx) {
+      ctx.clearRect(0, 0, cw, ch);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 16px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(rawText, cw / 2, ch / 2 + 1);
+      const imgData = ctx.getImageData(0, 0, cw, ch).data;
+      const cell = 0.042;
+      const barGeo = new THREE.BoxGeometry(cell * 0.96, cell * 0.96, tDepth);
+      const pixelGroup = new THREE.Group();
+      pixelGroup.name = "Text3D_Extruded_Typography";
+      let minX = Infinity;
+      let maxX = -Infinity;
+      for (let py = 0; py < ch; py++) {
+        for (let px = 0; px < cw; px++) {
+          const alpha = imgData[(py * cw + px) * 4 + 3];
+          if (alpha > 110) {
+            const wx = (px - cw / 2) * cell;
+            const wy = (ch / 2 - py) * cell + 0.48;
+            if (wx < minX) minX = wx;
+            if (wx > maxX) maxX = wx;
+            const isRim = alpha < 200;
+            const voxelMesh = new THREE.Mesh(
+              barGeo,
+              isRim ? accentMat : mainMat
+            );
+            voxelMesh.position.set(wx, wy, 0);
+            pixelGroup.add(voxelMesh);
+          }
+        }
+      }
+      group.add(pixelGroup);
+      const spanW = Number.isFinite(maxX - minX) ? Math.max(1.4, maxX - minX + 0.45) : 2.6;
+      const plinthGeo = new THREE.BoxGeometry(spanW, 0.18, tDepth + 0.25);
+      const plinth = new THREE.Mesh(plinthGeo, darkMat.clone());
+      plinth.name = "Text3D_Bevel_Plinth";
+      plinth.position.set(0, -0.04, 0);
+      group.add(plinth);
     }
-    const plinthGeo = new THREE.BoxGeometry(totalW + 0.5, 0.18, tDepth + 0.25);
-    const plinth = new THREE.Mesh(plinthGeo, darkMat.clone());
-    plinth.name = "Text3D_Bevel_Plinth";
-    plinth.position.set(0, -0.05, 0);
-    group.add(plinth);
   }
 
   // Apply Pose Preset (T-Pose / A-Pose / Battle Pose) to Arm/Wing limbs
@@ -794,7 +828,14 @@ export default function Viewport3D({
       targetGrp.traverse((obj) => {
         if ((obj as THREE.Mesh).isMesh) {
           const mesh = obj as THREE.Mesh;
-          if (mesh.name === "Part_Relief_Medallion_Plate") {
+          if (
+            mesh.name === "Part_Relief_Medallion_Plate" ||
+            ((effectiveShading === "pbr" || effectiveShading === "base_color") &&
+              (mesh.name.startsWith("Part_Filled_") ||
+                mesh.name.startsWith("AddBaseStlPlatform") ||
+                mesh.name.startsWith("Part_Decal_") ||
+                mesh.name.endsWith("_Voxel")))
+          ) {
             return;
           }
           if (effectiveShading === "wireframe") {
@@ -1060,6 +1101,65 @@ export default function Viewport3D({
         backing.name = "Part_Relief_Medallion_Plate";
         backing.position.set(0, 0.15, -0.18);
         loadedRoot.add(backing);
+      } else if (studioOverrides?.artStyleMode === "voxel") {
+        // Real 3D Voxelizer on loaded GLB geometry
+        const vStep = 0.11;
+        const occupied = new Map<string, [number, number, number, number]>();
+        sceneInstance.updateMatrixWorld(true);
+        const tmpV = new THREE.Vector3();
+        let partCounter = 0;
+        sceneInstance.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh && child.visible) {
+            const m = child as THREE.Mesh;
+            const pos = m.geometry?.attributes?.position;
+            if (!pos) return;
+            const pIdx = partCounter++;
+            const stride = Math.max(1, Math.floor(pos.count / 900));
+            for (let i = 0; i < pos.count; i += stride) {
+              tmpV.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+              const gx = Math.round(tmpV.x / vStep);
+              const gy = Math.round(tmpV.y / vStep);
+              const gz = Math.round(tmpV.z / vStep);
+              const key = `${gx},${gy},${gz}`;
+              if (!occupied.has(key)) {
+                occupied.set(key, [gx * vStep, gy * vStep, gz * vStep, pIdx]);
+              }
+            }
+          }
+        });
+        if (occupied.size > 0) {
+          const voxGroup = new THREE.Group();
+          voxGroup.name = "GLB_Voxelized_Blocks";
+          const cubeGeo = new THREE.BoxGeometry(vStep * 0.92, vStep * 0.92, vStep * 0.92);
+          const voxPalette = [
+            studioOverrides?.material.primaryColor &&
+            studioOverrides.material.primaryColor !== "#d6d3d1"
+              ? studioOverrides.material.primaryColor
+              : currentTask.primary_color || "#b45309",
+            currentTask.accent_color || "#78716c",
+            "#57534e",
+            "#a8a29e",
+            "#44403c",
+            "#78350f",
+          ];
+          const voxMats = voxPalette.map(
+            (hex) =>
+              new THREE.MeshStandardMaterial({
+                color: hex,
+                roughness: 0.45,
+                metalness: 0.25,
+                flatShading: true,
+              })
+          );
+          occupied.forEach(([vx, vy, vz, pIdx]) => {
+            const cube = new THREE.Mesh(cubeGeo, voxMats[pIdx % voxMats.length]);
+            cube.position.set(vx, vy, vz);
+            cube.name = `Part_0${(pIdx % 6) + 1}_Voxel`;
+            voxGroup.add(cube);
+          });
+          sceneInstance.visible = false;
+          loadedRoot.add(voxGroup);
+        }
       }
 
       loadedRoot.add(sceneInstance);
@@ -1118,11 +1218,11 @@ export default function Viewport3D({
           roughness: 0.2,
           metalness: 0.6,
         });
-        const badgeGeo = new THREE.CylinderGeometry(0.22 * dScale, 0.22 * dScale, 0.04, 6);
+        const badgeGeo = new THREE.CylinderGeometry(0.17 * dScale, 0.17 * dScale, 0.04, 6);
         badgeGeo.rotateX(Math.PI / 2);
         const badge = new THREE.Mesh(badgeGeo, decalMat);
         badge.name = "Part_Decal_Projected_Emblem";
-        const hitPos = decalHitPosRef.current || [0, 0.15, 0.68];
+        const hitPos = decalHitPosRef.current || [0, 0.34, 0.42];
         badge.position.set(hitPos[0], hitPos[1], hitPos[2]);
         badge.rotation.z = dRot;
         loadedRoot.add(badge);
@@ -1901,10 +2001,31 @@ export default function Viewport3D({
           const partName = hitMesh.name || `Mesh_Part_${partIndex + 1}`;
           if (partIndex >= 0) {
             setSelectedPart({ index: partIndex, name: partName });
+            const bTool = studioOverrides?.activeBrushTool;
+            if (bTool === "paint" || bTool === "lasso") {
+              const brushHex =
+                studioOverrides?.material.primaryColor &&
+                studioOverrides.material.primaryColor.toLowerCase() !== "#d6d3d1"
+                  ? studioOverrides.material.primaryColor
+                  : "#ef4444";
+              partPaintMapRef.current[partIndex] = brushHex;
+              const mat = hitMesh.material as THREE.MeshStandardMaterial;
+              if (mat && mat.color) {
+                mat.color.set(brushHex);
+                mat.needsUpdate = true;
+              }
+            } else if (bTool === "eraser" || bTool === "healing") {
+              delete partPaintMapRef.current[partIndex];
+              const mat = hitMesh.material as THREE.MeshStandardMaterial;
+              if (mat && mat.color) {
+                mat.color.set("#ffffff");
+                mat.needsUpdate = true;
+              }
+            }
           }
 
           // If Decal Sticker is enabled, snap the 3D Decal Emblem to the clicked surface point!
-          if (studioOverrides?.decalEnabled) {
+          if (studioOverrides?.decalEnabled || studioOverrides?.activeBrushTool === "decal" || studioOverrides?.activeBrushTool === "stamp") {
             const decalMesh = meshGroupRef.current.getObjectByName(
               "Part_Decal_Projected_Emblem"
             );
@@ -1975,8 +2096,10 @@ export default function Viewport3D({
           const a = document.createElement("a");
           a.href = url;
           a.download = `${safeName}.glb`;
+          document.body.appendChild(a);
           a.click();
-          URL.revokeObjectURL(url);
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 20000);
         },
         () => {},
         { binary: true }
@@ -1989,11 +2112,12 @@ export default function Viewport3D({
       const a = document.createElement("a");
       a.href = url;
       a.download = `${safeName}.obj`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 20000);
     } else {
-      // Generate valid ASCII STL for 3D Printing Slicers (Bambu Studio / Creality / Cura)
-      const lines: string[] = [`solid ${safeName}`];
+      // Generate fast Binary STL (ArrayBuffer) for 3D Printing Slicers (Bambu Studio / Creality / Cura)
       const vA = new THREE.Vector3();
       const vB = new THREE.Vector3();
       const vC = new THREE.Vector3();
@@ -2001,6 +2125,9 @@ export default function Viewport3D({
       const ab = new THREE.Vector3();
 
       targetGroup.updateMatrixWorld(true);
+      const meshes: { geom: THREE.BufferGeometry; pos: THREE.BufferAttribute | THREE.InterleavedBufferAttribute }[] = [];
+      let totalTris = 0;
+
       targetGroup.traverse((obj) => {
         if ((obj as THREE.Mesh).isMesh && obj.visible) {
           const mesh = obj as THREE.Mesh;
@@ -2009,33 +2136,68 @@ export default function Viewport3D({
           const nonIndexed = geom.index ? geom.toNonIndexed() : geom;
           const pos = nonIndexed.getAttribute("position");
           if (!pos) return;
-          for (let i = 0; i < pos.count; i += 3) {
-            vA.fromBufferAttribute(pos, i);
-            vB.fromBufferAttribute(pos, i + 1);
-            vC.fromBufferAttribute(pos, i + 2);
-            cb.subVectors(vC, vB);
-            ab.subVectors(vA, vB);
-            cb.cross(ab).normalize();
-            lines.push(`facet normal ${cb.x.toFixed(5)} ${cb.y.toFixed(5)} ${cb.z.toFixed(5)}`);
-            lines.push("  outer loop");
-            lines.push(`    vertex ${vA.x.toFixed(5)} ${vA.y.toFixed(5)} ${vA.z.toFixed(5)}`);
-            lines.push(`    vertex ${vB.x.toFixed(5)} ${vB.y.toFixed(5)} ${vB.z.toFixed(5)}`);
-            lines.push(`    vertex ${vC.x.toFixed(5)} ${vC.y.toFixed(5)} ${vC.z.toFixed(5)}`);
-            lines.push("  endloop");
-            lines.push("endfacet");
+          const tris = Math.floor(pos.count / 3);
+          if (tris > 0) {
+            totalTris += tris;
+            meshes.push({ geom: nonIndexed, pos });
           }
         }
       });
-      lines.push(`endsolid ${safeName}`);
-      const blob = new Blob([lines.join("\n")], { type: "model/stl" });
+
+      const buffer = new ArrayBuffer(84 + totalTris * 50);
+      const view = new DataView(buffer);
+      view.setUint32(80, totalTris, true);
+      let offset = 84;
+
+      for (const { pos } of meshes) {
+        for (let i = 0; i + 2 < pos.count; i += 3) {
+          vA.fromBufferAttribute(pos, i);
+          vB.fromBufferAttribute(pos, i + 1);
+          vC.fromBufferAttribute(pos, i + 2);
+          cb.subVectors(vC, vB);
+          ab.subVectors(vA, vB);
+          cb.cross(ab).normalize();
+
+          view.setFloat32(offset, cb.x, true); offset += 4;
+          view.setFloat32(offset, cb.y, true); offset += 4;
+          view.setFloat32(offset, cb.z, true); offset += 4;
+
+          view.setFloat32(offset, vA.x, true); offset += 4;
+          view.setFloat32(offset, vA.y, true); offset += 4;
+          view.setFloat32(offset, vA.z, true); offset += 4;
+
+          view.setFloat32(offset, vB.x, true); offset += 4;
+          view.setFloat32(offset, vB.y, true); offset += 4;
+          view.setFloat32(offset, vB.z, true); offset += 4;
+
+          view.setFloat32(offset, vC.x, true); offset += 4;
+          view.setFloat32(offset, vC.y, true); offset += 4;
+          view.setFloat32(offset, vC.z, true); offset += 4;
+
+          view.setUint16(offset, 0, true); offset += 2;
+        }
+      }
+
+      const blob = new Blob([buffer], { type: "application/octet-stream" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `${safeName}.stl`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 20000);
     }
   };
+
+  useEffect(() => {
+    const onCustomExport = (e: Event) => {
+      const ce = e as CustomEvent<{ format?: "glb" | "obj" | "stl" }>;
+      handleExportFile(ce.detail?.format || "stl");
+    };
+    window.addEventListener("prism3d-export", onCustomExport);
+    return () => window.removeEventListener("prism3d-export", onCustomExport);
+  });
 
   return (
     <div className="relative flex-1 min-h-0 bg-[#090709] overflow-hidden flex flex-col">
