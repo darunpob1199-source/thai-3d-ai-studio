@@ -7,26 +7,27 @@
 }
 
 body {
-  background-color: #060608;
-  color: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+  background-color: #141415;
+  color: #ededed;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Custom sleek crimson-black scrollbar */
+/* Quiet graphite scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a080a;
+  background: #0f0f10;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3f151b;
-  border-radius: 9999px;
+  background: #232325;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #ef4444;
+  background: #36363a;
 }

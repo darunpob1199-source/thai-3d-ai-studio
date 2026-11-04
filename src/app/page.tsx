@@ -104,7 +104,7 @@ const STUDIO_PILLARS: {
   {
     id: "create",
     label: "สร้าง 3D",
-    titleTh: "1. สร้างโมเดล 3D (Create)",
+    titleTh: "สร้างโมเดล 3D",
     defaultTool: "generate",
     icon: Wand2,
     subTools: [
@@ -116,7 +116,7 @@ const STUDIO_PILLARS: {
   {
     id: "mesh",
     label: "รีเมช",
-    titleTh: "2. จัดการโพลีกอน & ชิ้นส่วน",
+    titleTh: "จัดการโพลีกอน & ชิ้นส่วน",
     defaultTool: "retopo",
     icon: Grid3X3,
     subTools: [
@@ -129,31 +129,31 @@ const STUDIO_PILLARS: {
   {
     id: "texture",
     label: "พื้นผิว",
-    titleTh: "3. พื้นผิว & ระบายสี (Texture)",
+    titleTh: "พื้นผิว & ระบายสี",
     defaultTool: "texture",
     icon: Palette,
     subTools: [
       { id: "texture", label: "AI Texture" },
       { id: "edit", label: "พู่กัน 3D" },
       { id: "pbr", label: "แสง/PBR" },
-      { id: "upscale", label: "8K ชัดพิเศษ" },
+      { id: "upscale", label: "อัปสเกล 8K" },
     ],
   },
   {
     id: "animate",
     label: "อนิเมชัน",
-    titleTh: "4. ผูกกระดูก & ท่าทาง (Rig & Motion)",
+    titleTh: "ผูกกระดูก & ท่าทาง",
     defaultTool: "rig",
     icon: Bone,
     subTools: [
-      { id: "rig", label: "1. ผูกกระดูก (Auto-Rig)" },
-      { id: "animate", label: "2. ท่าทาง (Motion)" },
+      { id: "rig", label: "ผูกกระดูก" },
+      { id: "animate", label: "ท่าทาง" },
     ],
   },
   {
     id: "print",
     label: "พิมพ์ 3D",
-    titleTh: "5. เตรียมพิมพ์ 3D (.STL Slicer)",
+    titleTh: "เตรียมพิมพ์ 3D (.STL)",
     defaultTool: "print3d",
     icon: Printer,
     subTools: [{ id: "print3d", label: "3D Print & Slicer" }],
@@ -170,15 +170,15 @@ const MODEL_OPTIONS: {
   {
     id: "trellis_pbr",
     code: "PRO",
-    name: "Pro Studio HD (Tripo v2.5 / TRELLIS.2)",
-    sub: "Full 360° PBR (Albedo + Metallic + Roughness) • ต้นทุน 6.80฿",
+    name: "Pro Studio HD (TRELLIS.2)",
+    sub: "Full 360° PBR (Albedo · Metallic · Roughness)",
     credits: 6,
   },
   {
     id: "hunyuan3d_2_1",
     code: "STD",
     name: "Standard PBR (Microsoft Trellis)",
-    sub: "360° Baked UV Texture • ต้นทุนเพียง 0.68฿/ชิ้น!",
+    sub: "360° Baked UV Texture · เร็วและประหยัดเครดิต",
     credits: 2,
   },
 ];
@@ -208,21 +208,21 @@ const QUICK_PROMPTS = [
 
 const TEXTURE_STYLE_PRESETS = [
   {
-    name: "Crimson Obsidian Neon",
+    name: "Crimson Obsidian",
     primary: "#ef4444",
     accent: "#18181b",
     roughness: 0.18,
     metalness: 0.9,
   },
   {
-    name: "Royal Siam Crimson & Gold",
+    name: "Royal Siam Gold",
     primary: "#dc2626",
     accent: "#f59e0b",
     roughness: 0.22,
     metalness: 0.92,
   },
   {
-    name: "Blood Moon Ruby Crystal",
+    name: "Ruby Crystal",
     primary: "#e11d48",
     accent: "#fb7185",
     roughness: 0.12,
@@ -236,7 +236,7 @@ const TEXTURE_STYLE_PRESETS = [
     metalness: 0.15,
   },
   {
-    name: "Volcanic Obsidian Armor",
+    name: "Volcanic Armor",
     primary: "#18181b",
     accent: "#f43f5e",
     roughness: 0.3,
@@ -259,7 +259,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     stage: "refine_pbr",
     engine: "trellis_pbr",
     mode: "image_to_3d",
-    prompt_th: "[Pro Studio 6.80฿] หุ่นรบเกราะเหล็ก Battle Mech (Full PBR 360°)",
+    prompt_th: "หุ่นรบเกราะเหล็ก Battle Mech",
     prompt_en:
       "Pro Studio TRELLIS.2 4B Cascade — Heavy armored sci-fi battle mech with baked Albedo, Metallic, and Roughness PBR maps",
     input_image_url: "/models/pro_trellis2_battle_mech.webp",
@@ -285,7 +285,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     stage: "refine_pbr",
     engine: "trellis_pbr",
     mode: "image_to_3d",
-    prompt_th: "[Pro Studio 6.80฿] เกราะอกมังกรทองคำจักรพรรดิ (Full PBR 360°)",
+    prompt_th: "เกราะอกมังกรทองคำจักรพรรดิ",
     prompt_en:
       "Pro Studio TRELLIS.2 4B Cascade — Ornate gold and steel dragon chest plate armor with full Metallic & Roughness PBR maps",
     input_image_url: "/models/pro_trellis2_dragon_armor.webp",
@@ -311,7 +311,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     stage: "refine_pbr",
     engine: "trellis_pbr",
     mode: "image_to_3d",
-    prompt_th: "[Pro Studio 6.80฿] โกเลมหินโบราณคลุมมอส (Full PBR 360°)",
+    prompt_th: "โกเลมหินโบราณคลุมมอส",
     prompt_en:
       "Pro Studio TRELLIS.2 4B Cascade — Ancient stone golem covered in moss with full PBR Albedo & Roughness maps",
     input_image_url: "/models/pro_trellis2_stone_golem.webp",
@@ -337,7 +337,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     stage: "refine_pbr",
     engine: "hunyuan3d_2_1",
     mode: "image_to_3d",
-    prompt_th: "[Standard 0.68฿] นักรบมังกร Dragonborn (Trellis PBR 360°)",
+    prompt_th: "นักรบมังกร Dragonborn",
     prompt_en:
       "Standard Microsoft Trellis ($0.02 / 0.68 THB) — Humanoid Dragonborn warrior character with 360° AI-baked UV texture",
     input_image_url: "/models/standard_trellis_dragonborn.png",
@@ -363,7 +363,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     stage: "refine_pbr",
     engine: "hunyuan3d_2_1",
     mode: "image_to_3d",
-    prompt_th: "[Standard 0.68฿] หุ่นรบไซไฟ Futuristic Mech (Trellis PBR 360°)",
+    prompt_th: "หุ่นรบไซไฟ Futuristic Mech",
     prompt_en:
       "Standard Microsoft Trellis ($0.02 / 0.68 THB) — Futuristic robot mech with 360° AI-baked UV texture",
     input_image_url: "/models/standard_trellis_mech.png",
@@ -389,7 +389,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     stage: "refine_pbr",
     engine: "hunyuan3d_2_1",
     mode: "image_to_3d",
-    prompt_th: "[Standard 0.68฿] มังกรพญานาคโบราณ (Trellis PBR 360°)",
+    prompt_th: "มังกรพญานาคโบราณ",
     prompt_en:
       "Standard Microsoft Trellis ($0.02 / 0.68 THB) — Mythical guardian dragon with 360° AI-baked UV texture",
     input_image_url: "/models/standard_trellis_loong.png",
@@ -415,7 +415,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     stage: "refine_pbr",
     engine: "hunyuan3d_2_1",
     mode: "image_to_3d",
-    prompt_th: "[Standard 0.68฿] ก๊อบลินนักรบแฟนตาซี (Trellis PBR 360°)",
+    prompt_th: "ก๊อบลินนักรบแฟนตาซี",
     prompt_en:
       "Standard Microsoft Trellis ($0.02 / 0.68 THB) — Fantasy goblin character with 360° AI-baked UV texture",
     input_image_url: "/models/standard_trellis_goblin.png",
@@ -1103,62 +1103,69 @@ export default function SiamPrism3DStudioPage() {
   );
 
   return (
-    <main className="h-dvh w-dvw overflow-hidden bg-[#060608] text-slate-100 flex flex-col p-3 gap-2.5 select-none font-sans relative">
-      {/* Ambient Aurora Mesh Backdrop */}
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/4 w-[620px] h-[360px] rounded-full bg-red-500/[0.09] blur-[130px]" />
-        <div className="absolute top-28 right-1/4 w-[520px] h-[340px] rounded-full bg-red-500/[0.09] blur-[130px]" />
-        <div className="absolute bottom-0 left-1/3 w-[480px] h-[260px] rounded-full bg-emerald-500/[0.06] blur-[120px]" />
-      </div>
-
-      {/* Floating Action Toast */}
+    <main className="h-dvh w-dvw overflow-hidden bg-[#141415] text-[#ededed] flex flex-col select-none font-sans relative">
+      {/* Quiet Studio Notification Toast */}
       {actionToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-[#110b0e]/95 border border-red-400/50 text-red-200 text-xs font-semibold shadow-[0_0_25px_rgba(239,68,68,0.3)] flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-red-400" />
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-[8px] bg-[#19191b] border border-white/[0.12] text-[#ededed] text-[13px] font-normal shadow-[0_8px_24px_rgba(0,0,0,0.45)] flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#e5484d] shrink-0" />
           <span>{actionToast}</span>
         </div>
       )}
 
       {/* =====================================================================
-          1. TOP FLOATING PILL HEADER (Minimalist Luxury Navigation)
+          1. TOP STUDIO HEADER (56px, Graphite #0f0f10, 1px Hairline, No Glows)
          ===================================================================== */}
-      <header className="relative z-20 h-12 w-full rounded-full bg-[#110b0e]/85 backdrop-blur-2xl px-4 flex items-center justify-between shrink-0 border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-        {/* Left Navigation: Brand + Clean 2-Tab Switcher */}
-        <nav className="flex items-center gap-3">
+      <header className="relative z-20 h-14 w-full bg-[#0f0f10] px-6 flex items-center justify-between shrink-0 border-b border-white/[0.08]">
+        {/* Left Navigation: Flat Prism Mark + 2-Tab Segmented Control */}
+        <nav className="flex items-center gap-4">
           <button
             onClick={() => setTopNav("home")}
-            className="flex items-center gap-2 pr-2 py-1 rounded-full hover:opacity-90 transition cursor-pointer"
+            className="flex items-center gap-2.5 py-1 hover:opacity-85 transition-opacity cursor-pointer"
           >
-            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-red-600 via-red-500 to-rose-600 flex items-center justify-center text-white font-black text-xs shadow-[0_0_12px_rgba(239,68,68,0.5)]">
-              P
-            </div>
-            <span className="font-bold text-sm tracking-tight text-white">
-              Prism<span className="text-red-400">3D</span>
+            <svg
+              className="w-5 h-5 text-[#e5484d] shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 2L21 19H3L12 2Z"
+                fill="currentColor"
+                fillOpacity="0.9"
+              />
+              <path
+                d="M12 2L21 19H12V2Z"
+                fill="#ffffff"
+                fillOpacity="0.22"
+              />
+            </svg>
+            <span className="font-medium text-[16px] tracking-tight text-[#ededed]">
+              Prism3D
             </span>
           </button>
 
-          <div className="h-8 p-0.5 rounded-full bg-[#090709] border border-white/[0.08] flex items-center gap-0.5">
+          <div className="h-8 p-1 rounded-[8px] bg-[#19191b] border border-white/[0.08] flex items-center gap-1">
             <button
               onClick={() => setTopNav("home")}
-              className={`h-7 px-3.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+              className={`h-6 px-3 rounded-[6px] text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer ${
                 topNav === "home"
-                  ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#232325] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                  : "text-[#85858b] hover:text-[#ededed]"
               }`}
             >
-              <HomeIcon className="w-3.5 h-3.5" />
+              <HomeIcon className="w-3.5 h-3.5 stroke-[1.5]" />
               <span>หน้าแรก</span>
             </button>
 
             <button
               onClick={() => setTopNav("workspace")}
-              className={`h-7 px-3.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
+              className={`h-6 px-3 rounded-[6px] text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer ${
                 topNav === "workspace"
-                  ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#232325] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                  : "text-[#85858b] hover:text-[#ededed]"
               }`}
             >
-              <Box className="w-3.5 h-3.5" />
+              <Box className="w-3.5 h-3.5 stroke-[1.5]" />
               <span>สตูดิโอ 3D</span>
             </button>
           </div>
@@ -1167,8 +1174,8 @@ export default function SiamPrism3DStudioPage() {
         {/* Right Actions */}
         <div className="flex items-center gap-2">
           {oauthToast && (
-            <div className="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px]">
-              <CheckCircle2 className="w-3.5 h-3.5" />
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-[8px] bg-[#19191b] border border-white/[0.08] text-[#ededed] text-[12px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#4cc38a]" />
               <span>{oauthToast}</span>
             </div>
           )}
@@ -1177,104 +1184,102 @@ export default function SiamPrism3DStudioPage() {
           {topNav === "workspace" && (
             <button
               onClick={() => setDccBridgeModalOpen(true)}
-              className="hidden sm:flex h-8 px-3 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 items-center gap-1.5 text-xs font-medium text-slate-200 transition cursor-pointer"
+              className="hidden sm:flex h-8 px-3 rounded-[8px] bg-[#19191b] hover:bg-[#232325] border border-white/[0.08] items-center gap-2 text-[13px] font-normal text-[#a1a1a6] hover:text-[#ededed] transition-colors cursor-pointer"
             >
-              <Cpu className="w-3.5 h-3.5 text-red-400" />
+              <Cpu className="w-4 h-4 stroke-[1.5] text-[#85858b]" />
               <span>DCC Bridge</span>
             </button>
           )}
 
-          {/* Credits + Top-Up Pill (Click Balance -> D1 Ledger, Click + -> QR Top-Up) */}
-          <div className="h-8 pl-1.5 pr-1 rounded-full bg-white/[0.04] border border-white/10 flex items-center gap-1.5">
+          {/* Credits + Top-Up Control (Tabular Mono Figures) */}
+          <div className="h-8 p-1 rounded-[8px] bg-[#19191b] border border-white/[0.08] flex items-center gap-1">
             <button
               onClick={() => {
                 fetchSession();
                 setTopupInitialTab("ledger");
                 setTopupModalOpen(true);
               }}
-              title="คลิกดูประวัติธุรกรรมและยอดเครดิตจริงใน Cloudflare D1"
-              className="h-6 px-2 rounded-full hover:bg-white/[0.08] flex items-center gap-1.5 text-xs font-bold text-white transition cursor-pointer"
+              title="ดูประวัติธุรกรรมและยอดเครดิตในฐานข้อมูล D1"
+              className="h-6 px-2.5 rounded-[6px] hover:bg-[#232325] flex items-center gap-1.5 text-[13px] text-[#ededed] transition-colors cursor-pointer"
             >
-              <Coins className="w-3.5 h-3.5 text-red-400" />
-              <span>{user ? user.credits_balance : 0}</span>
-              <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                D1
+              <Coins className="w-3.5 h-3.5 stroke-[1.5] text-[#85858b]" />
+              <span className="font-mono tabular-nums font-medium">
+                {user ? user.credits_balance : 0}
               </span>
+              <span className="text-[12px] text-[#85858b]">เครดิต</span>
             </button>
             <button
               onClick={() => {
                 setTopupInitialTab("topup");
                 setTopupModalOpen(true);
               }}
-              className="h-6 px-2.5 rounded-full bg-gradient-to-r from-red-600 via-red-500 to-rose-600 hover:brightness-110 text-white font-bold text-[11px] flex items-center gap-1 transition shadow-sm cursor-pointer"
+              className="h-6 px-2.5 rounded-[6px] bg-[#e5484d] hover:bg-[#dc2626] text-white font-medium text-[12px] flex items-center gap-1 transition-colors cursor-pointer"
             >
-              <Plus className="w-3 h-3 stroke-[2.5]" />
+              <Plus className="w-3.5 h-3.5 stroke-[1.5]" />
               <span>เติมเครดิต</span>
             </button>
           </div>
 
           {/* User Profile / Google Sign-In */}
           {user ? (
-            <div className="flex items-center gap-1 pl-1.5 pr-1.5 py-1 rounded-full bg-white/[0.04] border border-white/10">
+            <div className="h-8 px-2 rounded-[8px] bg-[#19191b] border border-white/[0.08] flex items-center gap-1.5">
               {user.avatar_url ? (
                 <img
                   src={user.avatar_url}
                   alt={user.name}
-                  className="w-6 h-6 rounded-full bg-slate-800 object-cover"
+                  className="w-5 h-5 rounded-[4px] bg-[#232325] object-cover"
                 />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-red-600 to-rose-600 text-white font-bold text-xs flex items-center justify-center">
+                <div className="w-5 h-5 rounded-[4px] bg-[#232325] text-[#ededed] font-medium text-[11px] flex items-center justify-center">
                   {user.name.slice(0, 1).toUpperCase()}
                 </div>
               )}
-              <span className="text-xs font-medium text-slate-200 max-w-[96px] truncate hidden md:inline px-1">
+              <span className="text-[13px] font-normal text-[#a1a1a6] max-w-[96px] truncate hidden md:inline px-1">
                 {user.name}
               </span>
               <button
                 onClick={handleDirectGoogleLogin}
                 title="สลับบัญชี Google"
-                className="p-1 text-slate-400 hover:text-white rounded-full hover:bg-white/10 transition cursor-pointer"
+                className="p-1 text-[#85858b] hover:text-[#ededed] rounded-[4px] hover:bg-[#232325] transition-colors cursor-pointer"
               >
-                <RefreshCw className="w-3 h-3" />
+                <RefreshCw className="w-3.5 h-3.5 stroke-[1.5]" />
               </button>
               <button
                 onClick={handleLogout}
                 title="ออกจากระบบ"
-                className="p-1 text-slate-400 hover:text-rose-400 rounded-full hover:bg-white/10 transition cursor-pointer"
+                className="p-1 text-[#85858b] hover:text-[#e5484d] rounded-[4px] hover:bg-[#232325] transition-colors cursor-pointer"
               >
-                <LogOut className="w-3 h-3" />
+                <LogOut className="w-3.5 h-3.5 stroke-[1.5]" />
               </button>
             </div>
           ) : (
             <button
               onClick={handleDirectGoogleLogin}
-              className="h-8 px-3.5 rounded-full bg-white text-zinc-900 hover:bg-zinc-100 font-bold text-xs flex items-center gap-2 transition cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.18)]"
+              className="h-8 px-3.5 rounded-[8px] bg-[#ededed] text-[#0f0f10] hover:bg-white font-medium text-[13px] flex items-center gap-2 transition-colors cursor-pointer"
             >
               <GoogleLogoSvg className="w-3.5 h-3.5" />
-              <span>เข้าสู่ระบบด้วย Google</span>
+              <span>เข้าสู่ระบบ</span>
             </button>
           )}
         </div>
       </header>
 
       {/* =====================================================================
-          2A. WELCOME PAGE (Minimalist Luxury Prompt Card + Clean Gallery)
+          2A. WELCOME PAGE (Unslopped Graphite Studio Composer & Showcase)
          ===================================================================== */}
       {topNav === "home" ? (
-        <div className="relative z-10 flex-1 overflow-y-auto px-4 pb-12 space-y-10 no-scrollbar">
-          {/* Hero Welcome Section */}
-          <section className="pt-8 pb-2 flex flex-col items-center">
-            <h1 className="text-2xl sm:text-4xl font-bold tracking-tight text-white text-center mb-2.5">
-              {user
-                ? `สวัสดี ${user.name} วันนี้คุณจะปั้นอะไรเป็น 3D?`
-                : "เปลี่ยนจินตนาการเป็นโมเดล 3D ระดับสตูดิโอ"}
+        <div className="relative z-10 flex-1 overflow-y-auto px-6 py-10 space-y-12 no-scrollbar">
+          {/* Hero Section */}
+          <section className="max-w-[760px] mx-auto flex flex-col items-center">
+            <h1 className="text-[28px] sm:text-[36px] font-medium tracking-[-0.02em] text-[#ededed] text-center leading-[1.15]">
+              สร้างโมเดล 3D พร้อมพื้นผิว PBR และโครงกระดูก
             </h1>
 
-            <p className="text-sm text-slate-400 font-light text-center mb-7">
-              พิมพ์คำสั่งภาษาไทย หรือแนบรูปภาพต้นแบบ (Ctrl+V) เพื่อสร้างโมเดล 3D พร้อมใช้งานทันที
+            <p className="text-[14px] text-[#a1a1a6] font-normal text-center mt-2 mb-8 max-w-[540px] leading-[1.5]">
+              แปลงข้อความภาษาไทยหรือรูปภาพต้นแบบเป็นไฟล์ .GLB และ .STL สำหรับเอนจินเกม แอนิเมชัน และเครื่องพิมพ์ 3D
             </p>
 
-            {/* Minimalist Luxury Creation Card */}
+            {/* Studio Prompt Composer Card (Outer radius 14px, padding 16px, inner controls 8px) */}
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -1295,30 +1300,28 @@ export default function SiamPrism3DStudioPage() {
                   reader.readAsDataURL(file);
                 }
               }}
-              className={`w-full max-w-[780px] rounded-[28px] p-5 flex flex-col justify-between gap-4 relative overflow-hidden transition-all duration-300 backdrop-blur-xl ${
+              className={`w-full rounded-[14px] p-4 flex flex-col justify-between gap-4 relative transition-colors ${
                 isDragOverHero
-                  ? "bg-red-500/15 border-2 border-red-400 shadow-[0_0_60px_rgba(239,68,68,0.35)]"
-                  : "bg-[#110b0e]/90 border border-white/10 hover:border-red-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.55)]"
+                  ? "bg-[#232325] border border-[#e5484d]"
+                  : "bg-[#19191b] border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
               }`}
             >
-              <div className="pointer-events-none absolute inset-x-16 top-0 h-[1px] bg-gradient-to-r from-transparent via-red-400/50 to-transparent" />
-
-              {/* Main Prompt Input + Inline Image Preview (if attached) */}
+              {/* Main Prompt Input + Inline Image Preview */}
               <div className="flex items-start gap-4">
                 <textarea
                   rows={3}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="บรรยายโมเดล 3D ที่ต้องการสร้าง เช่น หุ่นรบเกราะเหล็กไซไฟ, มังกรพญานาคคริสตัล, ดาบอัศวิน..."
-                  className="flex-1 bg-transparent text-base text-white placeholder-slate-500 focus:outline-none resize-none leading-relaxed"
+                  placeholder="บรรยายโมเดล 3D เช่น หุ่นรบเกราะเหล็กไซไฟ, มังกรพญานาคคริสตัล, ดาบอัศวิน"
+                  className="flex-1 bg-transparent text-[15px] text-[#ededed] placeholder-[#85858b] focus:outline-none resize-none leading-[1.6]"
                 />
 
                 {uploadedImage && (
-                  <div className="relative w-20 h-20 rounded-2xl bg-black/50 border border-red-400/40 p-1 shrink-0 group">
+                  <div className="relative w-20 h-20 rounded-[8px] bg-[#0f0f10] border border-white/[0.08] p-1 shrink-0">
                     <img
                       src={uploadedImage}
                       alt="Reference"
-                      className="w-full h-full object-contain rounded-xl"
+                      className="w-full h-full object-contain rounded-[6px]"
                     />
                     <button
                       onClick={() => {
@@ -1326,7 +1329,7 @@ export default function SiamPrism3DStudioPage() {
                         setInputMode("text_to_3d");
                       }}
                       title="ลบรูปต้นแบบ"
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center shadow-md cursor-pointer"
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-[4px] bg-[#232325] border border-white/[0.12] text-[#ededed] text-[11px] flex items-center justify-center cursor-pointer"
                     >
                       ×
                     </button>
@@ -1334,22 +1337,22 @@ export default function SiamPrism3DStudioPage() {
                 )}
               </div>
 
-              {/* Clean 4-Control Action Bar */}
-              <div className="pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-2">
+              {/* Action Bar (4 Controls, 8px Radius, No Emojis) */}
+              <div className="pt-3 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   {/* 1. Attach Image / .GLB */}
-                  <label className="h-9 px-3.5 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs font-medium text-slate-200 flex items-center gap-2 cursor-pointer transition">
+                  <label className="h-9 px-3 rounded-[8px] bg-[#232325] hover:bg-[#2c2c2f] border border-white/[0.08] text-[13px] font-normal text-[#ededed] flex items-center gap-2 cursor-pointer transition-colors">
                     <input
                       type="file"
                       accept="image/*,.glb,.gltf"
                       onChange={handleImageUpload}
                       className="hidden"
                     />
-                    <ImageIcon className="w-3.5 h-3.5 text-red-400" />
+                    <ImageIcon className="w-4 h-4 stroke-[1.5] text-[#85858b]" />
                     <span>{uploadedImage ? "เปลี่ยนรูปต้นแบบ" : "แนบรูป / .GLB"}</span>
                   </label>
 
-                  {/* 2. Engine Tier Switcher (Standard 0.68฿ vs Pro 6.80฿) */}
+                  {/* 2. Engine Tier Switcher */}
                   <button
                     onClick={() =>
                       setSelectedModel(
@@ -1358,17 +1361,22 @@ export default function SiamPrism3DStudioPage() {
                           : "trellis_pbr"
                       )
                     }
-                    className={`h-9 px-3.5 rounded-full text-xs font-semibold flex items-center gap-1.5 border transition cursor-pointer ${
-                      selectedModel === "trellis_pbr"
-                        ? "bg-amber-500/15 text-amber-200 border-amber-400/40"
-                        : "bg-white/[0.05] text-slate-200 border-white/10 hover:bg-white/[0.09]"
-                    }`}
+                    className="h-9 px-3 rounded-[8px] bg-[#232325] hover:bg-[#2c2c2f] border border-white/[0.08] text-[13px] font-normal text-[#ededed] flex items-center gap-2 transition-colors cursor-pointer"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-red-400" />
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        selectedModel === "trellis_pbr"
+                          ? "bg-[#e5484d]"
+                          : "bg-[#85858b]"
+                      }`}
+                    />
                     <span>
                       {selectedModel === "trellis_pbr"
-                        ? "🏆 Pro Studio (6 🪙)"
-                        : "⚡ Standard PBR (2 🪙)"}
+                        ? "Pro Studio"
+                        : "Standard PBR"}
+                    </span>
+                    <span className="font-mono tabular-nums text-[12px] text-[#85858b]">
+                      {selectedModel === "trellis_pbr" ? "6 เครดิต" : "2 เครดิต"}
                     </span>
                   </button>
                 </div>
@@ -1377,22 +1385,22 @@ export default function SiamPrism3DStudioPage() {
                   {/* 3. Random Prompt Idea */}
                   <button
                     onClick={handleRandomPrompt}
-                    title="สุ่มไอเดียคำสั่ง Prompt"
-                    className="w-9 h-9 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition cursor-pointer"
+                    title="สุ่มคำสั่งตัวอย่าง"
+                    className="w-9 h-9 rounded-[8px] bg-[#232325] hover:bg-[#2c2c2f] border border-white/[0.08] flex items-center justify-center text-[#a1a1a6] hover:text-[#ededed] transition-colors cursor-pointer"
                   >
-                    <Dices className="w-4 h-4" />
+                    <Dices className="w-4 h-4 stroke-[1.5]" />
                   </button>
 
-                  {/* 4. Primary Generate CTA */}
+                  {/* 4. Primary Generate CTA (Off-white primary button on dark ramp per Unslop) */}
                   <button
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="h-9 px-5 rounded-full bg-gradient-to-r from-red-600 via-red-500 to-rose-600 hover:brightness-110 text-white font-bold text-xs flex items-center gap-2 shadow-[0_0_24px_rgba(239,68,68,0.35)] transition cursor-pointer"
+                    className="h-9 px-4 rounded-[8px] bg-[#ededed] hover:bg-white disabled:opacity-50 text-[#0f0f10] font-medium text-[13px] flex items-center gap-2 transition-colors cursor-pointer"
                   >
-                    <Wand2 className="w-3.5 h-3.5" />
+                    <Wand2 className="w-4 h-4 stroke-[1.5]" />
                     <span>สร้างโมเดล 3D</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-black/30 text-white text-[11px] font-extrabold">
-                      {estimatedCost} 🪙
+                    <span className="px-1.5 py-0.5 rounded-[4px] bg-black/10 text-[#0f0f10] text-[12px] font-mono tabular-nums font-medium">
+                      {estimatedCost}
                     </span>
                   </button>
                 </div>
@@ -1401,20 +1409,20 @@ export default function SiamPrism3DStudioPage() {
           </section>
 
           {/* Showcase & Community Gallery Section */}
-          <section className="max-w-[1380px] mx-auto space-y-4">
-            {/* Clean Single-Row Category Pills + Search */}
+          <section className="max-w-[1360px] mx-auto space-y-4">
+            {/* Category Bar + Search */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
                 {GALLERY_CATEGORIES.map((cat) => {
                   const active = selectedCategory === cat.id;
                   return (
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
-                      className={`h-8 px-4 rounded-full text-xs font-medium whitespace-nowrap transition cursor-pointer ${
+                      className={`h-8 px-3 rounded-[8px] text-[13px] font-normal whitespace-nowrap transition-colors cursor-pointer ${
                         active
-                          ? "bg-white text-zinc-950 font-semibold shadow-sm"
-                          : "bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white"
+                          ? "bg-[#232325] text-[#ededed] border border-white/[0.1]"
+                          : "text-[#85858b] hover:text-[#ededed] hover:bg-[#19191b]"
                       }`}
                     >
                       {cat.label}
@@ -1423,78 +1431,77 @@ export default function SiamPrism3DStudioPage() {
                 })}
               </div>
 
-              <div className="h-8 px-3.5 rounded-full bg-[#110b0e] border border-white/10 flex items-center gap-2">
-                <Search className="w-3.5 h-3.5 text-slate-400" />
+              <div className="h-8 px-3 rounded-[8px] bg-[#19191b] border border-white/[0.08] flex items-center gap-2">
+                <Search className="w-4 h-4 stroke-[1.5] text-[#85858b]" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ค้นหาโมเดล 3D..."
-                  className="bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none w-36 sm:w-48"
+                  placeholder="ค้นหาโมเดล"
+                  className="bg-transparent text-[13px] text-[#ededed] placeholder-[#85858b] focus:outline-none w-36 sm:w-48"
                 />
               </div>
             </div>
 
-            {/* Clean 4-Column 3D Model Grid */}
+            {/* 4-Column 3D Model Grid (Outer 14px, padding 8px, inner 8px, zero emojis, zero scale-on-hover) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {allGalleryModels.map((item) => {
+                const cleanTitle = item.prompt_th.replace(/^\[.*?\]\s*/, "");
+                const isPro = item.engine === "trellis_pbr";
+                return (
+                  <div
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTask(item);
+                      setTopNav("workspace");
+                    }}
+                    className="rounded-[14px] bg-[#19191b] border border-white/[0.08] hover:border-white/[0.18] p-2 flex flex-col justify-between relative group cursor-pointer transition-colors"
+                  >
+                    <div className="h-[248px] rounded-[8px] bg-[#0f0f10] border border-white/[0.04] flex items-center justify-center relative overflow-hidden">
+                      {item.input_image_url ? (
+                        <img
+                          src={item.input_image_url}
+                          alt={cleanTitle}
+                          className="w-full h-full object-contain p-4"
+                        />
+                      ) : (
+                        <div
+                          className="w-20 h-20 rounded-[12px] flex items-center justify-center border border-white/15"
+                          style={{
+                            background: `linear-gradient(135deg, ${item.primary_color}, ${item.accent_color})`,
+                          }}
+                        >
+                          <Box className="w-8 h-8 stroke-[1.5] text-white" />
+                        </div>
+                      )}
 
-              {allGalleryModels.map((item) => (
-                <div
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTask(item);
-                    setTopNav("workspace");
-                  }}
-                  className="h-[320px] rounded-[24px] bg-[#110b0e] border border-white/[0.07] hover:border-red-400/50 p-3.5 flex flex-col justify-between relative overflow-hidden group cursor-pointer transition"
-                >
-                  <div className="flex-1 rounded-2xl bg-gradient-to-b from-[#1f0d13] to-[#0b080a] flex items-center justify-center relative overflow-hidden">
-                    {item.input_image_url ? (
-                      <img
-                        src={item.input_image_url}
-                        alt={item.prompt_th}
-                        className="w-full h-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div
-                        className="w-24 h-24 rounded-3xl shadow-2xl flex items-center justify-center border border-white/20 transition-transform duration-400 group-hover:scale-110 group-hover:rotate-3"
-                        style={{
-                          background: `linear-gradient(135deg, ${item.primary_color}, ${item.accent_color})`,
-                        }}
-                      >
-                        <Box className="w-11 h-11 text-white drop-shadow" />
-                      </div>
-                    )}
-
-                    <span
-                      className={`absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                        item.engine === "trellis_pbr"
-                          ? "bg-amber-950/90 border-amber-400/60 text-amber-200"
-                          : "bg-sky-950/90 border-sky-400/50 text-sky-200"
-                      }`}
-                    >
-                      {item.engine === "trellis_pbr"
-                        ? "🏆 ตัวท็อป PRO (6.80฿)"
-                        : "⚡ ตัวกลาง STD (0.68฿)"}
-                    </span>
-
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-0 bg-slate-950/65 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 p-3">
-                      <span className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg">
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>เปิดใน 3D Studio</span>
+                      {/* Quiet HUD Spec Badge */}
+                      <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-[4px] bg-[#141415]/90 border border-white/[0.08] flex items-center gap-1.5 text-[11px] font-mono tabular-nums text-[#a1a1a6]">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            isPro ? "bg-[#e5484d]" : "bg-[#85858b]"
+                          }`}
+                        />
+                        <span>{isPro ? "PRO · PBR" : "STD · PBR"}</span>
                       </span>
-                      <div className="flex items-center gap-1.5">
+
+                      {/* Bottom Action Bar on Hover */}
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-x-2 bottom-2 p-1.5 rounded-[6px] bg-[#141415]/95 border border-white/[0.1] flex items-center justify-between gap-1.5">
+                        <span className="flex-1 h-7 px-2.5 rounded-[4px] bg-[#ededed] text-[#0f0f10] font-medium text-[12px] flex items-center justify-center gap-1.5">
+                          <span>เปิดในสตูดิโอ</span>
+                        </span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveTask(item);
-                            setPrompt(item.prompt_th);
+                            setPrompt(cleanTitle);
                             setTopNav("workspace");
                             handleSelectLeftTool("generate");
-                            triggerToast(`โหลดพรอมต์และโมเดล "${item.prompt_th}" เพื่อ Remix แล้ว`);
+                            triggerToast(`โหลดพรอมต์ "${cleanTitle}" เพื่อสร้างใหม่แล้ว`);
                           }}
-                          className="px-2.5 py-1 rounded-full bg-[#110b0e]/90 hover:bg-red-500/25 border border-red-400/40 text-[10px] font-semibold text-red-200 cursor-pointer"
+                          className="h-7 px-2.5 rounded-[4px] bg-[#232325] hover:bg-[#2c2c2f] text-[12px] font-normal text-[#ededed] transition-colors cursor-pointer"
                         >
-                          ✨ Remix
+                          Remix
                         </button>
                         <button
                           onClick={(e) => {
@@ -1502,70 +1509,62 @@ export default function SiamPrism3DStudioPage() {
                             setActiveTask(item);
                             setTopNav("workspace");
                             handleSelectLeftTool("texture");
-                            triggerToast(`เปิด "${item.prompt_th}" ใน AI Retexture Studio`);
+                            triggerToast(`เปิด "${cleanTitle}" ในโหมดพื้นผิว PBR`);
                           }}
-                          className="px-2.5 py-1 rounded-full bg-[#110b0e]/90 hover:bg-rose-500/25 border border-rose-400/40 text-[10px] font-semibold text-rose-200 cursor-pointer"
+                          className="h-7 px-2.5 rounded-[4px] bg-[#232325] hover:bg-[#2c2c2f] text-[12px] font-normal text-[#a1a1a6] hover:text-[#ededed] transition-colors cursor-pointer"
                         >
-                          🎨 Retexture
+                          PBR
                         </button>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="pt-3 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-red-600 to-rose-700 text-white font-bold text-xs flex items-center justify-center shrink-0 ring-2 ring-red-400/30">
-                        P
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-white truncate">
-                          {item.prompt_th}
-                        </p>
-                        <p className="text-[10px] text-slate-400 truncate">
-                          {(item.target_poly_count / 1000).toFixed(1)}k polys •{" "}
-                          {item.topology.toUpperCase()}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 text-[11px] text-slate-400 shrink-0">
-                      <Heart className="w-3.5 h-3.5 text-red-400" />
-                      <span>42</span>
+                    {/* Card Footer: Title + Signature Tabular Mono Spec */}
+                    <div className="pt-2.5 pb-1 px-1.5 flex items-center justify-between gap-3">
+                      <p className="text-[13px] font-medium text-[#ededed] truncate">
+                        {cleanTitle}
+                      </p>
+                      <span className="text-[11px] font-mono tabular-nums text-[#85858b] shrink-0">
+                        {(item.target_poly_count / 1000).toFixed(0)}k · {item.topology.toUpperCase()}
+                      </span>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         </div>
       ) : (
         /* =====================================================================
-           2B. 3D WORKSPACE VIEW — ALL 11 LEFT-RAIL TOOLS FULLY INTERACTIVE
+           2B. 3D WORKSPACE VIEW — PRECISION DARKROOM STUDIO SHELL
            ===================================================================== */
-        <div className="relative z-10 flex-1 min-h-0 flex gap-0">
+        <div className="relative z-10 flex-1 min-h-0 flex bg-[#0f0f10]">
           {/* -------------------------------------------------------------------
-              LEFT DOCK PART 1: Clean 5-Pillar Studio Rail (Meshy / Tripo Standard)
+              LEFT DOCK PART 1: 5-Pillar Studio Rail (64px wide, 4px grid)
              ------------------------------------------------------------------- */}
-          <aside className="w-[66px] h-full rounded-l-[20px] bg-[#110b0e] border-y border-l border-red-500/15 flex flex-col justify-between py-2.5 px-1.5 shrink-0">
-            <div className="flex flex-col gap-2 overflow-y-auto no-scrollbar">
-              {STUDIO_PILLARS.map((pillar, idx) => {
+          <aside className="w-16 h-full bg-[#0f0f10] border-r border-white/[0.08] flex flex-col justify-between py-3 px-2 shrink-0">
+            <div className="flex flex-col gap-1 overflow-y-auto no-scrollbar">
+              {STUDIO_PILLARS.map((pillar) => {
                 const Icon = pillar.icon;
                 const isActive = pillar.subTools.some((st) => st.id === activeLeftTool);
                 return (
                   <button
                     key={pillar.id}
                     onClick={() => handleSelectLeftTool(pillar.defaultTool)}
-                    className={`w-full py-2.5 px-1 rounded-xl flex flex-col items-center justify-center gap-1 transition cursor-pointer relative ${
+                    className={`w-full py-2.5 px-1 rounded-[8px] flex flex-col items-center justify-center gap-1.5 transition-colors cursor-pointer relative ${
                       isActive
-                        ? "bg-gradient-to-b from-red-600/25 to-rose-600/20 text-red-200 border border-red-400/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
-                        : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                        ? "bg-[#232325] text-[#ededed]"
+                        : "text-[#85858b] hover:text-[#ededed] hover:bg-[#19191b]"
                     }`}
                   >
-                    <span className="absolute top-1 left-1.5 text-[8px] font-mono opacity-45">
-                      0{idx + 1}
-                    </span>
-                    <Icon className={`w-4 h-4 ${isActive ? "text-red-400" : ""}`} />
-                    <span className="text-[10px] leading-tight font-bold text-center">
+                    {isActive && (
+                      <span className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r bg-[#e5484d]" />
+                    )}
+                    <Icon
+                      className={`w-4 h-4 stroke-[1.5] ${
+                        isActive ? "text-[#ededed]" : "text-[#85858b]"
+                      }`}
+                    />
+                    <span className="text-[11px] leading-none font-normal text-center">
                       {pillar.label}
                     </span>
                   </button>
@@ -1573,24 +1572,24 @@ export default function SiamPrism3DStudioPage() {
               })}
             </div>
 
-            <div className="pt-2 border-t border-white/[0.06] flex flex-col items-center">
+            <div className="pt-2 border-t border-white/[0.08] flex flex-col items-center">
               <button
                 onClick={() => setTopupModalOpen(true)}
-                className="w-full py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] flex flex-col items-center gap-1 transition cursor-pointer"
+                className="w-full py-2 rounded-[8px] text-[#85858b] hover:text-[#ededed] hover:bg-[#19191b] flex flex-col items-center gap-1 transition-colors cursor-pointer"
               >
-                <Smartphone className="w-4 h-4 text-red-400" />
-                <span className="text-[9.5px] leading-none font-semibold">เติมเครดิต</span>
+                <Coins className="w-4 h-4 stroke-[1.5]" />
+                <span className="text-[10px] leading-none font-normal">เครดิต</span>
               </button>
             </div>
           </aside>
 
           {/* -------------------------------------------------------------------
-              LEFT DOCK PART 2: Dynamic Tool Panel with Sub-Mode Switcher
+              LEFT DOCK PART 2: Dynamic Tool Inspector (280px wide, Graphite #141415)
              ------------------------------------------------------------------- */}
-          <section className="w-[276px] h-full rounded-r-[20px] bg-[#160e12] border-y border-r border-red-500/15 flex flex-col shrink-0 overflow-hidden">
+          <section className="w-[280px] h-full bg-[#141415] border-r border-white/[0.08] flex flex-col shrink-0 overflow-hidden">
             {/* Dynamic Panel Header */}
-            <div className="h-10 px-3.5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-              <span className="text-xs font-bold text-white tracking-wide truncate">
+            <div className="h-10 px-4 border-b border-white/[0.08] flex items-center justify-between shrink-0">
+              <span className="text-[13px] font-medium text-[#ededed] truncate">
                 {
                   STUDIO_PILLARS.find((p) =>
                     p.subTools.some((st) => st.id === activeLeftTool)
@@ -1622,35 +1621,35 @@ export default function SiamPrism3DStudioPage() {
                     emissiveIntensity: activeTask?.output_glb_url ? 0 : 0.25,
                     polyMultiplier: 1,
                   });
-                  triggerToast("รีเซ็ตการตั้งค่า Viewport & สีวัสดุกลับสู่ค่าเริ่มต้นเรียบร้อย");
+                  triggerToast("รีเซ็ตการตั้งค่า Viewport และวัสดุกลับสู่ค่าเริ่มต้นแล้ว");
                 }}
-                title="Reset Tool Effects"
-                className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] hover:bg-white/10 text-slate-300 flex items-center gap-1 cursor-pointer shrink-0"
+                title="รีเซ็ตการตั้งค่า"
+                className="text-[12px] px-2 py-1 rounded-[6px] hover:bg-[#232325] text-[#85858b] hover:text-[#ededed] flex items-center gap-1 transition-colors cursor-pointer shrink-0"
               >
-                <RotateCcw className="w-2.5 h-2.5" />
-                <span>Reset</span>
+                <RotateCcw className="w-3 h-3 stroke-[1.5]" />
+                <span>รีเซ็ต</span>
               </button>
             </div>
 
-            {/* Clean Sub-Mode Switcher inside the Active Pillar */}
+            {/* Sub-Mode Switcher inside the Active Pillar */}
             {(() => {
               const currentPillar = STUDIO_PILLARS.find((p) =>
                 p.subTools.some((st) => st.id === activeLeftTool)
               );
               if (!currentPillar || currentPillar.subTools.length <= 1) return null;
               return (
-                <div className="px-3 pt-2.5 pb-1 shrink-0">
-                  <div className="p-1 rounded-xl bg-[#0b080a] border border-white/[0.07] flex items-center gap-1">
+                <div className="px-3 pt-3 pb-1 shrink-0">
+                  <div className="p-1 rounded-[8px] bg-[#0f0f10] border border-white/[0.08] flex items-center gap-1">
                     {currentPillar.subTools.map((st) => {
                       const subActive = activeLeftTool === st.id;
                       return (
                         <button
                           key={st.id}
                           onClick={() => handleSelectLeftTool(st.id)}
-                          className={`flex-1 py-1.5 px-1.5 rounded-lg text-[10px] font-bold transition truncate cursor-pointer ${
+                          className={`flex-1 py-1.5 px-2 rounded-[6px] text-[12px] font-medium transition-colors truncate cursor-pointer ${
                             subActive
-                              ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-sm"
-                              : "text-slate-400 hover:text-white"
+                              ? "bg-[#232325] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                              : "text-[#85858b] hover:text-[#ededed]"
                           }`}
                         >
                           {st.label}
@@ -1771,51 +1770,51 @@ export default function SiamPrism3DStudioPage() {
                ================================================================= */}
             {activeLeftTool === "relief" && (
               <div className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar">
-                <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#090709] border border-white/10">
+                <div className="grid grid-cols-2 gap-1 p-1 rounded-[8px] bg-[#0f0f10] border border-white/[0.08]">
                   <button
                     onClick={() => {
                       setArtStyleMode("relief");
                       triggerToast("สลับเป็นโหมดปั้นนูนต่ำ 3D Bas-Relief Medallion");
                     }}
-                    className={`py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    className={`py-1.5 rounded-[6px] text-xs font-medium transition-colors cursor-pointer ${
                       artStyleMode === "relief"
-                        ? "bg-red-600 text-white"
-                        : "text-slate-300 hover:text-white"
+                        ? "bg-[#232325] text-[#ededed]"
+                        : "text-[#85858b] hover:text-[#ededed]"
                     }`}
                   >
-                    🪙 Bas-Relief
+                    Bas-Relief
                   </button>
                   <button
                     onClick={() => {
                       setArtStyleMode("text3d");
                       triggerToast("สลับเป็นโหมด 3D Text Extruder");
                     }}
-                    className={`py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                    className={`py-1.5 rounded-[6px] text-xs font-medium transition-colors cursor-pointer ${
                       artStyleMode === "text3d"
-                        ? "bg-red-600 text-white"
-                        : "text-slate-300 hover:text-white"
+                        ? "bg-[#232325] text-[#ededed]"
+                        : "text-[#85858b] hover:text-[#ededed]"
                     }`}
                   >
-                    🔤 3D Text
+                    3D Text
                   </button>
                 </div>
 
                 {artStyleMode === "text3d" ? (
-                  <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] space-y-3">
+                  <div className="p-3 rounded-[10px] bg-[#19191b] border border-white/[0.08] space-y-3">
                     <div className="space-y-1">
-                      <span className="text-[11px] text-slate-300">ข้อความ 3D (3D Typography)</span>
+                      <span className="text-[11px] text-[#a1a1a6]">ข้อความ 3D (3D Typography)</span>
                       <input
                         type="text"
                         maxLength={8}
                         value={text3dContent}
                         onChange={(e) => setText3dContent(e.target.value.toUpperCase())}
-                        className="w-full px-3 py-2 rounded-lg bg-[#090709] border border-red-400/40 text-xs font-mono text-white focus:outline-none"
+                        className="w-full px-3 py-2 rounded-[6px] bg-[#0f0f10] border border-white/[0.1] text-xs font-mono text-[#ededed] focus:outline-none"
                       />
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">Extrusion Depth (ความหนา)</span>
-                        <span className="text-red-300 font-mono">{text3dDepth.toFixed(2)}m</span>
+                        <span className="text-[#a1a1a6]">Extrusion Depth</span>
+                        <span className="text-[#ededed] font-mono tabular-nums">{text3dDepth.toFixed(2)}m</span>
                       </div>
                       <input
                         type="range"
@@ -1824,19 +1823,19 @@ export default function SiamPrism3DStudioPage() {
                         step={0.05}
                         value={text3dDepth}
                         onChange={(e) => setText3dDepth(Number(e.target.value))}
-                        className="w-full accent-red-400 h-1.5 bg-slate-900 rounded-lg"
+                        className="w-full accent-[#e5484d] h-1.5 bg-[#0f0f10] rounded-lg"
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] space-y-3">
-                    <p className="text-[11px] text-slate-300 leading-relaxed">
-                      สร้างเหรียญตราหรือป้ายภาพนูนต่ำ 3D (Bas-Relief / Lithophane) พร้อมกรอบเหรียญสำหรับพิมพ์ 3D
+                  <div className="p-3 rounded-[10px] bg-[#19191b] border border-white/[0.08] space-y-3">
+                    <p className="text-[11px] text-[#a1a1a6] leading-relaxed">
+                      สร้างเหรียญตราหรือป้ายภาพนูนต่ำ 3D (Bas-Relief / Lithophane) พร้อมกรอบสำหรับพิมพ์ 3D
                     </p>
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-slate-300">Relief Emboss Height</span>
-                        <span className="text-red-300 font-mono">{reliefDepth.toFixed(2)}x</span>
+                        <span className="text-[#a1a1a6]">Relief Emboss Height</span>
+                        <span className="text-[#ededed] font-mono tabular-nums">{reliefDepth.toFixed(2)}x</span>
                       </div>
                       <input
                         type="range"
@@ -1845,7 +1844,7 @@ export default function SiamPrism3DStudioPage() {
                         step={0.05}
                         value={reliefDepth}
                         onChange={(e) => setReliefDepth(Number(e.target.value))}
-                        className="w-full accent-red-400 h-1.5 bg-slate-900 rounded-lg"
+                        className="w-full accent-[#e5484d] h-1.5 bg-[#0f0f10] rounded-lg"
                       />
                     </div>
                   </div>
@@ -1854,9 +1853,9 @@ export default function SiamPrism3DStudioPage() {
                 <button
                   onClick={() => {
                     setArtStyleMode("standard");
-                    triggerToast("กลับสู่โหมดโมเดล 3D ปกติ (Full 3D Mesh)");
+                    triggerToast("กลับสู่โหมดโมเดล 3D ปกติ");
                   }}
-                  className="w-full py-2 rounded-xl bg-white/[0.06] hover:bg-white/10 text-xs text-slate-300 cursor-pointer"
+                  className="w-full py-2 rounded-[8px] bg-[#19191b] hover:bg-[#232325] border border-white/[0.08] text-xs text-[#a1a1a6] hover:text-[#ededed] cursor-pointer"
                 >
                   กลับสู่โหมด Full 3D Mesh
                 </button>
@@ -1868,24 +1867,24 @@ export default function SiamPrism3DStudioPage() {
                ================================================================= */}
             {activeLeftTool === "generate" && (
               <>
-                <div className="px-3 pt-3 pb-2 shrink-0">
-                  <div className="h-8 w-full rounded-full bg-[#0b080a] p-0.5 flex items-center relative border border-white/[0.06]">
+                <div className="px-3 pt-2 pb-2 shrink-0">
+                  <div className="h-8 w-full rounded-[8px] bg-[#0f0f10] p-1 flex items-center relative border border-white/[0.08]">
                     <button
                       onClick={() => setMeshQualityTab("hd")}
-                      className={`flex-1 h-full rounded-full text-xs font-semibold transition cursor-pointer ${
+                      className={`flex-1 h-full rounded-[6px] text-xs font-medium transition-colors cursor-pointer ${
                         meshQualityTab === "hd"
-                          ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-sm"
-                          : "text-slate-300 hover:text-white"
+                          ? "bg-[#232325] text-[#ededed]"
+                          : "text-[#85858b] hover:text-[#ededed]"
                       }`}
                     >
                       HD Model
                     </button>
                     <button
                       onClick={() => setMeshQualityTab("smart-mesh")}
-                      className={`flex-1 h-full rounded-full text-xs font-semibold transition cursor-pointer ${
+                      className={`flex-1 h-full rounded-[6px] text-xs font-medium transition-colors cursor-pointer ${
                         meshQualityTab === "smart-mesh"
-                          ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-sm"
-                          : "text-slate-300 hover:text-white"
+                          ? "bg-[#232325] text-[#ededed]"
+                          : "text-[#85858b] hover:text-[#ededed]"
                       }`}
                     >
                       Smart Mesh
@@ -1894,8 +1893,8 @@ export default function SiamPrism3DStudioPage() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-3 space-y-2.5 no-scrollbar">
-                  <div className="p-3 rounded-2xl border border-red-400/30 bg-red-500/[0.06] flex flex-col gap-2.5">
-                    <div className="h-8 w-full rounded-full bg-[#090709] p-0.5 grid grid-cols-4 gap-0.5">
+                  <div className="p-3 rounded-[10px] border border-white/[0.08] bg-[#19191b] flex flex-col gap-2.5">
+                    <div className="h-8 w-full rounded-[8px] bg-[#0f0f10] p-1 grid grid-cols-4 gap-1 border border-white/[0.06]">
                       {[
                         { id: "text_to_3d", title: "Text to 3D", icon: PenTool },
                         { id: "image_to_3d", title: "Image to 3D", icon: ImageIcon },
@@ -1913,20 +1912,20 @@ export default function SiamPrism3DStudioPage() {
                                 m.id as "text_to_3d" | "image_to_3d" | "multi_view" | "retopo"
                               )
                             }
-                            className={`h-full rounded-full flex items-center justify-center transition cursor-pointer ${
+                            className={`h-full rounded-[6px] flex items-center justify-center transition-colors cursor-pointer ${
                               active
-                                ? "bg-red-600 text-white shadow-sm"
-                                : "text-slate-400 hover:text-white"
+                                ? "bg-[#232325] text-[#ededed]"
+                                : "text-[#85858b] hover:text-[#ededed]"
                             }`}
                           >
-                            <Icon className="w-3.5 h-3.5" />
+                            <Icon className="w-3.5 h-3.5 stroke-[1.5]" />
                           </button>
                         );
                       })}
                     </div>
 
                     {inputMode === "image_to_3d" ? (
-                      <label className="h-[176px] rounded-xl border border-dashed border-red-400/25 hover:border-red-400/60 bg-[#090709]/60 hover:bg-white/[0.03] flex flex-col items-center justify-center cursor-pointer transition p-2 text-center relative overflow-hidden">
+                      <label className="h-[168px] rounded-[8px] border border-dashed border-white/[0.15] hover:border-white/[0.3] bg-[#0f0f10] flex flex-col items-center justify-center cursor-pointer transition-colors p-2 text-center relative overflow-hidden">
                         <input
                           type="file"
                           accept="image/*"
@@ -1937,32 +1936,31 @@ export default function SiamPrism3DStudioPage() {
                           <img
                             src={uploadedImage}
                             alt="Uploaded reference"
-                            className="w-full h-full object-contain rounded-lg"
+                            className="w-full h-full object-contain rounded-[6px]"
                           />
                         ) : (
                           <>
-                            <Upload className="w-6 h-6 text-red-400 mb-2" />
-                            <span className="text-xs font-medium text-slate-200">
-                              Upload JPG, PNG, WEBP
+                            <Upload className="w-5 h-5 stroke-[1.5] text-[#85858b] mb-2" />
+                            <span className="text-xs font-medium text-[#ededed]">
+                              อัปโหลดรูปภาพ JPG, PNG, WEBP
                             </span>
-                            <span className="text-[10px] text-slate-500 mt-1">
-                              Size ≤ 20MB (หรือกด Ctrl+V)
+                            <span className="text-[11px] text-[#85858b] mt-1">
+                              ขนาดไม่เกิน 20MB หรือวางด้วย Ctrl+V
                             </span>
                           </>
                         )}
                       </label>
                     ) : inputMode === "multi_view" ? (
-                      /* WorkspaceGeneratePanelMultiViewUploaderV2: 4 Angle Slots + Storyboard Sheet Preview */
                       <div className="space-y-2">
                         {uploadedImage && (
-                          <div className="relative rounded-xl border border-red-400/35 bg-[#090709]/80 p-1.5 overflow-hidden">
+                          <div className="relative rounded-[8px] border border-white/[0.1] bg-[#0f0f10] p-1.5 overflow-hidden">
                             <img
                               src={uploadedImage}
                               alt="4-View Storyboard Sheet"
-                              className="w-full h-16 object-contain rounded-lg bg-white"
+                              className="w-full h-16 object-contain rounded-[6px] bg-white"
                             />
-                            <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-red-600/90 text-white text-[8px] font-bold tracking-wider uppercase shadow">
-                              4-View Storyboard Sheet
+                            <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-[4px] bg-[#141415]/90 text-[#ededed] text-[10px] font-mono">
+                              4-View Sheet
                             </span>
                           </div>
                         )}
@@ -1970,7 +1968,7 @@ export default function SiamPrism3DStudioPage() {
                           {(["front", "back", "left", "right"] as const).map((slot) => (
                             <label
                               key={slot}
-                              className="h-20 rounded-xl border border-dashed border-red-400/25 hover:border-red-400/60 bg-[#090709]/60 flex flex-col items-center justify-center cursor-pointer p-1 relative overflow-hidden"
+                              className="h-20 rounded-[8px] border border-dashed border-white/[0.15] hover:border-white/[0.3] bg-[#0f0f10] flex flex-col items-center justify-center cursor-pointer p-1 relative overflow-hidden"
                             >
                               <input
                                 type="file"
@@ -1983,16 +1981,16 @@ export default function SiamPrism3DStudioPage() {
                                   <img
                                     src={multiViewImages[slot]!}
                                     alt={slot}
-                                    className="w-full h-full object-contain rounded-lg bg-white"
+                                    className="w-full h-full object-contain rounded-[6px] bg-white"
                                   />
-                                  <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-black/75 text-red-200 text-[8px] font-bold uppercase">
+                                  <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-[4px] bg-[#141415]/90 text-[#ededed] text-[10px] font-mono">
                                     {slot}
                                   </span>
                                 </>
                               ) : (
                                 <>
-                                  <Upload className="w-3.5 h-3.5 text-red-400 mb-1" />
-                                  <span className="text-[10px] font-semibold uppercase text-slate-300">
+                                  <Upload className="w-3.5 h-3.5 stroke-[1.5] text-[#85858b] mb-1" />
+                                  <span className="text-[11px] font-normal text-[#a1a1a6] capitalize">
                                     {slot}
                                   </span>
                                 </>
@@ -2007,15 +2005,15 @@ export default function SiamPrism3DStudioPage() {
                           rows={5}
                           value={prompt}
                           onChange={(e) => setPrompt(e.target.value)}
-                          placeholder="พิมพ์คำสั่งภาษาไทยหรืออังกฤษ เช่น หุ่นยนต์ยักษ์วัดแจ้ง..."
-                          className="w-full h-[132px] rounded-xl bg-[#090709]/70 border border-white/[0.08] focus:border-red-400/60 p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none resize-none leading-relaxed"
+                          placeholder="บรรยายโมเดล 3D เช่น หุ่นยนต์ยักษ์วัดแจ้ง..."
+                          className="w-full h-[124px] rounded-[8px] bg-[#0f0f10] border border-white/[0.08] focus:border-white/[0.2] p-2.5 text-xs text-[#ededed] placeholder-[#85858b] focus:outline-none resize-none leading-relaxed"
                         />
                         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pt-0.5">
                           {QUICK_PROMPTS.map((qp) => (
                             <button
                               key={qp.label}
                               onClick={() => setPrompt(qp.prompt)}
-                              className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] hover:bg-red-500/20 text-slate-300 hover:text-red-200 whitespace-nowrap transition cursor-pointer"
+                              className="text-[11px] px-2 py-0.5 rounded-[6px] bg-[#232325] hover:bg-[#2c2c2f] text-[#a1a1a6] hover:text-[#ededed] whitespace-nowrap transition-colors cursor-pointer"
                             >
                               {qp.label}
                             </button>
@@ -2025,50 +2023,47 @@ export default function SiamPrism3DStudioPage() {
                     )}
 
                     {/* 4-View Character Turnaround Storyboard Generator Bar */}
-                    <div className="pt-1 border-t border-white/[0.08] flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between text-[10px] text-red-200/90 font-semibold">
-                        <span>🎬 AI 4-View Storyboard (หั่น 4 มุมอัตโนมัติ)</span>
-                        <span className="text-[9px] text-emerald-300 font-mono">360° Multi-View</span>
+                    <div className="pt-2 border-t border-white/[0.08] flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between text-[11px] text-[#a1a1a6]">
+                        <span>4-View Turnaround Sheet</span>
+                        <span className="text-[10px] text-[#85858b] font-mono">360°</span>
                       </div>
                       <div className="grid grid-cols-2 gap-1.5">
                         <button
                           type="button"
                           onClick={() => handleGenerateStoryboard(false)}
                           disabled={isGeneratingStoryboard}
-                          className="py-1.5 px-2 rounded-xl bg-gradient-to-r from-red-600/80 to-rose-600/80 hover:from-red-500 hover:to-rose-500 text-white text-[10px] font-bold flex items-center justify-center gap-1 shadow transition cursor-pointer disabled:opacity-50"
+                          className="py-1.5 px-2 rounded-[6px] bg-[#232325] hover:bg-[#2c2c2f] text-[#ededed] text-[11px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                         >
-                          <Sparkles className="w-3 h-3 shrink-0" />
+                          <Sparkles className="w-3.5 h-3.5 stroke-[1.5] text-[#85858b] shrink-0" />
                           <span className="truncate">
-                            {isGeneratingStoryboard ? "กำลังเจน 4 มุม..." : "เจน Storyboard 4 มุม"}
+                            {isGeneratingStoryboard ? "กำลังสร้าง 4 มุม..." : "สร้างภาพ 4 มุม"}
                           </span>
                         </button>
                         <button
                           type="button"
                           onClick={() => handleGenerateStoryboard(true)}
-                          className="py-1.5 px-2 rounded-xl bg-white/[0.07] hover:bg-red-500/20 border border-red-400/30 text-red-200 text-[10px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
+                          className="py-1.5 px-2 rounded-[6px] bg-[#0f0f10] hover:bg-[#232325] border border-white/[0.08] text-[#a1a1a6] hover:text-[#ededed] text-[11px] font-normal flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                         >
-                          <Layers className="w-3 h-3 text-red-400 shrink-0" />
-                          <span className="truncate">ชุด 4-View คนแคระ</span>
+                          <Layers className="w-3.5 h-3.5 stroke-[1.5] text-[#85858b] shrink-0" />
+                          <span className="truncate">ตัวอย่าง 4-View</span>
                         </button>
                       </div>
                     </div>
                   </div>
 
                   {/* Geometry & Texture Accordion */}
-                  <div className="rounded-xl bg-white/[0.04] border border-white/[0.05] p-3 flex flex-col gap-2">
+                  <div className="rounded-[10px] bg-[#19191b] border border-white/[0.08] p-3 flex flex-col gap-2">
                     <button
                       onClick={() => setAdvancedOpen(!advancedOpen)}
-                      className="w-full flex items-center justify-between text-xs font-medium text-slate-200 cursor-pointer"
+                      className="w-full flex items-center justify-between text-xs font-medium text-[#ededed] cursor-pointer"
                     >
-                      <div className="flex items-center gap-1.5">
-                        <Sliders className="w-3.5 h-3.5 text-red-400" />
+                      <div className="flex items-center gap-2">
+                        <Sliders className="w-3.5 h-3.5 stroke-[1.5] text-[#85858b]" />
                         <span>Geometry & Texture</span>
-                        <span className="text-[9px] px-1.5 py-0.2 rounded bg-red-500/20 text-red-300 font-semibold">
-                          New
-                        </span>
                       </div>
                       <ChevronRight
-                        className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                        className={`w-3.5 h-3.5 text-[#85858b] transition-transform ${
                           advancedOpen ? "rotate-90" : ""
                         }`}
                       />
@@ -2230,8 +2225,8 @@ export default function SiamPrism3DStudioPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-slate-200">Humanoid Rigging</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-300">
-                          +3 🪙
+                        <span className="text-[9px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">
+                          +3 เครดิต
                         </span>
                       </div>
                       <button
@@ -2443,8 +2438,8 @@ export default function SiamPrism3DStudioPage() {
                 {/* Meshy Voxelizer Toggle (TextToVoxel) */}
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/30 flex items-center justify-between">
                   <div>
-                    <div className="text-xs font-semibold text-red-200">🧱 3D Voxelizer Mode</div>
-                    <div className="text-[10px] text-slate-400">แปลง Mesh เป็นบล็อก Voxel</div>
+                    <div className="text-xs font-medium text-[#ededed]">3D Voxelizer Mode</div>
+                    <div className="text-[10px] text-[#85858b]">แปลง Mesh เป็นบล็อก Voxel</div>
                   </div>
                   <button
                     onClick={() => {
@@ -2772,11 +2767,11 @@ export default function SiamPrism3DStudioPage() {
                         triggerToast(`สร้างพื้นผิว AI Texture ตามคำสั่ง "${texturePrompt.slice(0, 28)}" สำเร็จ!`);
                       }
                     }}
-                    className="w-full py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center justify-center gap-2"
+                    className="w-full py-2 rounded-[8px] bg-[#ededed] hover:bg-white text-[#0f0f10] font-medium text-xs cursor-pointer transition-colors flex items-center justify-center gap-2"
                   >
-                    <span>🎨 สร้างพื้นผิว AI Texture</span>
-                    <span className="px-1.5 py-0.5 rounded-full bg-black/30 text-[10px] font-extrabold">
-                      3 🪙
+                    <span>สร้างพื้นผิว AI Texture</span>
+                    <span className="px-1.5 py-0.5 rounded-[4px] bg-black/10 text-[11px] font-mono tabular-nums font-medium">
+                      3 เครดิต
                     </span>
                   </button>
                 </div>
@@ -2831,12 +2826,12 @@ export default function SiamPrism3DStudioPage() {
                   </span>
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { id: "paint" as const, label: "🖌️ Paint" },
-                      { id: "healing" as const, label: "🩹 Heal Seam" },
-                      { id: "decal" as const, label: "🏷️ 3D Decal" },
-                      { id: "stamp" as const, label: "🔖 Stamp" },
-                      { id: "lasso" as const, label: "⭕ Inpaint" },
-                      { id: "eraser" as const, label: "🧼 Eraser" },
+                      { id: "paint" as const, label: "Paint" },
+                      { id: "healing" as const, label: "Heal Seam" },
+                      { id: "decal" as const, label: "3D Decal" },
+                      { id: "stamp" as const, label: "Stamp" },
+                      { id: "lasso" as const, label: "Inpaint" },
+                      { id: "eraser" as const, label: "Eraser" },
                     ].map((tl) => (
                       <button
                         key={tl.id}
@@ -2896,8 +2891,8 @@ export default function SiamPrism3DStudioPage() {
                 {/* Meshy 3D Decal Projection (pmDecalSpace) */}
                 <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/30 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-red-200">
-                      🏷️ 3D Decal Emblem
+                    <span className="text-xs font-medium text-[#ededed]">
+                      3D Decal Emblem
                     </span>
                     <button
                       onClick={() => setDecalEnabled(!decalEnabled)}
@@ -3107,11 +3102,11 @@ export default function SiamPrism3DStudioPage() {
                       triggerToast(`อัปสเกลโมเดลเป็น ${upscaleResolution} Ultra HD สำเร็จ!`);
                     }
                   }}
-                  className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-lg flex items-center justify-center gap-2"
+                  className="w-full py-2 rounded-[8px] bg-[#ededed] hover:bg-white text-[#0f0f10] font-medium text-xs cursor-pointer flex items-center justify-center gap-2 transition-colors"
                 >
                   <span>Run {upscaleResolution} AI Upscaler</span>
-                  <span className="px-1.5 py-0.5 rounded-full bg-black/30 text-[10px] font-extrabold">
-                    1 🪙
+                  <span className="px-1.5 py-0.5 rounded-[4px] bg-black/10 text-[11px] font-mono tabular-nums font-medium">
+                    1 เครดิต
                   </span>
                 </button>
               </div>
@@ -3313,10 +3308,10 @@ export default function SiamPrism3DStudioPage() {
                   <span className="text-[11px] text-slate-400">Character Type</span>
                   <div className="grid grid-cols-2 gap-1.5">
                     {[
-                      { id: "humanoid" as const, label: "🧍 Humanoid" },
-                      { id: "quadruped_dog" as const, label: "🐕 Quadruped Dog" },
-                      { id: "quadruped_cat" as const, label: "🐈 Quadruped Cat" },
-                      { id: "universal" as const, label: "🦾 Universal Rig" },
+                      { id: "humanoid" as const, label: "Humanoid" },
+                      { id: "quadruped_dog" as const, label: "Quadruped Dog" },
+                      { id: "quadruped_cat" as const, label: "Quadruped Cat" },
+                      { id: "universal" as const, label: "Universal Rig" },
                     ].map((r) => (
                       <button
                         key={r.id}
@@ -3431,11 +3426,11 @@ export default function SiamPrism3DStudioPage() {
                       );
                     }
                   }}
-                  className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-lg flex items-center justify-center gap-2"
+                  className="w-full py-2 rounded-[8px] bg-[#ededed] hover:bg-white text-[#0f0f10] font-medium text-xs cursor-pointer flex items-center justify-center gap-2 transition-colors"
                 >
-                  <span>Apply Auto-Rig & Open Motion →</span>
-                  <span className="px-1.5 py-0.5 rounded-full bg-black/30 text-[10px] font-extrabold">
-                    3 🪙
+                  <span>ผูกกระดูก Auto-Rig</span>
+                  <span className="px-1.5 py-0.5 rounded-[4px] bg-black/10 text-[11px] font-mono tabular-nums font-medium">
+                    3 เครดิต
                   </span>
                 </button>
               </div>
@@ -3665,12 +3660,12 @@ export default function SiamPrism3DStudioPage() {
                     setPrintCheckMode(false);
                     setAddPrintBase(true);
                     triggerToast(
-                      "Make Printable: ซ่อมแซม Watertight Mesh + เติมฐานตั้งพร้อมพิมพ์ .STL/.3MF!"
+                      "Make Printable: ซ่อมแซม Watertight Mesh และเติมฐานตั้งสำหรับพิมพ์ .STL เรียบร้อย"
                     );
                   }}
-                  className="w-full py-2 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-md"
+                  className="w-full py-2 rounded-[8px] bg-[#ededed] hover:bg-white text-[#0f0f10] font-medium text-xs cursor-pointer transition-colors"
                 >
-                  🛠️ One-Click Make Printable (STL Repair)
+                  Make Printable (STL Repair)
                 </button>
 
                 <div className="grid grid-cols-2 gap-1.5">
@@ -3680,12 +3675,12 @@ export default function SiamPrism3DStudioPage() {
                         new CustomEvent("prism3d-export", { detail: { format: "stl" } })
                       );
                       triggerToast(
-                        "ดาวน์โหลดไฟล์ .STL พร้อมส่งเข้า Bambu Studio เรียบร้อยแล้ว!"
+                        "ดาวน์โหลดไฟล์ .STL สำหรับ Bambu Studio เรียบร้อยแล้ว"
                       );
                     }}
-                    className="py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-emerald-200 text-[11px] font-bold cursor-pointer"
+                    className="py-2 rounded-[8px] bg-[#19191b] hover:bg-[#232325] border border-white/[0.08] text-[#ededed] text-[11px] font-medium cursor-pointer transition-colors"
                   >
-                    🎋 Send to Bambu
+                    Bambu Studio (.STL)
                   </button>
                   <button
                     onClick={() => {
@@ -3693,24 +3688,24 @@ export default function SiamPrism3DStudioPage() {
                         new CustomEvent("prism3d-export", { detail: { format: "stl" } })
                       );
                       triggerToast(
-                        "ดาวน์โหลดไฟล์ .STL พร้อมส่งเข้า Creality Print เรียบร้อยแล้ว!"
+                        "ดาวน์โหลดไฟล์ .STL สำหรับ Creality Print เรียบร้อยแล้ว"
                       );
                     }}
-                    className="py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/40 text-red-200 text-[11px] font-bold cursor-pointer"
+                    className="py-2 rounded-[8px] bg-[#19191b] hover:bg-[#232325] border border-white/[0.08] text-[#ededed] text-[11px] font-medium cursor-pointer transition-colors"
                   >
-                    🖨️ Creality Print
+                    Creality Print (.STL)
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Bottom Sticky AI Model Selector + Generate CTA (Only shown in 01 สร้าง 3D Pillar) */}
+            {/* Bottom Sticky AI Model Selector + Generate CTA (Only shown in Create Pillar) */}
             {(activeLeftTool === "generate" ||
               activeLeftTool === "relief" ||
               activeLeftTool === "agent") && (
-              <div className="p-3 border-t border-white/[0.06] bg-[#160e12] space-y-2.5 shrink-0 relative">
+              <div className="p-3 border-t border-white/[0.08] bg-[#141415] space-y-2.5 shrink-0 relative">
                 {modelDropdownOpen && (
-                  <div className="absolute bottom-[116px] left-3 right-3 rounded-2xl bg-[#110b0e] border border-red-500/25 shadow-2xl p-1.5 z-30 space-y-1">
+                  <div className="absolute bottom-[112px] left-3 right-3 rounded-[10px] bg-[#19191b] border border-white/[0.12] shadow-2xl p-1.5 z-30 space-y-1">
                     {MODEL_OPTIONS.map((m) => (
                       <button
                         key={m.id}
@@ -3718,18 +3713,18 @@ export default function SiamPrism3DStudioPage() {
                           setSelectedModel(m.id);
                           setModelDropdownOpen(false);
                         }}
-                        className={`w-full p-2 rounded-xl text-left flex items-center justify-between transition cursor-pointer ${
+                        className={`w-full p-2 rounded-[8px] text-left flex items-center justify-between transition-colors cursor-pointer ${
                           selectedModel === m.id
-                            ? "bg-red-500/15 text-white border border-red-400/30"
-                            : "hover:bg-white/[0.05] text-slate-300"
+                            ? "bg-[#232325] text-[#ededed] border border-white/[0.1]"
+                            : "hover:bg-[#232325]/60 text-[#a1a1a6]"
                         }`}
                       >
                         <div>
-                          <div className="text-xs font-semibold">{m.name}</div>
-                          <div className="text-[10px] text-slate-400">{m.sub}</div>
+                          <div className="text-xs font-medium text-[#ededed]">{m.name}</div>
+                          <div className="text-[11px] text-[#85858b]">{m.sub}</div>
                         </div>
-                        <span className="text-xs font-bold text-red-300">
-                          {m.credits} 🪙
+                        <span className="text-xs font-mono tabular-nums text-[#ededed]">
+                          {m.credits} เครดิต
                         </span>
                       </button>
                     ))}
@@ -3738,26 +3733,26 @@ export default function SiamPrism3DStudioPage() {
 
                 <button
                   onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-                  className="w-full p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] flex items-center justify-between transition cursor-pointer"
+                  className="w-full p-2 rounded-[8px] bg-[#19191b] hover:bg-[#232325] border border-white/[0.08] flex items-center justify-between transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-red-500/15 flex items-center justify-center text-[10px] font-extrabold text-red-300 shrink-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-[6px] bg-[#232325] border border-white/[0.08] flex items-center justify-center text-[10px] font-mono font-medium text-[#ededed] shrink-0">
                       {currentModelSpec.code}
                     </div>
                     <div className="text-left min-w-0">
-                      <div className="text-xs font-semibold text-white truncate">
+                      <div className="text-xs font-medium text-[#ededed] truncate">
                         {currentModelSpec.name}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate">
+                      <div className="text-[11px] text-[#85858b] truncate">
                         {currentModelSpec.sub}
                       </div>
                     </div>
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <ChevronRight className="w-3.5 h-3.5 text-[#85858b] shrink-0" />
                 </button>
 
                 {errorBanner && (
-                  <div className="px-2.5 py-1.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-[11px] text-rose-200">
+                  <div className="px-2.5 py-1.5 rounded-[6px] bg-[#e5484d]/15 border border-[#e5484d]/30 text-[11px] text-[#ededed]">
                     {errorBanner}
                   </div>
                 )}
@@ -3765,19 +3760,18 @@ export default function SiamPrism3DStudioPage() {
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="w-full h-10 rounded-full bg-gradient-to-r from-red-600 via-red-500 to-rose-600 hover:brightness-110 disabled:opacity-50 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(239,68,68,0.3)] transition cursor-pointer"
+                  className="w-full h-9 rounded-[8px] bg-[#ededed] hover:bg-white disabled:opacity-50 text-[#0f0f10] font-medium text-[13px] flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   {isGenerating ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span className="truncate">{genStageText || "Generating..."}</span>
+                      <span className="truncate">{genStageText || "กำลังประมวลผล..."}</span>
                     </>
                   ) : (
                     <>
                       <span>สร้างโมเดล 3D ใหม่</span>
-                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-black/30 text-white font-extrabold text-[11px]">
-                        <Coins className="w-3 h-3" />
-                        {estimatedCost}
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] bg-black/10 text-[#0f0f10] font-mono tabular-nums font-medium text-[12px]">
+                        {estimatedCost} เครดิต
                       </span>
                     </>
                   )}
@@ -3787,9 +3781,9 @@ export default function SiamPrism3DStudioPage() {
           </section>
 
           {/* -------------------------------------------------------------------
-              CENTER: Interactive 3D Viewport Canvas (Unobstructed)
+              CENTER: Interactive 3D Viewport Canvas (Edge-to-Edge Darkroom)
              ------------------------------------------------------------------- */}
-          <section className="flex-1 h-full relative mx-3 rounded-[20px] overflow-hidden bg-[#090709] border border-red-500/15 flex flex-col">
+          <section className="flex-1 h-full relative overflow-hidden bg-[#0b0b0c] flex flex-col">
             <Viewport3D
               activeTask={activeTask}
               isGenerating={isGenerating}
@@ -3801,127 +3795,110 @@ export default function SiamPrism3DStudioPage() {
           </section>
 
           {/* -------------------------------------------------------------------
-              RIGHT DOCK: Assets & Property Panel (WorkspaceRightPanel)
+              RIGHT DOCK: Assets & Property Inspector (260px, Graphite #141415)
              ------------------------------------------------------------------- */}
-          <aside className="w-[256px] h-full rounded-[20px] bg-[#110b0e] border border-red-500/15 flex flex-col shrink-0 overflow-hidden">
-            <div className="h-9 bg-white/[0.03] grid grid-cols-2 shrink-0 border-b border-white/[0.06]">
-              <button
-                onClick={() => setRightTab("assets")}
-                className={`h-full text-xs font-semibold flex items-center justify-center gap-1.5 transition border-b-2 cursor-pointer ${
-                  rightTab === "assets"
-                    ? "border-red-400 text-red-300 bg-red-500/[0.05]"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <FolderOpen className="w-3.5 h-3.5" />
-                <span>Assets</span>
-              </button>
-              <button
-                onClick={() => setRightTab("property")}
-                className={`h-full text-xs font-semibold flex items-center justify-center gap-1.5 transition border-b-2 cursor-pointer ${
-                  rightTab === "property"
-                    ? "border-red-400 text-red-300 bg-red-500/[0.05]"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>Property</span>
-              </button>
-            </div>
-
-            <div className="p-3 bg-gradient-to-r from-red-500/15 via-rose-500/10 to-red-500/15 border-b border-white/[0.06] flex items-center justify-between gap-2 shrink-0">
-              <div className="min-w-0">
-                <p className="text-[11px] font-semibold text-white leading-tight">
-                  PromptPay QR Top-Up
-                </p>
-                <p className="text-[10px] text-slate-300 truncate mt-0.5">
-                  เติมเครดิตรับโบนัสเพิ่มทันที
-                </p>
+          <aside className="w-[260px] h-full bg-[#141415] border-l border-white/[0.08] flex flex-col shrink-0 overflow-hidden">
+            <div className="h-10 px-3 pt-1.5 bg-[#141415] border-b border-white/[0.08] shrink-0">
+              <div className="h-7 p-0.5 rounded-[6px] bg-[#0f0f10] border border-white/[0.08] grid grid-cols-2 gap-0.5">
+                <button
+                  onClick={() => setRightTab("assets")}
+                  className={`h-full rounded-[4px] text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                    rightTab === "assets"
+                      ? "bg-[#232325] text-[#ededed]"
+                      : "text-[#85858b] hover:text-[#ededed]"
+                  }`}
+                >
+                  <FolderOpen className="w-3.5 h-3.5 stroke-[1.5]" />
+                  <span>โมเดล</span>
+                </button>
+                <button
+                  onClick={() => setRightTab("property")}
+                  className={`h-full rounded-[4px] text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                    rightTab === "property"
+                      ? "bg-[#232325] text-[#ededed]"
+                      : "text-[#85858b] hover:text-[#ededed]"
+                  }`}
+                >
+                  <Sliders className="w-3.5 h-3.5 stroke-[1.5]" />
+                  <span>คุณสมบัติ</span>
+                </button>
               </div>
-              <button
-                onClick={() => setTopupModalOpen(true)}
-                className="px-2.5 py-1 rounded-full bg-gradient-to-r from-red-600 to-rose-600 hover:brightness-110 text-white font-bold text-[10px] shrink-0 shadow-sm transition cursor-pointer"
-              >
-                เติมเครดิต
-              </button>
             </div>
 
             {rightTab === "assets" ? (
               <div className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    All Assets ({(tasks.length > 0 ? tasks : CURATED_SHOWCASE).length})
+                  <span className="text-[12px] text-[#a1a1a6] font-normal">
+                    คลังโมเดล ({(tasks.length > 0 ? tasks : CURATED_SHOWCASE).length})
                   </span>
                   <button
                     onClick={() => setRightTab("property")}
-                    className="text-[10px] px-2.5 py-0.5 rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 transition cursor-pointer"
+                    className="text-[11px] px-2 py-0.5 rounded-[6px] bg-[#19191b] hover:bg-[#232325] border border-white/[0.08] text-[#a1a1a6] hover:text-[#ededed] transition-colors cursor-pointer"
                   >
-                    Hierarchy
+                    โครงสร้างชิ้นส่วน
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2">
                   {/* Upload .GLB or Image Reference */}
-                  <label className="aspect-square rounded-xl border border-dashed border-red-400/25 hover:border-red-400/60 bg-white/[0.02] hover:bg-red-500/[0.05] flex flex-col items-center justify-center p-2 text-center cursor-pointer transition">
+                  <label className="aspect-square rounded-[10px] border border-dashed border-white/[0.14] hover:border-white/[0.28] bg-[#0f0f10] hover:bg-[#19191b] flex flex-col items-center justify-center p-2 text-center cursor-pointer transition-colors">
                     <input
                       type="file"
                       accept="image/*,.glb,.gltf"
                       onChange={handleImageUpload}
                       className="hidden"
                     />
-                    <Upload className="w-4 h-4 text-red-400 mb-1" />
-                    <span className="text-[10px] font-semibold text-slate-200 leading-tight">
-                      Import 3D / Img
+                    <Upload className="w-4 h-4 stroke-[1.5] text-[#85858b] mb-1.5" />
+                    <span className="text-[11px] font-medium text-[#ededed] leading-tight">
+                      นำเข้า .GLB / รูป
                     </span>
-                    <span className="text-[8px] text-slate-500 mt-0.5">
-                      .GLB, PNG, WEBP
+                    <span className="text-[10px] text-[#85858b] mt-0.5">
+                      GLB, PNG, WEBP
                     </span>
                   </label>
 
                   {(tasks.length > 0 ? tasks : CURATED_SHOWCASE).map((item) => {
                     const isSelected = activeTask?.id === item.id;
                     const isPro = item.engine === "trellis_pbr";
+                    const cleanName = item.prompt_th.replace(/^\[.*?\]\s*/, "");
                     return (
                       <div
                         key={item.id}
                         onClick={() => setActiveTask(item)}
-                        className={`group aspect-square rounded-xl relative overflow-hidden cursor-pointer border transition flex flex-col items-center justify-between p-1.5 ${
+                        className={`group aspect-square rounded-[10px] relative overflow-hidden cursor-pointer border transition-colors flex flex-col items-center justify-between p-1.5 ${
                           isSelected
-                            ? "border-red-400 bg-red-500/15 shadow-[0_0_15px_rgba(239,68,68,0.22)]"
-                            : isPro
-                              ? "border-amber-500/35 bg-[#160e12] hover:border-amber-400/70"
-                              : "border-white/[0.07] bg-[#160e12] hover:border-red-400/35"
+                            ? "border-[#e5484d] bg-[#19191b]"
+                            : "border-white/[0.08] bg-[#19191b] hover:border-white/[0.18]"
                         }`}
                       >
-                        <div className="w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden rounded-lg bg-black/40 mt-4">
+                        <div className="w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden rounded-[6px] bg-[#0f0f10] mt-4">
                           {item.input_image_url ? (
                             <img
                               src={item.input_image_url}
-                              alt={item.prompt_th}
-                              className="w-full h-full object-contain p-1 group-hover:scale-105 transition"
+                              alt={cleanName}
+                              className="w-full h-full object-contain p-1.5"
                             />
                           ) : (
                             <div
-                              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-md border border-white/20"
+                              className="w-9 h-9 rounded-[8px] flex items-center justify-center border border-white/15"
                               style={{
                                 background: `linear-gradient(135deg, ${item.primary_color}, ${item.accent_color})`,
                               }}
                             >
-                              <Box className="w-5 h-5 text-white" />
+                              <Box className="w-4 h-4 stroke-[1.5] text-white" />
                             </div>
                           )}
                         </div>
-                        <span className="text-[9.5px] text-slate-200 font-medium truncate w-full text-center mt-1">
-                          {item.prompt_th.replace(/^\[.*?\]\s*/, "")}
+                        <span className="text-[11px] text-[#ededed] font-normal truncate w-full text-center mt-1">
+                          {cleanName}
                         </span>
-                        <span
-                          className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-[8px] font-bold ${
-                            isPro
-                              ? "bg-amber-500/90 text-slate-950"
-                              : "bg-sky-500/25 border border-sky-400/40 text-sky-200"
-                          }`}
-                        >
-                          {isPro ? "🏆 ตัวท็อป PRO 6.80฿" : "⚡ ตัวกลาง 0.68฿"}
+                        <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-[4px] bg-[#141415]/90 border border-white/[0.08] text-[9px] font-mono tabular-nums text-[#a1a1a6] flex items-center gap-1">
+                          <span
+                            className={`w-1 h-1 rounded-full ${
+                              isPro ? "bg-[#e5484d]" : "bg-[#85858b]"
+                            }`}
+                          />
+                          {isPro ? "PRO" : "STD"}
                         </span>
                       </div>
                     );
@@ -3933,17 +3910,17 @@ export default function SiamPrism3DStudioPage() {
               <div className="flex-1 overflow-y-auto p-3 space-y-3 text-xs no-scrollbar">
                 {activeTask && (
                   <>
-                    {/* Scene Node Hierarchy Tree (WorkspaceRightPanelPropertyHierarchyTree) */}
-                    <div className="p-3 rounded-xl bg-white/[0.04] space-y-2">
+                    {/* Scene Node Hierarchy Tree */}
+                    <div className="p-3 rounded-[10px] bg-[#19191b] border border-white/[0.08] space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-red-300 uppercase font-semibold">
-                          Scene Hierarchy ({partNames.length})
+                        <span className="text-[11px] text-[#a1a1a6] font-medium">
+                          โครงสร้างชิ้นส่วน ({partNames.length})
                         </span>
                         <button
                           onClick={() => setHiddenParts([])}
-                          className="text-[10px] text-slate-400 hover:text-white cursor-pointer"
+                          className="text-[11px] text-[#85858b] hover:text-[#ededed] cursor-pointer"
                         >
-                          Reset
+                          แสดงทั้งหมด
                         </button>
                       </div>
                       <div className="space-y-1 max-h-36 overflow-y-auto no-scrollbar">
@@ -3953,19 +3930,19 @@ export default function SiamPrism3DStudioPage() {
                             <div
                               key={name}
                               onClick={() => togglePartVisibility(idx)}
-                              className="px-2 py-1 rounded-lg bg-[#090709]/60 hover:bg-white/[0.06] flex items-center justify-between text-[11px] cursor-pointer"
+                              className="px-2 py-1.5 rounded-[6px] bg-[#0f0f10] hover:bg-[#232325] flex items-center justify-between text-[11px] cursor-pointer transition-colors"
                             >
                               <span
                                 className={`truncate ${
-                                  hidden ? "line-through text-slate-500" : "text-slate-200"
+                                  hidden ? "line-through text-[#85858b]" : "text-[#ededed]"
                                 }`}
                               >
                                 {name}
                               </span>
                               {hidden ? (
-                                <EyeOff className="w-3 h-3 text-rose-400 shrink-0" />
+                                <EyeOff className="w-3.5 h-3.5 stroke-[1.5] text-[#85858b] shrink-0" />
                               ) : (
-                                <Eye className="w-3 h-3 text-red-400 shrink-0" />
+                                <Eye className="w-3.5 h-3.5 stroke-[1.5] text-[#a1a1a6] shrink-0" />
                               )}
                             </div>
                           );
@@ -3973,14 +3950,14 @@ export default function SiamPrism3DStudioPage() {
                       </div>
                     </div>
 
-                    {/* Transform Inspector (WorkspaceRightPanelPropertyTransform) */}
-                    <div className="p-3 rounded-xl bg-white/[0.04] space-y-2">
-                      <span className="text-[10px] text-red-300 uppercase font-semibold">
-                        Transform & Rotation
+                    {/* Transform Inspector */}
+                    <div className="p-3 rounded-[10px] bg-[#19191b] border border-white/[0.08] space-y-2">
+                      <span className="text-[11px] text-[#a1a1a6] font-medium">
+                        การหมุนโมเดล (Rotation)
                       </span>
                       <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-slate-400">Rotate Y</span>
-                        <span className="text-white font-mono">{transformState.rotY}°</span>
+                        <span className="text-[#85858b]">แกน Y</span>
+                        <span className="text-[#ededed] font-mono tabular-nums">{transformState.rotY}°</span>
                       </div>
                       <input
                         type="range"
@@ -3994,16 +3971,16 @@ export default function SiamPrism3DStudioPage() {
                             rotY: Number(e.target.value),
                           }))
                         }
-                        className="w-full accent-red-400 h-1 bg-slate-900 rounded-lg"
+                        className="w-full accent-[#e5484d] h-1 bg-[#0f0f10] rounded-lg"
                       />
                     </div>
 
-                    <div className="p-3 rounded-xl bg-white/[0.04] space-y-1.5">
-                      <div className="flex items-center gap-1 text-[10px] text-red-300 uppercase font-semibold">
-                        <Languages className="w-3 h-3" />
-                        <span>AI Enhanced 3D Prompt</span>
+                    <div className="p-3 rounded-[10px] bg-[#19191b] border border-white/[0.08] space-y-1.5">
+                      <div className="flex items-center gap-1.5 text-[11px] text-[#a1a1a6] font-medium">
+                        <Languages className="w-3.5 h-3.5 stroke-[1.5] text-[#85858b]" />
+                        <span>รายละเอียดโมเดล (Prompt)</span>
                       </div>
-                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                      <p className="text-[11px] text-[#85858b] leading-relaxed">
                         {activeTask.prompt_en}
                       </p>
                     </div>
@@ -4036,7 +4013,7 @@ export default function SiamPrism3DStudioPage() {
                                 prev.map((t) => (t.id === data.task.id ? data.task : t))
                               );
                             }
-                            triggerToast("บันทึกค่าวัสดุ PBR & โครงสร้างลงฐานข้อมูลเรียบร้อย!");
+                            triggerToast("บันทึกค่าวัสดุ PBR และโครงสร้างลงฐานข้อมูลแล้ว");
                           } else {
                             setActiveTask({
                               ...activeTask,
@@ -4045,16 +4022,16 @@ export default function SiamPrism3DStudioPage() {
                               roughness: materialState.roughness,
                               metalness: materialState.metalness,
                             });
-                            triggerToast("บันทึกการตั้งค่าวัสดุลงในโมเดลปัจจุบันเรียบร้อย!");
+                            triggerToast("บันทึกการตั้งค่าวัสดุลงในโมเดลปัจจุบันแล้ว");
                           }
                         } catch {
-                          triggerToast("บันทึกการตั้งค่าวัสดุลงในโมเดลปัจจุบันเรียบร้อย!");
+                          triggerToast("บันทึกการตั้งค่าวัสดุลงในโมเดลปัจจุบันแล้ว");
                         }
                       }}
-                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:brightness-110 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md transition cursor-pointer"
+                      className="w-full py-2 rounded-[8px] bg-[#ededed] hover:bg-white text-[#0f0f10] font-medium text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>บันทึกค่าโมเดลลงฐานข้อมูล (Save to DB)</span>
+                      <Check className="w-3.5 h-3.5 stroke-[1.5]" />
+                      <span>บันทึกการตั้งค่าโมเดล</span>
                     </button>
                   </>
                 )}
