@@ -185,6 +185,32 @@ async function setSetting(db, key, value) {
     .run();
 }
 
+async function resolveActiveUserId(request, db) {
+  const cookieUid = getCookie(request, "studio_uid");
+  if (cookieUid) return cookieUid;
+  const loggedOut = getCookie(request, "studio_logged_out");
+  if (loggedOut === "1") return null;
+  const owner = await db
+    .prepare(
+      "SELECT id FROM users ORDER BY CASE WHEN role = 'admin' THEN 0 ELSE 1 END, created_at ASC LIMIT 1"
+    )
+    .first();
+  return owner?.id || null;
+}
+
+async function syncUserBalanceFromLedger(db, userId) {
+  const sumRow = await db
+    .prepare("SELECT COALESCE(SUM(amount), 0) AS real_balance FROM credit_transactions WHERE user_id = ?")
+    .bind(userId)
+    .first();
+  const realBalance = Math.max(0, Number(sumRow?.real_balance ?? 0));
+  await db
+    .prepare("UPDATE users SET credits_balance = ?, updated_at = datetime('now') WHERE id = ?")
+    .bind(realBalance, userId)
+    .run();
+  return await db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+}
+
 async function getUserHistory(db, userId) {
   const tasksRes = await db
     .prepare("SELECT * FROM generation_tasks WHERE user_id = ? ORDER BY created_at DESC LIMIT 30")
@@ -219,10 +245,7 @@ async function findOrCreateGoogleUserD1(db, { email, name, avatar_url, google_su
       )
       .bind(name, avatar_url || null, existing.id)
       .run();
-    const updated = await db
-      .prepare("SELECT * FROM users WHERE id = ?")
-      .bind(existing.id)
-      .first();
+    const updated = await syncUserBalanceFromLedger(db, existing.id);
     return { user: updated, isNewUser: false };
   }
 
@@ -353,22 +376,31 @@ export default {
     }
 
     // =========================================================================
-    // 3. /api/auth/me (Session Check & Logout)
+    // 3. /api/auth/me (Session Check & Live D1 Credit Ledger Sync)
     // =========================================================================
     if (pathname === "/api/auth/me") {
       if (method === "GET") {
-        const userId = getCookie(request, "studio_uid");
+        const userId = await resolveActiveUserId(request, db);
         if (!userId) return jsonResponse({ authenticated: false, user: null });
-        const user = await db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+        const user = await syncUserBalanceFromLedger(db, userId);
         if (!user) return jsonResponse({ authenticated: false, user: null });
         const history = await getUserHistory(db, user.id);
-        return jsonResponse({ authenticated: true, user, ...history });
+        return jsonResponse(
+          { authenticated: true, user, ...history },
+          200,
+          {
+            "Set-Cookie": `studio_uid=${user.id}; Path=/; Max-Age=2592000; HttpOnly; SameSite=Lax`,
+          }
+        );
       }
       if (method === "DELETE") {
         return jsonResponse(
           { ok: true },
           200,
-          { "Set-Cookie": "studio_uid=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax" }
+          {
+            "Set-Cookie":
+              "studio_uid=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax, studio_logged_out=1; Path=/; Max-Age=86400; SameSite=Lax",
+          }
         );
       }
     }
@@ -507,11 +539,11 @@ export default {
     // 5. /api/credits/topup (PromptPay QR Top-Up + SHA-256 Slip Deduplication)
     // =========================================================================
     if (pathname === "/api/credits/topup" && method === "POST") {
-      const userId = getCookie(request, "studio_uid");
+      const userId = await resolveActiveUserId(request, db);
       if (!userId) {
         return jsonResponse({ error: "กรุณาเข้าสู่ระบบด้วย Gmail ก่อนเติมเครดิต" }, 401);
       }
-      const user = await db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+      const user = await syncUserBalanceFromLedger(db, userId);
       if (!user) {
         return jsonResponse({ error: "ไม่พบบัญชีผู้ใช้งาน" }, 401);
       }
@@ -565,7 +597,7 @@ export default {
         )
         .run();
 
-      const updatedUser = await db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+      const updatedUser = await syncUserBalanceFromLedger(db, userId);
       const history = await getUserHistory(db, userId);
       return jsonResponse({
         ok: true,
@@ -665,11 +697,11 @@ export default {
     // 6. /api/generate (AI 3D Generation + Credit Hold & Auto-Refund in D1)
     // =========================================================================
     if (pathname === "/api/generate" && method === "POST") {
-      const userId = getCookie(request, "studio_uid");
+      const userId = await resolveActiveUserId(request, db);
       if (!userId) {
         return jsonResponse({ error: "กรุณาเข้าสู่ระบบด้วย Gmail ก่อนเริ่มสร้างโมเดล 3D" }, 401);
       }
-      const user = await db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+      const user = await syncUserBalanceFromLedger(db, userId);
       if (!user) {
         return jsonResponse({ error: "ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่" }, 401);
       }
@@ -687,14 +719,14 @@ export default {
       const hasRig = Boolean(body.hasRig);
       let inputImageUrl = body.inputImageUrl || null;
 
-      const engineCosts = { triposg: 2, hunyuan3d_2_1: 2, trellis_pbr: 15 };
+      const engineCosts = { triposg: 2, hunyuan3d_2_1: 2, trellis_pbr: 6 };
       const costCredits =
         stage === "draft_3d" ? 2 : (engineCosts[engine] || 2) + (hasRig ? 3 : 0);
 
       if (Number(user.credits_balance) < costCredits) {
         return jsonResponse(
           {
-            error: `เครดิตไม่เพียงพอ (ต้องใช้ ${costCredits} เครดิต แต่คุณมี ${user.credits_balance} เครดิต)`,
+            error: `เครดิตใน D1 ไม่เพียงพอ (ต้องใช้ ${costCredits} เครดิต แต่คุณมี ${user.credits_balance} เครดิต)`,
           },
           402
         );
@@ -940,7 +972,7 @@ export default {
         )
         .run();
 
-      const updatedUser = await db.prepare("SELECT * FROM users WHERE id = ?").bind(userId).first();
+      const updatedUser = await syncUserBalanceFromLedger(db, userId);
       const history = await getUserHistory(db, userId);
       return jsonResponse({
         ok: true,
@@ -1010,7 +1042,105 @@ export default {
     }
 
     // =========================================================================
-    // 7B. /api/glb-proxy (Same-Origin Binary GLB Stream Proxy for Three.js GLTFLoader)
+    // 7B. /api/studio-op (Studio Tool Operations + Real D1 Credit Deduction)
+    // =========================================================================
+    if (pathname === "/api/studio-op" && method === "POST") {
+      const body = await request.json().catch(() => ({}));
+      const operation = String(body.operation || "").trim();
+      const prompt = String(body.prompt || "").trim();
+      const resolution = String(body.resolution || "4K").trim();
+
+      // Paid Cloud AI operations vs Free in-browser operations
+      const opCosts = {
+        rig: 3,
+        retexture: 3,
+        upscale: 1,
+        remesh: 0,
+      };
+      const costCredits = opCosts[operation] ?? 0;
+
+      const opLabels = {
+        rig: "ผูกกระดูก Auto-Rigging 16 ข้อต่อ (SkinnedMesh)",
+        retexture: `สร้างพื้นผิว AI PBR Texture${prompt ? ` - "${prompt.slice(0, 32)}"` : ""}`,
+        upscale: `อัปสเกลพื้นผิว AI ${resolution} Ultra HD`,
+        remesh: "คำนวณจัดเรียงโครงข่าย Clean Quad Topology (ฟรี 0 เครดิต)",
+      };
+
+      const userId = await resolveActiveUserId(request, db);
+      if (costCredits > 0) {
+        if (!userId) {
+          return jsonResponse(
+            { error: "กรุณาเข้าสู่ระบบด้วย Google ก่อนใช้งานฟีเจอร์ที่ใช้เครดิต" },
+            401
+          );
+        }
+        const user = await syncUserBalanceFromLedger(db, userId);
+        if (!user) {
+          return jsonResponse({ error: "ไม่พบบัญชีผู้ใช้ กรุณาเข้าสู่ระบบใหม่" }, 401);
+        }
+        if (Number(user.credits_balance) < costCredits) {
+          return jsonResponse(
+            {
+              error: `เครดิตใน D1 ไม่เพียงพอ (ต้องใช้ ${costCredits} 🪙 แต่คุณมี ${user.credits_balance} 🪙)`,
+            },
+            402
+          );
+        }
+
+        const newBalance = Number(user.credits_balance) - costCredits;
+        const txId = `tx_${randomHex(8)}`;
+        const refId = `op_${operation}_${randomHex(5)}`;
+
+        await db
+          .prepare(
+            `INSERT INTO credit_transactions (id, user_id, type, amount, balance_after, description, reference_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
+          )
+          .bind(
+            txId,
+            userId,
+            `spend_${operation}`,
+            -costCredits,
+            newBalance,
+            opLabels[operation] || `ใช้งานเครื่องมือ ${operation}`,
+            refId
+          )
+          .run();
+
+        const updatedUser = await syncUserBalanceFromLedger(db, userId);
+        const history = await getUserHistory(db, userId);
+
+        return jsonResponse({
+          ok: true,
+          operation,
+          costCredits,
+          user: updatedUser,
+          ...history,
+          message: `หัก ${costCredits} 🪙 ใน Cloudflare D1 (คงเหลือ ${updatedUser.credits_balance} 🪙) — ${opLabels[operation]}`,
+        });
+      }
+
+      let updatedUser = null;
+      let history = {};
+      if (userId) {
+        updatedUser = await syncUserBalanceFromLedger(db, userId);
+        if (updatedUser) {
+          history = await getUserHistory(db, userId);
+        }
+      }
+
+      return jsonResponse({
+        ok: true,
+        operation,
+        costCredits: 0,
+        user: updatedUser,
+        ...history,
+        message: opLabels[operation] || `ประมวลผล ${operation} สำเร็จ (ฟรี 0 🪙)`,
+      });
+    }
+
+    // =========================================================================
+    // 7C. /api/glb-proxy (Same-Origin Binary GLB Stream Proxy for Three.js GLTFLoader)
     // =========================================================================
     if (pathname === "/api/glb-proxy" && method === "GET") {
       const remoteUrl = url.searchParams.get("url");

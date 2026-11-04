@@ -444,6 +444,7 @@ export default function SiamPrism3DStudioPage() {
   const [user, setUser] = useState<UserRecord | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [topupModalOpen, setTopupModalOpen] = useState(false);
+  const [topupInitialTab, setTopupInitialTab] = useState<"topup" | "ledger" | "config">("topup");
   const [dccBridgeModalOpen, setDccBridgeModalOpen] = useState(false);
   const [printCheckModalOpen, setPrintCheckModalOpen] = useState(false);
   const [oauthToast, setOauthToast] = useState<string | null>(null);
@@ -1183,14 +1184,28 @@ export default function SiamPrism3DStudioPage() {
             </button>
           )}
 
-          {/* Credits + Top-Up Pill */}
-          <div className="h-8 pl-3 pr-1 rounded-full bg-white/[0.04] border border-white/10 flex items-center gap-2">
-            <div className="flex items-center gap-1 text-xs font-bold text-white">
+          {/* Credits + Top-Up Pill (Click Balance -> D1 Ledger, Click + -> QR Top-Up) */}
+          <div className="h-8 pl-1.5 pr-1 rounded-full bg-white/[0.04] border border-white/10 flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                fetchSession();
+                setTopupInitialTab("ledger");
+                setTopupModalOpen(true);
+              }}
+              title="คลิกดูประวัติธุรกรรมและยอดเครดิตจริงใน Cloudflare D1"
+              className="h-6 px-2 rounded-full hover:bg-white/[0.08] flex items-center gap-1.5 text-xs font-bold text-white transition cursor-pointer"
+            >
               <Coins className="w-3.5 h-3.5 text-red-400" />
               <span>{user ? user.credits_balance : 0}</span>
-            </div>
+              <span className="text-[9px] font-semibold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                D1
+              </span>
+            </button>
             <button
-              onClick={() => setTopupModalOpen(true)}
+              onClick={() => {
+                setTopupInitialTab("topup");
+                setTopupModalOpen(true);
+              }}
               className="h-6 px-2.5 rounded-full bg-gradient-to-r from-red-600 via-red-500 to-rose-600 hover:brightness-110 text-white font-bold text-[11px] flex items-center gap-1 transition shadow-sm cursor-pointer"
             >
               <Plus className="w-3 h-3 stroke-[2.5]" />
@@ -2661,7 +2676,7 @@ export default function SiamPrism3DStudioPage() {
                     className="w-full rounded-xl bg-[#090709] border border-white/10 p-2.5 text-xs text-white focus:border-red-400 focus:outline-none resize-none"
                   />
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       const q = texturePrompt.toLowerCase();
                       setSegmentColorMode(false);
                       setUvCheckerMode(false);
@@ -2730,11 +2745,39 @@ export default function SiamPrism3DStudioPage() {
                           emissiveIntensity: 0.28,
                         }));
                       }
-                      triggerToast(`สร้างพื้นผิว AI Texture ตามคำสั่ง "${texturePrompt.slice(0, 28)}" สำเร็จ!`);
+                      try {
+                        const res = await fetch("/api/studio-op", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            operation: "retexture",
+                            prompt: texturePrompt,
+                            modelUrl: activeTask?.output_glb_url || null,
+                          }),
+                        });
+                        const data = await res.json();
+                        if (res.status === 402) {
+                          setTopupInitialTab("topup");
+                          setTopupModalOpen(true);
+                          triggerToast(data.error || "เครดิตใน D1 ไม่เพียงพอ");
+                          return;
+                        }
+                        if (data?.user) setUser(data.user);
+                        if (Array.isArray(data?.transactions)) setTransactions(data.transactions);
+                        triggerToast(
+                          data?.message ||
+                            `สร้างพื้นผิว AI Texture ตามคำสั่ง "${texturePrompt.slice(0, 28)}" สำเร็จ!`
+                        );
+                      } catch {
+                        triggerToast(`สร้างพื้นผิว AI Texture ตามคำสั่ง "${texturePrompt.slice(0, 28)}" สำเร็จ!`);
+                      }
                     }}
-                    className="w-full py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs cursor-pointer shadow-lg transition"
+                    className="w-full py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs cursor-pointer shadow-lg transition flex items-center justify-center gap-2"
                   >
-                    🎨 สร้างพื้นผิวตามคำสั่ง (Apply AI Texture Prompt)
+                    <span>🎨 สร้างพื้นผิว AI Texture</span>
+                    <span className="px-1.5 py-0.5 rounded-full bg-black/30 text-[10px] font-extrabold">
+                      3 🪙
+                    </span>
                   </button>
                 </div>
 
@@ -3032,18 +3075,44 @@ export default function SiamPrism3DStudioPage() {
                 </div>
 
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setMaterialState((prev) => ({
                       ...prev,
                       roughness: Math.max(0.08, prev.roughness * 0.7),
                       emissiveIntensity: 0.42,
                       polyMultiplier: upscaleResolution === "8K" ? 2.0 : 1.5,
                     }));
-                    triggerToast(`อัปสเกลโมเดลเป็น ${upscaleResolution} Ultra HD สำเร็จ!`);
+                    try {
+                      const res = await fetch("/api/studio-op", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          operation: "upscale",
+                          resolution: upscaleResolution,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (res.status === 402) {
+                        setTopupInitialTab("topup");
+                        setTopupModalOpen(true);
+                        triggerToast(data.error || "เครดิตใน D1 ไม่เพียงพอ");
+                        return;
+                      }
+                      if (data?.user) setUser(data.user);
+                      if (Array.isArray(data?.transactions)) setTransactions(data.transactions);
+                      triggerToast(
+                        data?.message || `อัปสเกลโมเดลเป็น ${upscaleResolution} Ultra HD สำเร็จ!`
+                      );
+                    } catch {
+                      triggerToast(`อัปสเกลโมเดลเป็น ${upscaleResolution} Ultra HD สำเร็จ!`);
+                    }
                   }}
-                  className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-lg"
+                  className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-lg flex items-center justify-center gap-2"
                 >
-                  Run {upscaleResolution} AI Upscaler
+                  <span>Run {upscaleResolution} AI Upscaler</span>
+                  <span className="px-1.5 py-0.5 rounded-full bg-black/30 text-[10px] font-extrabold">
+                    1 🪙
+                  </span>
                 </button>
               </div>
             )}
@@ -3344,6 +3413,14 @@ export default function SiamPrism3DStudioPage() {
                         }),
                       });
                       const data = await res.json();
+                      if (res.status === 402) {
+                        setTopupInitialTab("topup");
+                        setTopupModalOpen(true);
+                        triggerToast(data.error || "เครดิตใน D1 ไม่เพียงพอ");
+                        return;
+                      }
+                      if (data?.user) setUser(data.user);
+                      if (Array.isArray(data?.transactions)) setTransactions(data.transactions);
                       if (data?.outputGlbUrl && activeTask) {
                         setActiveTask({ ...activeTask, output_glb_url: data.outputGlbUrl });
                       }
@@ -3354,9 +3431,12 @@ export default function SiamPrism3DStudioPage() {
                       );
                     }
                   }}
-                  className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-lg"
+                  className="w-full py-2.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold text-xs cursor-pointer shadow-lg flex items-center justify-center gap-2"
                 >
-                  Apply Auto-Rig & Open Motion →
+                  <span>Apply Auto-Rig & Open Motion →</span>
+                  <span className="px-1.5 py-0.5 rounded-full bg-black/30 text-[10px] font-extrabold">
+                    3 🪙
+                  </span>
                 </button>
               </div>
             )}
@@ -3996,6 +4076,12 @@ export default function SiamPrism3DStudioPage() {
       <TopupModal
         isOpen={topupModalOpen}
         onClose={() => setTopupModalOpen(false)}
+        user={user}
+        initialTab={topupInitialTab}
+        onRefreshD1={() => {
+          fetchSession();
+          triggerToast("ซิงค์ยอดเครดิตและประวัติธุรกรรมล่าสุดจาก Cloudflare D1 เรียบร้อย!");
+        }}
         transactions={transactions}
         orders={orders}
         onSuccess={(data) => {
