@@ -93,43 +93,70 @@ type LeftToolId =
   | "animate"
   | "print3d";
 
-const LEFT_RAIL_GROUPS: {
-  group: string;
-  items: { id: LeftToolId; label: string; icon: React.ComponentType<{ className?: string }> }[];
+const STUDIO_PILLARS: {
+  id: string;
+  label: string;
+  titleTh: string;
+  defaultTool: LeftToolId;
+  icon: React.ComponentType<{ className?: string }>;
+  subTools: { id: LeftToolId; label: string }[];
 }[] = [
   {
-    group: "create",
-    items: [
-      { id: "agent", label: "3D Agent", icon: Sparkles },
-      { id: "generate", label: "Image/Text", icon: Wand2 },
-      { id: "relief", label: "Relief/Text", icon: Box },
+    id: "create",
+    label: "สร้าง 3D",
+    titleTh: "1. สร้างโมเดล 3D (Create)",
+    defaultTool: "generate",
+    icon: Wand2,
+    subTools: [
+      { id: "generate", label: "รูป/ข้อความ" },
+      { id: "relief", label: "นูนต่ำ/อักษร" },
+      { id: "agent", label: "AI Agent" },
     ],
   },
   {
-    group: "mesh",
-    items: [
-      { id: "segment", label: "Auto-Split", icon: Scissors },
-      { id: "fill-parts", label: "Fill Parts", icon: Puzzle },
-      { id: "retopo", label: "Remesh", icon: Grid3X3 },
-      { id: "smart-uv", label: "Auto-UV", icon: Layers },
+    id: "mesh",
+    label: "รีเมช",
+    titleTh: "2. จัดการโพลีกอน & ชิ้นส่วน",
+    defaultTool: "retopo",
+    icon: Grid3X3,
+    subTools: [
+      { id: "retopo", label: "Remesh" },
+      { id: "segment", label: "แยกชิ้น" },
+      { id: "fill-parts", label: "เติมฐาน" },
+      { id: "smart-uv", label: "กาง UV" },
     ],
   },
   {
-    group: "texture",
-    items: [
-      { id: "texture", label: "AI Texture", icon: Palette },
-      { id: "edit", label: "Brush/Decal", icon: PenTool },
-      { id: "upscale", label: "8K Upscale", icon: ArrowUpRight },
-      { id: "pbr", label: "PBR/HDRI", icon: Sun },
+    id: "texture",
+    label: "พื้นผิว",
+    titleTh: "3. พื้นผิว & ระบายสี (Texture)",
+    defaultTool: "texture",
+    icon: Palette,
+    subTools: [
+      { id: "texture", label: "AI Texture" },
+      { id: "edit", label: "พู่กัน 3D" },
+      { id: "pbr", label: "แสง/PBR" },
+      { id: "upscale", label: "8K ชัดพิเศษ" },
     ],
   },
   {
-    group: "animate",
-    items: [
-      { id: "rig", label: "Auto-Rig", icon: Bone },
-      { id: "animate", label: "Motion 600+", icon: Play },
-      { id: "print3d", label: "3D Print", icon: Printer },
+    id: "animate",
+    label: "อนิเมชัน",
+    titleTh: "4. ผูกกระดูก & ท่าทาง (Rig & Motion)",
+    defaultTool: "rig",
+    icon: Bone,
+    subTools: [
+      { id: "rig", label: "1. ผูกกระดูก (Auto-Rig)" },
+      { id: "animate", label: "2. ท่าทาง (Motion)" },
     ],
+  },
+  {
+    id: "print",
+    label: "พิมพ์ 3D",
+    titleTh: "5. เตรียมพิมพ์ 3D (.STL Slicer)",
+    defaultTool: "print3d",
+    icon: Printer,
+    subTools: [{ id: "print3d", label: "3D Print & Slicer" }],
   },
 ];
 
@@ -1979,73 +2006,58 @@ export default function SiamPrism3DStudioPage() {
            ===================================================================== */
         <div className="relative z-10 flex-1 min-h-0 flex gap-0">
           {/* -------------------------------------------------------------------
-              LEFT DOCK PART 1: Vertical Icon Rail (14 Tools from Tripo + Meshy)
+              LEFT DOCK PART 1: Clean 5-Pillar Studio Rail (Meshy / Tripo Standard)
              ------------------------------------------------------------------- */}
-          <aside className="w-[58px] h-full rounded-l-[20px] bg-[#110b0e] border-y border-l border-red-500/15 flex flex-col justify-between py-1.5 shrink-0">
-            <div className="flex flex-col gap-0.5 overflow-y-auto no-scrollbar">
-              {LEFT_RAIL_GROUPS.map((group, gIdx) => (
-                <div
-                  key={group.group}
-                  className={`flex flex-col items-center gap-0.5 px-1 ${
-                    gIdx > 0 ? "pt-1 mt-0.5 border-t border-white/[0.06]" : ""
-                  }`}
-                >
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    const active = activeLeftTool === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => handleSelectLeftTool(item.id)}
-                        className={`w-full py-1 rounded-lg flex flex-col items-center justify-center gap-0.5 transition cursor-pointer ${
-                          active
-                            ? "bg-red-500/20 text-red-300 border border-red-400/40 shadow-inner"
-                            : "text-slate-400 hover:text-white hover:bg-white/[0.04]"
-                        }`}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                        <span className="text-[8.5px] leading-none font-medium text-center">
-                          {item.label}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
+          <aside className="w-[66px] h-full rounded-l-[20px] bg-[#110b0e] border-y border-l border-red-500/15 flex flex-col justify-between py-2.5 px-1.5 shrink-0">
+            <div className="flex flex-col gap-2 overflow-y-auto no-scrollbar">
+              {STUDIO_PILLARS.map((pillar, idx) => {
+                const Icon = pillar.icon;
+                const isActive = pillar.subTools.some((st) => st.id === activeLeftTool);
+                return (
+                  <button
+                    key={pillar.id}
+                    onClick={() => handleSelectLeftTool(pillar.defaultTool)}
+                    className={`w-full py-2.5 px-1 rounded-xl flex flex-col items-center justify-center gap-1 transition cursor-pointer relative ${
+                      isActive
+                        ? "bg-gradient-to-b from-red-600/25 to-rose-600/20 text-red-200 border border-red-400/50 shadow-[0_0_15px_rgba(239,68,68,0.2)]"
+                        : "text-slate-400 hover:text-white hover:bg-white/[0.04] border border-transparent"
+                    }`}
+                  >
+                    <span className="absolute top-1 left-1.5 text-[8px] font-mono opacity-45">
+                      0{idx + 1}
+                    </span>
+                    <Icon className={`w-4 h-4 ${isActive ? "text-red-400" : ""}`} />
+                    <span className="text-[10px] leading-tight font-bold text-center">
+                      {pillar.label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="pt-1 border-t border-white/[0.06] flex flex-col items-center">
+            <div className="pt-2 border-t border-white/[0.06] flex flex-col items-center">
               <button
                 onClick={() => setTopupModalOpen(true)}
-                className="w-11 py-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/[0.04] flex flex-col items-center gap-0.5 transition cursor-pointer"
+                className="w-full py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.04] flex flex-col items-center gap-1 transition cursor-pointer"
               >
-                <Smartphone className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-[8.5px] leading-none font-medium">QR Pay</span>
+                <Smartphone className="w-4 h-4 text-red-400" />
+                <span className="text-[9.5px] leading-none font-semibold">เติมเครดิต</span>
               </button>
             </div>
           </aside>
 
           {/* -------------------------------------------------------------------
-              LEFT DOCK PART 2: Dynamic Tool Panel (Switches based on activeLeftTool!)
+              LEFT DOCK PART 2: Dynamic Tool Panel with Sub-Mode Switcher
              ------------------------------------------------------------------- */}
-          <section className="w-[272px] h-full rounded-r-[20px] bg-[#160e12] border-y border-r border-red-500/15 flex flex-col shrink-0 overflow-hidden">
+          <section className="w-[276px] h-full rounded-r-[20px] bg-[#160e12] border-y border-r border-red-500/15 flex flex-col shrink-0 overflow-hidden">
             {/* Dynamic Panel Header */}
             <div className="h-10 px-3.5 border-b border-white/[0.06] flex items-center justify-between shrink-0">
-              <span className="text-xs font-bold text-white tracking-wide uppercase truncate">
-                {activeLeftTool === "agent" && "3D Agent Co-Pilot"}
-                {activeLeftTool === "generate" && "Generate Model"}
-                {activeLeftTool === "relief" && "3D Relief & Text"}
-                {activeLeftTool === "segment" && "Auto-Split Parts"}
-                {activeLeftTool === "fill-parts" && "Fill Missing Parts"}
-                {activeLeftTool === "retopo" && "Remesh & Voxel"}
-                {activeLeftTool === "smart-uv" && "Auto-UV Unwrap"}
-                {activeLeftTool === "texture" && "AI Texture Studio"}
-                {activeLeftTool === "edit" && "Brush & 3D Decal"}
-                {activeLeftTool === "upscale" && "8K AI Upscaler"}
-                {activeLeftTool === "pbr" && "PBR & HDRI Light"}
-                {activeLeftTool === "rig" && "Auto-Rig & Pose"}
-                {activeLeftTool === "animate" && "600+ Motion Library"}
-                {activeLeftTool === "print3d" && "3D Print & Slicer"}
+              <span className="text-xs font-bold text-white tracking-wide truncate">
+                {
+                  STUDIO_PILLARS.find((p) =>
+                    p.subTools.some((st) => st.id === activeLeftTool)
+                  )?.titleTh
+                }
               </span>
               <button
                 onClick={() => {
@@ -2069,7 +2081,7 @@ export default function SiamPrism3DStudioPage() {
                     accentColor: activeTask?.accent_color || "#f59e0b",
                     roughness: activeTask?.output_glb_url ? 0.42 : activeTask?.roughness ?? 0.35,
                     metalness: activeTask?.output_glb_url ? 0.18 : activeTask?.metalness ?? 0.25,
-                    emissiveIntensity: 0.25,
+                    emissiveIntensity: activeTask?.output_glb_url ? 0 : 0.25,
                     polyMultiplier: 1,
                   });
                   triggerToast("รีเซ็ตการตั้งค่า Viewport & สีวัสดุกลับสู่ค่าเริ่มต้นเรียบร้อย");
@@ -2081,6 +2093,36 @@ export default function SiamPrism3DStudioPage() {
                 <span>Reset</span>
               </button>
             </div>
+
+            {/* Clean Sub-Mode Switcher inside the Active Pillar */}
+            {(() => {
+              const currentPillar = STUDIO_PILLARS.find((p) =>
+                p.subTools.some((st) => st.id === activeLeftTool)
+              );
+              if (!currentPillar || currentPillar.subTools.length <= 1) return null;
+              return (
+                <div className="px-3 pt-2.5 pb-1 shrink-0">
+                  <div className="p-1 rounded-xl bg-[#0b080a] border border-white/[0.07] flex items-center gap-1">
+                    {currentPillar.subTools.map((st) => {
+                      const subActive = activeLeftTool === st.id;
+                      return (
+                        <button
+                          key={st.id}
+                          onClick={() => handleSelectLeftTool(st.id)}
+                          className={`flex-1 py-1.5 px-1.5 rounded-lg text-[10px] font-bold transition truncate cursor-pointer ${
+                            subActive
+                              ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-sm"
+                              : "text-slate-400 hover:text-white"
+                          }`}
+                        >
+                          {st.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* =================================================================
                 TOOL 0: 3D AGENT CO-PILOT (Meshy 7.1 AgentPanel)

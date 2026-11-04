@@ -2792,29 +2792,22 @@ export default function Viewport3D({
 
   return (
     <div className="relative flex-1 min-h-0 bg-[#090709] overflow-hidden flex flex-col">
-      {/* Docked Non-Overlapping Top Meshy ViewSwitcher Channel Bar */}
-      <div className="h-9 px-2.5 bg-[#110b0e]/95 border-b border-red-500/15 flex items-center justify-between gap-2 shrink-0 z-10">
-        <div className="flex items-center gap-0.5 overflow-x-auto no-scrollbar py-0.5">
+      {/* Streamlined Top Viewport Shading Bar (5 Core Modes + Map Inspector Dropdown) */}
+      <div className="h-9 px-3 bg-[#110b0e]/95 border-b border-red-500/15 flex items-center justify-between gap-2 shrink-0 z-10">
+        <div className="flex items-center gap-1 py-0.5">
           {(
             [
-              { id: "pbr", label: "PBR" },
-              { id: "clay", label: "Clay" },
-              { id: "wireframe", label: "Wire" },
-              { id: "base_color", label: "Albedo" },
-              { id: "normal", label: "Normal" },
-              { id: "metallic", label: "Metallic" },
-              { id: "roughness", label: "Roughness" },
-              { id: "ao_curvature", label: "Cavity/AO" },
+              { id: "pbr", label: "PBR (ปกติ)" },
+              { id: "clay", label: "Clay (ปั้นดิน)" },
+              { id: "wireframe", label: "Wireframe (เส้น)" },
+              { id: "base_color", label: "Albedo (สีล้วน)" },
               { id: "uv_checker", label: "UV Map" },
-              { id: "segment", label: "Segments" },
-              { id: "printability", label: "Print Check" },
-              { id: "filament_sim", label: "Filament" },
             ] as { id: RenderShadingMode; label: string }[]
           ).map((ch) => (
             <button
               key={ch.id}
               onClick={() => setShadingMode(ch.id)}
-              className={`px-2 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-semibold whitespace-nowrap transition cursor-pointer ${
                 effectiveShading === ch.id
                   ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-[0_0_10px_rgba(239,68,68,0.35)]"
                   : "text-slate-400 hover:text-white hover:bg-white/[0.06]"
@@ -2824,6 +2817,33 @@ export default function Viewport3D({
             </button>
           ))}
         </div>
+
+        <select
+          value={
+            ["normal", "metallic", "roughness", "ao_curvature", "segment", "printability", "filament_sim"].includes(
+              effectiveShading
+            )
+              ? effectiveShading
+              : ""
+          }
+          onChange={(e) => {
+            if (e.target.value) {
+              setShadingMode(e.target.value as RenderShadingMode);
+            }
+          }}
+          className="px-2.5 py-1 rounded-lg bg-[#090709] border border-white/10 text-[10.5px] text-slate-300 focus:outline-none cursor-pointer"
+        >
+          <option value="" disabled>
+            🔍 โหมดตรวจสอบพิเศษ (Inspect Maps)...
+          </option>
+          <option value="normal">Normal Map</option>
+          <option value="metallic">Metallic Map</option>
+          <option value="roughness">Roughness Map</option>
+          <option value="ao_curvature">Cavity / AO</option>
+          <option value="segment">Segments (แยกสีชิ้นส่วน)</option>
+          <option value="printability">Print Check (เช็กจุดยื่น)</option>
+          <option value="filament_sim">Filament (เส้นพลาสติก)</option>
+        </select>
       </div>
 
       {/* 3D Canvas Area */}
