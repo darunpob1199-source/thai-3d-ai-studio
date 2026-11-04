@@ -1796,6 +1796,7 @@ export default function Viewport3D({
 
               const skinIndices = new Uint16Array(vCount * 4);
               const skinWeights = new Float32Array(vCount * 4);
+              const boneW = new Float32Array(12);
 
               for (let vi = 0; vi < vCount; vi++) {
                 const nx = (posAttr.getX(vi) - minX) / spanX;
@@ -1806,7 +1807,7 @@ export default function Viewport3D({
                 const isLeftArmRegion = ny > 0.21 && ny < 0.86 && nx < lArmBound;
                 const isRightArmRegion = ny > 0.21 && ny < 0.86 && nx > rArmBound;
 
-                const candidates: { b: number; w: number }[] = [];
+                boneW.fill(0);
                 // Weight against the 12 deforming bones (0..11, including UpperLegs 8..9 and Knees 10..11)
                 for (let b = 0; b < 12; b++) {
                   if (isLeftArmRegion) {
@@ -1827,28 +1828,44 @@ export default function Viewport3D({
                   const [ax, ay] = boneRestDefs[b].segA!;
                   const [bx, by] = boneRestDefs[b].segB!;
                   const d = distToSegment2D(nx, ny, ax, ay, bx, by);
-                  const w = 1 / Math.pow(d + 0.05, 4.2);
-                  const existing = candidates.find((c) => c.b === targetBone);
-                  if (existing) {
-                    existing.w += w;
+                  const dPlus = d + 0.05;
+                  const d2 = dPlus * dPlus;
+                  const w = 1 / (d2 * d2);
+                  boneW[targetBone] += w;
+                }
+
+                let b0 = 0, b1 = 0, b2 = 0, b3 = 0;
+                let w0 = 0, w1 = 0, w2 = 0, w3 = 0;
+                for (let b = 0; b < 12; b++) {
+                  const w = boneW[b];
+                  if (w <= w3) continue;
+                  if (w > w0) {
+                    w3 = w2; b3 = b2;
+                    w2 = w1; b2 = b1;
+                    w1 = w0; b1 = b0;
+                    w0 = w;  b0 = b;
+                  } else if (w > w1) {
+                    w3 = w2; b3 = b2;
+                    w2 = w1; b2 = b1;
+                    w1 = w;  b1 = b;
+                  } else if (w > w2) {
+                    w3 = w2; b3 = b2;
+                    w2 = w;  b2 = b;
                   } else {
-                    candidates.push({ b: targetBone, w });
+                    w3 = w;  b3 = b;
                   }
                 }
-
-                candidates.sort((a, b) => b.w - a.w);
-                const top4 = candidates.slice(0, 4);
-                while (top4.length < 4) {
-                  top4.push({ b: 0, w: 0 });
-                }
-                const sumW =
-                  top4[0].w + top4[1].w + top4[2].w + top4[3].w || 1;
+                const sumW = w0 + w1 + w2 + w3 || 1;
 
                 const base = vi * 4;
-                for (let k = 0; k < 4; k++) {
-                  skinIndices[base + k] = top4[k].b;
-                  skinWeights[base + k] = top4[k].w / sumW;
-                }
+                skinIndices[base] = b0;
+                skinIndices[base + 1] = b1;
+                skinIndices[base + 2] = b2;
+                skinIndices[base + 3] = b3;
+                skinWeights[base] = w0 / sumW;
+                skinWeights[base + 1] = w1 / sumW;
+                skinWeights[base + 2] = w2 / sumW;
+                skinWeights[base + 3] = w3 / sumW;
               }
 
               const skinIndexAttr = new THREE.Uint16BufferAttribute(skinIndices, 4);
