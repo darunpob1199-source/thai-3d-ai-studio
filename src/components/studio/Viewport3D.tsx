@@ -2791,26 +2791,26 @@ export default function Viewport3D({
   });
 
   return (
-    <div className="relative flex-1 min-h-0 bg-[#090709] overflow-hidden flex flex-col">
-      {/* Streamlined Top Viewport Shading Bar (5 Core Modes + Map Inspector Dropdown) */}
-      <div className="h-9 px-3 bg-[#110b0e]/95 border-b border-red-500/15 flex items-center justify-between gap-2 shrink-0 z-10">
-        <div className="flex items-center gap-1 py-0.5">
+    <div className="relative flex-1 min-h-0 bg-[#0b0b0c] overflow-hidden flex flex-col">
+      {/* Top Viewport Shading Bar (Graphite #141415, 4px Grid, Quiet Controls) */}
+      <div className="h-10 px-3 bg-[#141415] border-b border-white/[0.08] flex items-center justify-between gap-2 shrink-0 z-10">
+        <div className="flex items-center gap-1 p-0.5 rounded-[8px] bg-[#0f0f10] border border-white/[0.08]">
           {(
             [
-              { id: "pbr", label: "PBR (ปกติ)" },
-              { id: "clay", label: "Clay (ปั้นดิน)" },
-              { id: "wireframe", label: "Wireframe (เส้น)" },
-              { id: "base_color", label: "Albedo (สีล้วน)" },
+              { id: "pbr", label: "PBR" },
+              { id: "clay", label: "Clay" },
+              { id: "wireframe", label: "Wireframe" },
+              { id: "base_color", label: "Albedo" },
               { id: "uv_checker", label: "UV Map" },
             ] as { id: RenderShadingMode; label: string }[]
           ).map((ch) => (
             <button
               key={ch.id}
               onClick={() => setShadingMode(ch.id)}
-              className={`px-2.5 py-1 rounded-lg text-[10.5px] font-semibold whitespace-nowrap transition cursor-pointer ${
+              className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
                 effectiveShading === ch.id
-                  ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-[0_0_10px_rgba(239,68,68,0.35)]"
-                  : "text-slate-400 hover:text-white hover:bg-white/[0.06]"
+                  ? "bg-[#232325] text-[#ededed]"
+                  : "text-[#85858b] hover:text-[#ededed]"
               }`}
             >
               {ch.label}
@@ -2831,18 +2831,18 @@ export default function Viewport3D({
               setShadingMode(e.target.value as RenderShadingMode);
             }
           }}
-          className="px-2.5 py-1 rounded-lg bg-[#090709] border border-white/10 text-[10.5px] text-slate-300 focus:outline-none cursor-pointer"
+          className="h-7 px-2.5 rounded-[6px] bg-[#19191b] border border-white/[0.08] text-[12px] text-[#a1a1a6] focus:outline-none cursor-pointer"
         >
           <option value="" disabled>
-            🔍 โหมดตรวจสอบพิเศษ (Inspect Maps)...
+            Inspect Maps
           </option>
           <option value="normal">Normal Map</option>
           <option value="metallic">Metallic Map</option>
           <option value="roughness">Roughness Map</option>
           <option value="ao_curvature">Cavity / AO</option>
-          <option value="segment">Segments (แยกสีชิ้นส่วน)</option>
-          <option value="printability">Print Check (เช็กจุดยื่น)</option>
-          <option value="filament_sim">Filament (เส้นพลาสติก)</option>
+          <option value="segment">Segments</option>
+          <option value="printability">Print Check</option>
+          <option value="filament_sim">Filament</option>
         </select>
       </div>
 
@@ -2850,46 +2850,46 @@ export default function Viewport3D({
       <div className="relative flex-1 min-h-0 w-full flex flex-col">
         <div ref={mountRef} className="w-full flex-1 cursor-grab active:cursor-grabbing" />
 
-        {/* Right-Edge Compact Scene Controls (No Duplicate View Buttons) */}
+        {/* Right-Edge Compact Scene Controls */}
         <div className="absolute right-3 top-3 z-10 flex flex-col items-center gap-1.5 pointer-events-auto">
           <button
             onClick={() => setShowRigBones(!showRigBones)}
-            title="Toggle Skeleton Rig Bones"
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition border cursor-pointer ${
+            title="แสดงโครงกระดูก (Skeleton Bones)"
+            className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors border cursor-pointer ${
               effectiveShowRig
-                ? "bg-red-500 text-white border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.4)]"
-                : "bg-[#160d11]/90 text-slate-300 border-red-500/15 hover:bg-red-500/10"
+                ? "bg-[#232325] text-[#ededed] border-[#e5484d]"
+                : "bg-[#141415]/90 text-[#85858b] hover:text-[#ededed] border-white/[0.08]"
             }`}
           >
-            <Activity className="w-3.5 h-3.5" />
+            <Activity className="w-4 h-4 stroke-[1.5]" />
           </button>
 
           <button
             onClick={() => setAutoRotate(!autoRotate)}
-            title="Auto-Rotate Turntable"
-            className={`w-8 h-8 rounded-full flex items-center justify-center transition border cursor-pointer ${
+            title="หมุนโมเดลอัตโนมัติ (Turntable)"
+            className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors border cursor-pointer ${
               autoRotate
-                ? "bg-red-500/20 text-red-300 border-red-400/40"
-                : "bg-[#160d11]/90 text-slate-400 border-red-500/15 hover:bg-red-500/10"
+                ? "bg-[#232325] text-[#ededed] border-white/[0.18]"
+                : "bg-[#141415]/90 text-[#85858b] hover:text-[#ededed] border-white/[0.08]"
             }`}
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-4 h-4 stroke-[1.5]" />
           </button>
 
           <button
             onClick={() => setLightIntensity((prev) => (prev > 1.6 ? 0.9 : prev + 0.4))}
-            title="Studio Lighting Intensity"
-            className="w-8 h-8 rounded-full bg-[#160d11]/90 text-slate-300 border border-red-500/15 hover:bg-red-500/10 flex items-center justify-center transition cursor-pointer"
+            title="ความสว่างไฟสตูดิโอ"
+            className="w-8 h-8 rounded-[8px] bg-[#141415]/90 text-[#85858b] hover:text-[#ededed] border border-white/[0.08] flex items-center justify-center transition-colors cursor-pointer"
           >
-            <Sun className="w-3.5 h-3.5" />
+            <Sun className="w-4 h-4 stroke-[1.5]" />
           </button>
         </div>
 
         {/* 3D Raycast Clicked Part Inspector Bar */}
         {selectedPart && (
-          <div className="absolute bottom-14 left-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#160d11]/95 backdrop-blur-xl border border-red-500/35 shadow-xl pointer-events-auto">
-            <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-bold">
-              3D Pick: {selectedPart.name}
+          <div className="absolute bottom-14 left-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-[8px] bg-[#19191b]/95 border border-white/[0.12] shadow-xl pointer-events-auto">
+            <span className="px-2 py-0.5 rounded-[4px] bg-[#232325] text-[#ededed] text-[11px] font-mono">
+              {selectedPart.name}
             </span>
             <div className="flex items-center gap-1">
               {[
@@ -2902,111 +2902,99 @@ export default function Viewport3D({
                   key={sw.hex}
                   onClick={() => handlePaintSelectedPart(sw.hex)}
                   title={`Paint ${selectedPart.name} ${sw.label}`}
-                  className="w-4 h-4 rounded-full border border-white/40 hover:scale-110 transition cursor-pointer"
+                  className="w-4 h-4 rounded-[4px] border border-white/30 cursor-pointer"
                   style={{ backgroundColor: sw.hex }}
                 />
               ))}
             </div>
             <button
               onClick={handleToggleSelectedPartVisible}
-              className="px-2 py-0.5 rounded-full bg-white/[0.08] hover:bg-white/15 text-[10px] text-slate-200 font-semibold cursor-pointer"
+              className="px-2 py-0.5 rounded-[4px] bg-[#232325] hover:bg-[#2c2c2f] text-[11px] text-[#ededed] font-normal cursor-pointer"
             >
-              ซ่อน/แสดงชิ้นนี้
+              ซ่อน/แสดง
             </button>
             <button
               onClick={() => setSelectedPart(null)}
-              className="text-[10px] text-slate-400 hover:text-white px-1 cursor-pointer"
+              className="text-[11px] text-[#85858b] hover:text-[#ededed] px-1 cursor-pointer"
             >
               ✕
             </button>
           </div>
         )}
 
-        {/* Picture-in-Picture 2D Original Input Image (ภาพต้นแบบ) */}
+        {/* Picture-in-Picture 2D Original Input Image (Quiet Graphite Frame) */}
         {activeTask?.input_image_url && !selectedPart && (
           <div
             onClick={() => setExpandRefImg(!expandRefImg)}
-            title="คลิกเพื่อขยาย/ย่อ ภาพต้นแบบ 2D ที่ใช้ปั้นโมเดล 3D นี้"
-            className={`absolute bottom-14 left-3 z-10 rounded-xl overflow-hidden bg-[#110b0e]/95 backdrop-blur-md border transition-all duration-200 cursor-pointer pointer-events-auto shadow-2xl ${
-              activeTask.engine === "trellis_pbr"
-                ? "border-amber-400/60 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
-                : "border-sky-400/40"
-            } ${expandRefImg ? "w-56" : "w-28"}`}
+            title="คลิกเพื่อขยายหรือย่อภาพต้นแบบ"
+            className={`absolute bottom-14 left-3 z-10 rounded-[10px] overflow-hidden bg-[#141415]/95 border border-white/[0.1] cursor-pointer pointer-events-auto ${
+              expandRefImg ? "w-52" : "w-24"
+            }`}
           >
-            <div
-              className={`px-2 py-1 text-[9px] font-bold flex items-center justify-between ${
-                activeTask.engine === "trellis_pbr"
-                  ? "bg-gradient-to-r from-amber-500/25 to-red-500/25 text-amber-200"
-                  : "bg-sky-500/20 text-sky-200"
-              }`}
-            >
-              <span className="truncate">
-                {activeTask.engine === "trellis_pbr"
-                  ? "🏆 ต้นแบบตัวท็อป (Pro)"
-                  : "⚡ ต้นแบบตัวกลาง (Std)"}
-              </span>
-              <span className="text-[8px] opacity-80">{expandRefImg ? "ย่อ" : "ขยาย"}</span>
+            <div className="px-2 py-1 text-[10px] font-mono text-[#a1a1a6] border-b border-white/[0.06] flex items-center justify-between">
+              <span className="truncate">ภาพต้นแบบ</span>
+              <span className="text-[9px] text-[#85858b]">{expandRefImg ? "ย่อ" : "ขยาย"}</span>
             </div>
-            <div className="p-1.5 bg-black/50 flex items-center justify-center">
+            <div className="p-1.5 bg-[#0f0f10] flex items-center justify-center">
               <img
                 src={activeTask.input_image_url}
                 alt="2D Input Reference"
-                className={`object-contain rounded-lg ${
-                  expandRefImg ? "w-52 h-52" : "w-24 h-24"
+                className={`object-contain rounded-[6px] ${
+                  expandRefImg ? "w-48 h-48" : "w-20 h-20"
                 }`}
               />
             </div>
           </div>
         )}
 
-        {/* Bottom Floating Status & Export Pill */}
+        {/* Bottom Status & Export Bar */}
         <div className="absolute bottom-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
-        <div className="px-3 py-1.5 rounded-full bg-[#110b0e]/90 backdrop-blur-md border border-red-500/15 text-[11px] text-slate-400 flex items-center gap-2 pointer-events-auto">
-          <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-          <span>
-            {Math.round(
-              (activeTask?.target_poly_count || 18000) *
-                (studioOverrides?.material.polyMultiplier || 1)
-            ).toLocaleString()}{" "}
-            Polys
-          </span>
-          <span className="text-slate-600">•</span>
-          <span className="uppercase text-red-300 font-semibold">
-            {studioOverrides?.artStyleMode && studioOverrides.artStyleMode !== "standard"
-              ? studioOverrides.artStyleMode.toUpperCase()
-              : activeTask?.topology || "QUAD"}
-          </span>
-          {studioOverrides?.addPrintBase && (
-            <>
-              <span className="text-slate-600">•</span>
-              <span className="text-emerald-300 font-semibold">+STL Base</span>
-            </>
-          )}
-        </div>
+          <div className="h-8 px-3 rounded-[8px] bg-[#141415]/95 border border-white/[0.08] text-[12px] font-mono tabular-nums text-[#a1a1a6] flex items-center gap-2 pointer-events-auto">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#e5484d]" />
+            <span className="text-[#ededed]">
+              {Math.round(
+                (activeTask?.target_poly_count || 18000) *
+                  (studioOverrides?.material.polyMultiplier || 1)
+              ).toLocaleString()}{" "}
+              polys
+            </span>
+            <span className="text-[#85858b]">·</span>
+            <span className="uppercase text-[#a1a1a6]">
+              {studioOverrides?.artStyleMode && studioOverrides.artStyleMode !== "standard"
+                ? studioOverrides.artStyleMode.toUpperCase()
+                : activeTask?.topology || "QUAD"}
+            </span>
+            {studioOverrides?.addPrintBase && (
+              <>
+                <span className="text-[#85858b]">·</span>
+                <span className="text-[#4cc38a]">+STL Base</span>
+              </>
+            )}
+          </div>
 
-        <div className="flex items-center gap-1 bg-[#110b0e]/90 backdrop-blur-md border border-red-500/15 p-1 rounded-full shadow-xl pointer-events-auto">
-          <button
-            onClick={() => handleExportFile("glb")}
-            className="h-7 px-3.5 rounded-full bg-gradient-to-r from-red-600 to-rose-600 hover:brightness-110 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>.GLB</span>
-          </button>
-          <button
-            onClick={() => handleExportFile("obj")}
-            className="h-7 px-2.5 rounded-full hover:bg-white/10 text-slate-300 text-xs font-medium transition cursor-pointer"
-          >
-            .OBJ
-          </button>
-          <button
-            onClick={() => handleExportFile("stl")}
-            className="h-7 px-2.5 rounded-full hover:bg-red-500/20 text-red-300 text-xs font-semibold transition cursor-pointer"
-            title="Export 3D Printable .STL Mesh"
-          >
-            .STL
-          </button>
+          <div className="flex items-center gap-1 bg-[#141415]/95 border border-white/[0.08] p-1 rounded-[8px] pointer-events-auto">
+            <button
+              onClick={() => handleExportFile("glb")}
+              className="h-6 px-3 rounded-[6px] bg-[#ededed] hover:bg-white text-[#0f0f10] text-[12px] font-mono font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 stroke-[1.5]" />
+              <span>.GLB</span>
+            </button>
+            <button
+              onClick={() => handleExportFile("obj")}
+              className="h-6 px-2.5 rounded-[6px] hover:bg-[#232325] text-[#a1a1a6] hover:text-[#ededed] text-[12px] font-mono transition-colors cursor-pointer"
+            >
+              .OBJ
+            </button>
+            <button
+              onClick={() => handleExportFile("stl")}
+              className="h-6 px-2.5 rounded-[6px] hover:bg-[#232325] text-[#a1a1a6] hover:text-[#ededed] text-[12px] font-mono transition-colors cursor-pointer"
+              title="Export 3D Printable .STL Mesh"
+            >
+              .STL
+            </button>
+          </div>
         </div>
-      </div>
 
         {/* Loading Overlay */}
         {isGenerating && (

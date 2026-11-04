@@ -1446,7 +1446,9 @@ export default function SiamPrism3DStudioPage() {
             {/* 4-Column 3D Model Grid (Outer 14px, padding 8px, inner 8px, zero emojis, zero scale-on-hover) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {allGalleryModels.map((item) => {
-                const cleanTitle = item.prompt_th.replace(/^\[.*?\]\s*/, "");
+                const cleanTitle = item.prompt_th
+                  .replace(/^\[.*?\]\s*/, "")
+                  .replace(/\s*\(.*?\)\s*$/, "");
                 const isPro = item.engine === "trellis_pbr";
                 return (
                   <div
@@ -3860,7 +3862,9 @@ export default function SiamPrism3DStudioPage() {
                   {(tasks.length > 0 ? tasks : CURATED_SHOWCASE).map((item) => {
                     const isSelected = activeTask?.id === item.id;
                     const isPro = item.engine === "trellis_pbr";
-                    const cleanName = item.prompt_th.replace(/^\[.*?\]\s*/, "");
+                    const cleanName = item.prompt_th
+                      .replace(/^\[.*?\]\s*/, "")
+                      .replace(/\s*\(.*?\)\s*$/, "");
                     return (
                       <div
                         key={item.id}
