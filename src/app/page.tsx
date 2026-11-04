@@ -254,28 +254,28 @@ const GALLERY_CATEGORIES = [
 
 const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
   {
-    id: "showcase_pro_battle_mech",
+    id: "showcase_pro_transformer",
     user_id: "community",
     stage: "refine_pbr",
     engine: "trellis_pbr",
     mode: "image_to_3d",
-    prompt_th: "หุ่นรบเกราะเหล็ก Battle Mech",
+    prompt_th: "หุ่นรบทรานส์ฟอร์เมอร์สทมิฬ-แดง",
     prompt_en:
-      "Pro Studio TRELLIS.2 4B Cascade — Heavy armored sci-fi battle mech with baked Albedo, Metallic, and Roughness PBR maps",
-    input_image_url: "/models/pro_trellis2_battle_mech.webp",
+      "Pro Studio TRELLIS.2 4B Cascade — Crimson and black transformer mecha warrior with heavy rifle and full Metallic & Roughness PBR maps",
+    input_image_url: "/models/pro_trellis2_transformer.webp",
     status: "completed",
     cost_credits: 6,
     refunded: 0,
-    target_poly_count: 148000,
+    target_poly_count: 162000,
     topology: "quad",
     has_pbr: 1,
     has_rig: 1,
     preset_type: "mecha",
     primary_color: "#d6d3d1",
-    accent_color: "#f59e0b",
-    roughness: 0.35,
-    metalness: 0.75,
-    output_glb_url: "/models/pro_trellis2_battle_mech.glb",
+    accent_color: "#ef4444",
+    roughness: 0.28,
+    metalness: 0.85,
+    output_glb_url: "/models/pro_trellis2_transformer.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
   },
@@ -306,12 +306,146 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     categoryTag: "Props",
   },
   {
+    id: "showcase_pro_spider_mech",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "หุ่นรบแมงมุมจักรกลหนัก 4 ขา",
+    prompt_en:
+      "Pro Studio TRELLIS.2 4B Cascade — Four-legged heavy artillery combat spider mech with dual autocannons and ammo belts",
+    input_image_url: "/models/pro_trellis2_spider_mech.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 154000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "vehicle",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.35,
+    metalness: 0.82,
+    output_glb_url:
+      "https://microsoft.github.io/TRELLIS.2/assets/generation/95db3c13622788ec311ae4dfa24dd88732c66ca5e340a0bf3465d2a528204037.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Vehicle",
+  },
+  {
+    id: "showcase_pro_royal_helmet",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "หมวกเกราะอัศวินเซรามิกสลักทอง",
+    prompt_en:
+      "Pro Studio TRELLIS.2 4B Cascade — Royal white ceramic paladin helmet with gold filigree crest and glowing runes",
+    input_image_url: "/models/pro_trellis2_royal_helmet.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 118000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "sword",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.22,
+    metalness: 0.78,
+    output_glb_url:
+      "https://microsoft.github.io/TRELLIS.2/assets/generation/290af2dd390c95db88a35b8062fdd2ac1a9c28edc6533bc6a26ab2c83c523c61.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Props",
+  },
+  {
+    id: "showcase_pro_king_statue",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "ประติมากรรมราชันย์บัลลังก์ศิลา",
+    prompt_en:
+      "Pro Studio TRELLIS.2 4B Cascade — Ancient carved stone king seated on an ornate throne holding a greatsword",
+    input_image_url: "/models/pro_trellis2_king_statue.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 142000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "crystal",
+    primary_color: "#d6d3d1",
+    accent_color: "#ef4444",
+    roughness: 0.62,
+    metalness: 0.18,
+    output_glb_url:
+      "https://microsoft.github.io/TRELLIS.2/assets/generation/f5332118a0cda9cd13fe13d4be2b00437e702d1f9af51ebb6b75219a572a6ce9.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Character",
+  },
+  {
+    id: "showcase_pro_battle_mech",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "หุ่นรบจักรกลหนักไซเบอร์พังก์",
+    prompt_en:
+      "Pro Studio TRELLIS.2 4B Cascade — Heavy armored sci-fi battle mech with baked Albedo, Metallic, and Roughness PBR maps",
+    input_image_url: "/models/pro_trellis2_battle_mech.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 148000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "mecha",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.35,
+    metalness: 0.75,
+    output_glb_url: "/models/pro_trellis2_battle_mech.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Character",
+  },
+  {
+    id: "showcase_pro_mech_boar",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "หมูป่าจักรกลสตีมพังก์แกนเพลิง",
+    prompt_en:
+      "Pro Studio TRELLIS.2 4B Cascade — Mechanical wild boar with bronze armor plates and glowing orange power core",
+    input_image_url: "/models/pro_trellis2_mech_boar.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 128000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "dragon",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.38,
+    metalness: 0.76,
+    output_glb_url:
+      "https://microsoft.github.io/TRELLIS.2/assets/generation/2bb0932314bae71eec94d0d01a20d3f761ade9664e013b9a9a43c00a2f44163a.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Animal",
+  },
+  {
     id: "showcase_pro_stone_golem",
     user_id: "community",
     stage: "refine_pbr",
     engine: "trellis_pbr",
     mode: "image_to_3d",
-    prompt_th: "โกเลมหินโบราณคลุมมอส",
+    prompt_th: "โกเลมศิลาเวทมนตร์โบราณ",
     prompt_en:
       "Pro Studio TRELLIS.2 4B Cascade — Ancient stone golem covered in moss with full PBR Albedo & Roughness maps",
     input_image_url: "/models/pro_trellis2_stone_golem.webp",
@@ -332,19 +466,149 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     categoryTag: "Character",
   },
   {
+    id: "showcase_std_elephant",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "hunyuan3d_2_1",
+    mode: "image_to_3d",
+    prompt_th: "ช้างศึกทรงเครื่องบัลลังก์ทองคำ",
+    prompt_en:
+      "Standard Microsoft Trellis — Royal armored war elephant with ornate gold howdah throne and 360° AI-baked UV texture",
+    input_image_url: "/models/standard_trellis_elephant.png",
+    status: "completed",
+    cost_credits: 2,
+    refunded: 0,
+    target_poly_count: 64000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "dragon",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.4,
+    metalness: 0.35,
+    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/elephant.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Animal",
+  },
+  {
+    id: "showcase_std_monster",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "hunyuan3d_2_1",
+    mode: "image_to_3d",
+    prompt_th: "อสูรกายยักษ์ศิลาตาเรืองแสง",
+    prompt_en:
+      "Standard Microsoft Trellis — Giant crystalline rock boss monster with glowing eyes and 360° AI-baked UV texture",
+    input_image_url: "/models/standard_trellis_monster.png",
+    status: "completed",
+    cost_credits: 2,
+    refunded: 0,
+    target_poly_count: 72000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "dragon",
+    primary_color: "#d6d3d1",
+    accent_color: "#38bdf8",
+    roughness: 0.48,
+    metalness: 0.25,
+    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/monster.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Animal",
+  },
+  {
+    id: "showcase_std_chest",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "hunyuan3d_2_1",
+    mode: "image_to_3d",
+    prompt_th: "หีบสมบัติหัวกะโหลกหนามเหล็ก",
+    prompt_en:
+      "Standard Microsoft Trellis — Fantasy RPG dungeon treasure chest with spiked iron bands and skull lock",
+    input_image_url: "/models/standard_trellis_chest.png",
+    status: "completed",
+    cost_credits: 2,
+    refunded: 0,
+    target_poly_count: 52000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "potion",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.38,
+    metalness: 0.55,
+    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/chest.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Props",
+  },
+  {
+    id: "showcase_std_robot_crab",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "hunyuan3d_2_1",
+    mode: "image_to_3d",
+    prompt_th: "ปูจักรกลไซเบอร์พังก์ก้ามเหล็ก",
+    prompt_en:
+      "Standard Microsoft Trellis — Cyberpunk mechanical crab drone with articulated limbs and neon accents",
+    input_image_url: "/models/standard_trellis_robot_crab.png",
+    status: "completed",
+    cost_credits: 2,
+    refunded: 0,
+    target_poly_count: 68000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "vehicle",
+    primary_color: "#d6d3d1",
+    accent_color: "#ef4444",
+    roughness: 0.32,
+    metalness: 0.72,
+    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/robot_crab.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Vehicle",
+  },
+  {
+    id: "showcase_std_temple",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "hunyuan3d_2_1",
+    mode: "image_to_3d",
+    prompt_th: "ปราสาทหอคอยเจดีย์โบราณ",
+    prompt_en:
+      "Standard Microsoft Trellis — Multi-tiered oriental pagoda temple tower with red lanterns and carved balconies",
+    input_image_url: "/models/standard_trellis_temple.png",
+    status: "completed",
+    cost_credits: 2,
+    refunded: 0,
+    target_poly_count: 88000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "crystal",
+    primary_color: "#d6d3d1",
+    accent_color: "#ef4444",
+    roughness: 0.45,
+    metalness: 0.25,
+    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/temple.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Props",
+  },
+  {
     id: "showcase_std_dragonborn",
     user_id: "community",
     stage: "refine_pbr",
     engine: "hunyuan3d_2_1",
     mode: "image_to_3d",
-    prompt_th: "นักรบมังกร Dragonborn",
+    prompt_th: "นักรบมังกรเกราะทองคำ",
     prompt_en:
       "Standard Microsoft Trellis ($0.02 / 0.68 THB) — Humanoid Dragonborn warrior character with 360° AI-baked UV texture",
     input_image_url: "/models/standard_trellis_dragonborn.png",
     status: "completed",
     cost_credits: 2,
     refunded: 0,
-    target_poly_count: 41000,
+    target_poly_count: 68000,
     topology: "quad",
     has_pbr: 1,
     has_rig: 1,
@@ -363,7 +627,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     stage: "refine_pbr",
     engine: "hunyuan3d_2_1",
     mode: "image_to_3d",
-    prompt_th: "หุ่นรบไซไฟ Futuristic Mech",
+    prompt_th: "หุ่นรบไซเบอร์เกราะไทเทเนียม",
     prompt_en:
       "Standard Microsoft Trellis ($0.02 / 0.68 THB) — Futuristic robot mech with 360° AI-baked UV texture",
     input_image_url: "/models/standard_trellis_mech.png",
@@ -389,7 +653,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string })[] = [
     stage: "refine_pbr",
     engine: "hunyuan3d_2_1",
     mode: "image_to_3d",
-    prompt_th: "มังกรพญานาคโบราณ",
+    prompt_th: "มังกรพญานาคเพลิงโบราณ",
     prompt_en:
       "Standard Microsoft Trellis ($0.02 / 0.68 THB) — Mythical guardian dragon with 360° AI-baked UV texture",
     input_image_url: "/models/standard_trellis_loong.png",
@@ -641,9 +905,6 @@ export default function SiamPrism3DStudioPage() {
         setUser(data.user);
         if (Array.isArray(data.tasks) && data.tasks.length > 0) {
           setTasks(data.tasks);
-          setActiveTask((prev) =>
-            !prev || prev.id.startsWith("showcase_") ? data.tasks[0] : prev
-          );
         }
         if (Array.isArray(data.transactions)) {
           setTransactions(data.transactions);
@@ -989,17 +1250,14 @@ export default function SiamPrism3DStudioPage() {
     }
   };
 
-  // Combine user tasks + curated showcase for the Welcome Gallery with Category Filtering
-  const allGalleryModels = [...tasks, ...CURATED_SHOWCASE]
-    .filter(
-      (item, index, self) =>
-        self.findIndex(
-          (t) =>
-            (t.output_glb_url && t.output_glb_url === item.output_glb_url && t.prompt_th === item.prompt_th) ||
-            t.id === item.id
-        ) === index
-    )
-    .filter((item) => {
+  // Combine curated showcase + user-generated tasks for the Welcome Gallery & Studio Dock
+  const showcaseGlbSet = new Set(CURATED_SHOWCASE.map((s) => s.output_glb_url));
+  const customUserTasks = tasks.filter(
+    (t) => !t.output_glb_url || !showcaseGlbSet.has(t.output_glb_url)
+  );
+  const combinedModels = [...customUserTasks, ...CURATED_SHOWCASE];
+
+  const allGalleryModels = combinedModels.filter((item) => {
     if (selectedCategory !== "All" && selectedCategory !== "Featured" && selectedCategory !== "3D Printing") {
       const tag = (item as any).categoryTag || "";
       const presetMap: Record<string, string> = {
@@ -3841,7 +4099,7 @@ export default function SiamPrism3DStudioPage() {
               <div className="flex-1 overflow-y-auto p-3 space-y-3 no-scrollbar">
                 <div className="flex items-center justify-between">
                   <span className="text-[12px] text-[#b8a2a8] font-normal">
-                    คลังโมเดล ({(tasks.length > 0 ? tasks : CURATED_SHOWCASE).length})
+                    คลังโมเดล ({combinedModels.length})
                   </span>
                   <button
                     onClick={() => setRightTab("property")}
@@ -3869,7 +4127,7 @@ export default function SiamPrism3DStudioPage() {
                     </span>
                   </label>
 
-                  {(tasks.length > 0 ? tasks : CURATED_SHOWCASE).map((item) => {
+                  {combinedModels.map((item) => {
                     const isSelected = activeTask?.id === item.id;
                     const isPro = item.engine === "trellis_pbr";
                     const cleanName = item.prompt_th
