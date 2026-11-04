@@ -2791,10 +2791,10 @@ export default function Viewport3D({
   });
 
   return (
-    <div className="relative flex-1 min-h-0 bg-[#0b0b0c] overflow-hidden flex flex-col">
-      {/* Top Viewport Shading Bar (Graphite #141415, 4px Grid, Quiet Controls) */}
-      <div className="h-10 px-3 bg-[#141415] border-b border-white/[0.08] flex items-center justify-between gap-2 shrink-0 z-10">
-        <div className="flex items-center gap-1 p-0.5 rounded-[8px] bg-[#0f0f10] border border-white/[0.08]">
+    <div className="relative flex-1 min-h-0 bg-[#090507] overflow-hidden flex flex-col">
+      {/* Top Viewport Shading Bar (Crimson-Obsidian #140a0e, 4px Grid, Quiet Controls) */}
+      <div className="h-10 px-3 bg-[#140a0e] border-b border-red-500/20 flex items-center justify-between gap-2 shrink-0 z-10">
+        <div className="flex items-center gap-1 p-0.5 rounded-[8px] bg-[#0b0709] border border-red-500/20">
           {(
             [
               { id: "pbr", label: "PBR" },
@@ -2809,8 +2809,8 @@ export default function Viewport3D({
               onClick={() => setShadingMode(ch.id)}
               className={`px-2.5 py-1 rounded-[6px] text-[12px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
                 effectiveShading === ch.id
-                  ? "bg-[#232325] text-[#ededed]"
-                  : "text-[#85858b] hover:text-[#ededed]"
+                  ? "bg-[#dc2626] text-white"
+                  : "text-[#9c848b] hover:text-[#f5eff1]"
               }`}
             >
               {ch.label}
@@ -2831,7 +2831,7 @@ export default function Viewport3D({
               setShadingMode(e.target.value as RenderShadingMode);
             }
           }}
-          className="h-7 px-2.5 rounded-[6px] bg-[#19191b] border border-white/[0.08] text-[12px] text-[#a1a1a6] focus:outline-none cursor-pointer"
+          className="h-7 px-2.5 rounded-[6px] bg-[#1a0d12] border border-red-500/20 text-[12px] text-[#c7b2b8] focus:outline-none cursor-pointer"
         >
           <option value="" disabled>
             Inspect Maps
@@ -2857,8 +2857,8 @@ export default function Viewport3D({
             title="แสดงโครงกระดูก (Skeleton Bones)"
             className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors border cursor-pointer ${
               effectiveShowRig
-                ? "bg-[#232325] text-[#ededed] border-[#e5484d]"
-                : "bg-[#141415]/90 text-[#85858b] hover:text-[#ededed] border-white/[0.08]"
+                ? "bg-[#dc2626] text-white border-[#ef4444]"
+                : "bg-[#140a0e]/90 text-[#9c848b] hover:text-[#f5eff1] border-red-500/20"
             }`}
           >
             <Activity className="w-4 h-4 stroke-[1.5]" />
@@ -2869,8 +2869,8 @@ export default function Viewport3D({
             title="หมุนโมเดลอัตโนมัติ (Turntable)"
             className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-colors border cursor-pointer ${
               autoRotate
-                ? "bg-[#232325] text-[#ededed] border-white/[0.18]"
-                : "bg-[#141415]/90 text-[#85858b] hover:text-[#ededed] border-white/[0.08]"
+                ? "bg-[#241118] text-[#f5eff1] border-red-500/40"
+                : "bg-[#140a0e]/90 text-[#9c848b] hover:text-[#f5eff1] border-red-500/20"
             }`}
           >
             <RotateCcw className="w-4 h-4 stroke-[1.5]" />
@@ -2879,7 +2879,7 @@ export default function Viewport3D({
           <button
             onClick={() => setLightIntensity((prev) => (prev > 1.6 ? 0.9 : prev + 0.4))}
             title="ความสว่างไฟสตูดิโอ"
-            className="w-8 h-8 rounded-[8px] bg-[#141415]/90 text-[#85858b] hover:text-[#ededed] border border-white/[0.08] flex items-center justify-center transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-[8px] bg-[#140a0e]/90 text-[#9c848b] hover:text-[#f5eff1] border border-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
           >
             <Sun className="w-4 h-4 stroke-[1.5]" />
           </button>
@@ -2887,8 +2887,8 @@ export default function Viewport3D({
 
         {/* 3D Raycast Clicked Part Inspector Bar */}
         {selectedPart && (
-          <div className="absolute bottom-14 left-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-[8px] bg-[#19191b]/95 border border-white/[0.12] shadow-xl pointer-events-auto">
-            <span className="px-2 py-0.5 rounded-[4px] bg-[#232325] text-[#ededed] text-[11px] font-mono">
+          <div className="absolute bottom-14 left-3 z-20 flex items-center gap-2 px-3 py-1.5 rounded-[8px] bg-[#1a0d12]/95 border border-red-500/30 shadow-xl pointer-events-auto">
+            <span className="px-2 py-0.5 rounded-[4px] bg-[#2a121a] text-[#f5eff1] text-[11px] font-mono">
               {selectedPart.name}
             </span>
             <div className="flex items-center gap-1">
@@ -2909,33 +2909,33 @@ export default function Viewport3D({
             </div>
             <button
               onClick={handleToggleSelectedPartVisible}
-              className="px-2 py-0.5 rounded-[4px] bg-[#232325] hover:bg-[#2c2c2f] text-[11px] text-[#ededed] font-normal cursor-pointer"
+              className="px-2 py-0.5 rounded-[4px] bg-[#2a121a] hover:bg-[#381822] text-[11px] text-[#f5eff1] font-normal cursor-pointer"
             >
               ซ่อน/แสดง
             </button>
             <button
               onClick={() => setSelectedPart(null)}
-              className="text-[11px] text-[#85858b] hover:text-[#ededed] px-1 cursor-pointer"
+              className="text-[11px] text-[#9c848b] hover:text-[#f5eff1] px-1 cursor-pointer"
             >
               ✕
             </button>
           </div>
         )}
 
-        {/* Picture-in-Picture 2D Original Input Image (Quiet Graphite Frame) */}
+        {/* Picture-in-Picture 2D Original Input Image (Crimson-Obsidian Frame) */}
         {activeTask?.input_image_url && !selectedPart && (
           <div
             onClick={() => setExpandRefImg(!expandRefImg)}
             title="คลิกเพื่อขยายหรือย่อภาพต้นแบบ"
-            className={`absolute bottom-14 left-3 z-10 rounded-[10px] overflow-hidden bg-[#141415]/95 border border-white/[0.1] cursor-pointer pointer-events-auto ${
+            className={`absolute bottom-14 left-3 z-10 rounded-[10px] overflow-hidden bg-[#140a0e]/95 border border-red-500/25 cursor-pointer pointer-events-auto ${
               expandRefImg ? "w-52" : "w-24"
             }`}
           >
-            <div className="px-2 py-1 text-[10px] font-mono text-[#a1a1a6] border-b border-white/[0.06] flex items-center justify-between">
+            <div className="px-2 py-1 text-[10px] font-mono text-[#c7b2b8] border-b border-red-500/15 flex items-center justify-between">
               <span className="truncate">ภาพต้นแบบ</span>
-              <span className="text-[9px] text-[#85858b]">{expandRefImg ? "ย่อ" : "ขยาย"}</span>
+              <span className="text-[9px] text-red-400">{expandRefImg ? "ย่อ" : "ขยาย"}</span>
             </div>
-            <div className="p-1.5 bg-[#0f0f10] flex items-center justify-center">
+            <div className="p-1.5 bg-[#0b0709] flex items-center justify-center">
               <img
                 src={activeTask.input_image_url}
                 alt="2D Input Reference"
@@ -2949,46 +2949,46 @@ export default function Viewport3D({
 
         {/* Bottom Status & Export Bar */}
         <div className="absolute bottom-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
-          <div className="h-8 px-3 rounded-[8px] bg-[#141415]/95 border border-white/[0.08] text-[12px] font-mono tabular-nums text-[#a1a1a6] flex items-center gap-2 pointer-events-auto">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#e5484d]" />
-            <span className="text-[#ededed]">
+          <div className="h-8 px-3 rounded-[8px] bg-[#140a0e]/95 border border-red-500/20 text-[12px] font-mono tabular-nums text-[#c7b2b8] flex items-center gap-2 pointer-events-auto">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444]" />
+            <span className="text-[#f5eff1]">
               {Math.round(
                 (activeTask?.target_poly_count || 18000) *
                   (studioOverrides?.material.polyMultiplier || 1)
               ).toLocaleString()}{" "}
               polys
             </span>
-            <span className="text-[#85858b]">·</span>
-            <span className="uppercase text-[#a1a1a6]">
+            <span className="text-[#7d666d]">·</span>
+            <span className="uppercase text-red-400">
               {studioOverrides?.artStyleMode && studioOverrides.artStyleMode !== "standard"
                 ? studioOverrides.artStyleMode.toUpperCase()
                 : activeTask?.topology || "QUAD"}
             </span>
             {studioOverrides?.addPrintBase && (
               <>
-                <span className="text-[#85858b]">·</span>
+                <span className="text-[#7d666d]">·</span>
                 <span className="text-[#4cc38a]">+STL Base</span>
               </>
             )}
           </div>
 
-          <div className="flex items-center gap-1 bg-[#141415]/95 border border-white/[0.08] p-1 rounded-[8px] pointer-events-auto">
+          <div className="flex items-center gap-1 bg-[#140a0e]/95 border border-red-500/20 p-1 rounded-[8px] pointer-events-auto">
             <button
               onClick={() => handleExportFile("glb")}
-              className="h-6 px-3 rounded-[6px] bg-[#ededed] hover:bg-white text-[#0f0f10] text-[12px] font-mono font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="h-6 px-3 rounded-[6px] bg-[#dc2626] hover:bg-[#ef4444] text-white text-[12px] font-mono font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 stroke-[1.5]" />
               <span>.GLB</span>
             </button>
             <button
               onClick={() => handleExportFile("obj")}
-              className="h-6 px-2.5 rounded-[6px] hover:bg-[#232325] text-[#a1a1a6] hover:text-[#ededed] text-[12px] font-mono transition-colors cursor-pointer"
+              className="h-6 px-2.5 rounded-[6px] hover:bg-[#241118] text-[#c7b2b8] hover:text-[#f5eff1] text-[12px] font-mono transition-colors cursor-pointer"
             >
               .OBJ
             </button>
             <button
               onClick={() => handleExportFile("stl")}
-              className="h-6 px-2.5 rounded-[6px] hover:bg-[#232325] text-[#a1a1a6] hover:text-[#ededed] text-[12px] font-mono transition-colors cursor-pointer"
+              className="h-6 px-2.5 rounded-[6px] hover:bg-[#241118] text-[#c7b2b8] hover:text-[#f5eff1] text-[12px] font-mono transition-colors cursor-pointer"
               title="Export 3D Printable .STL Mesh"
             >
               .STL

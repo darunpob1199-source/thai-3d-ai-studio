@@ -7,27 +7,27 @@
 }
 
 body {
-  background-color: #141415;
-  color: #ededed;
+  background-color: #0b0709;
+  color: #f5f0f2;
   font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Thai", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Quiet graphite scrollbar */
+/* Crimson-Obsidian scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f0f10;
+  background: #090608;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #232325;
+  background: #3b1720;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #36363a;
+  background: #dc2626;
 }
