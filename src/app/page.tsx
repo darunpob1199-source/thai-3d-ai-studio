@@ -505,7 +505,7 @@ export default function SiamPrism3DStudioPage() {
     accentColor: CURATED_SHOWCASE[0].accent_color,
     roughness: CURATED_SHOWCASE[0].roughness,
     metalness: CURATED_SHOWCASE[0].metalness,
-    emissiveIntensity: 0.25,
+    emissiveIntensity: 0,
     polyMultiplier: 1,
   });
   const [showRigBones, setShowRigBones] = useState<boolean>(false);
@@ -563,7 +563,7 @@ export default function SiamPrism3DStudioPage() {
       metalness: activeTask.output_glb_url
         ? 0.18
         : Math.min(activeTask.metalness ?? 0.25, 0.28),
-      emissiveIntensity: 0.25,
+      emissiveIntensity: activeTask.output_glb_url ? 0 : 0.25,
       polyMultiplier: 1,
     });
     setHiddenParts([]);
@@ -3767,7 +3767,7 @@ export default function SiamPrism3DStudioPage() {
                     setActiveLeftTool("animate");
                     setAnimationClip("idle");
                     triggerToast(
-                      "กำลังผูกกระดูก THREE.SkinnedMesh (10-Bone Envelope Weights)..."
+                      "กำลังผูกกระดูก THREE.SkinnedMesh (16-Bone Anatomical Skeleton & Envelope Weights)..."
                     );
                     try {
                       const res = await fetch("/api/studio-op", {

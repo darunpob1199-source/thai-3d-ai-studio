@@ -973,6 +973,7 @@ export default function Viewport3D({
               const customTint = studioOverrides?.material.primaryColor;
               const isDefaultTint =
                 !customTint ||
+                customTint.toLowerCase() === "#ef4444" ||
                 customTint.toLowerCase() === "#d6d3d1" ||
                 customTint.toLowerCase() === "#ffffff" ||
                 customTint.toLowerCase() === (currentTask.primary_color || "").toLowerCase();
@@ -1100,44 +1101,9 @@ export default function Viewport3D({
       });
 
       rawMeshes.forEach((m, pIdx) => {
-        let clonedMat = Array.isArray(m.material)
+        const clonedMat = Array.isArray(m.material)
           ? m.material[0].clone()
           : m.material.clone();
-
-        // Wrap native texture map into an editable CanvasTexture for real 3D UV surface brush painting
-        const stdMat = clonedMat as THREE.MeshStandardMaterial;
-        if (stdMat && stdMat.map && stdMat.map.image) {
-          let paintEntry = texCacheRef.current.get(`paint_${currentTask.id}`);
-          if (!paintEntry) {
-            const img = stdMat.map.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap;
-            const w = (img as HTMLImageElement).width || 1024;
-            const h = (img as HTMLImageElement).height || 1024;
-            const c = document.createElement("canvas");
-            c.width = w;
-            c.height = h;
-            const ctx = c.getContext("2d");
-            if (ctx) {
-              try {
-                ctx.drawImage(img as CanvasImageSource, 0, 0, w, h);
-                const backup = document.createElement("canvas");
-                backup.width = w;
-                backup.height = h;
-                backup.getContext("2d")?.drawImage(c, 0, 0);
-                c.dataset.hasBackup = "1";
-                (c as unknown as { _backupCanvas?: HTMLCanvasElement })._backupCanvas = backup;
-              } catch {
-                // cross-origin fallback
-              }
-            }
-            paintEntry = new THREE.CanvasTexture(c);
-            paintEntry.colorSpace = THREE.SRGBColorSpace;
-            paintEntry.flipY = stdMat.map.flipY;
-            paintEntry.needsUpdate = true;
-            texCacheRef.current.set(`paint_${currentTask.id}`, paintEntry);
-          }
-          stdMat.map = paintEntry;
-          stdMat.needsUpdate = true;
-        }
 
         let targetMesh: THREE.Mesh = m;
         if (
@@ -1178,16 +1144,16 @@ export default function Viewport3D({
         const rightArm = liveBones[6];
         const rightForeArm = liveBones[7];
         if (pose === "t_pose") {
-          leftArm.rotation.set(0, 0, -0.46);
-          rightArm.rotation.set(0, 0, 0.46);
+          leftArm.rotation.set(0, 0, -0.32);
+          rightArm.rotation.set(0, 0, 0.32);
         } else if (pose === "a_pose") {
-          leftArm.rotation.set(0, 0, -0.24);
-          rightArm.rotation.set(0, 0, 0.24);
+          leftArm.rotation.set(0, 0, -0.16);
+          rightArm.rotation.set(0, 0, 0.16);
         } else if (pose === "battle") {
-          leftArm.rotation.set(-0.48, 0, -0.16);
-          leftForeArm.rotation.set(-0.45, 0, 0);
-          rightArm.rotation.set(-0.56, 0, 0.16);
-          rightForeArm.rotation.set(-0.52, 0, 0);
+          leftArm.rotation.set(-0.35, 0, -0.12);
+          leftForeArm.rotation.set(-0.28, 0, 0);
+          rightArm.rotation.set(-0.42, 0, 0.12);
+          rightForeArm.rotation.set(-0.32, 0, 0);
         }
       }
 
@@ -1720,24 +1686,95 @@ export default function Viewport3D({
                 midZ,
               ];
 
-              // 10-Bone Humanoid Hierarchy (Mixamo / Meshy / Tripo Standard)
+              // Automatic Anatomical Silhouette & Air-Gap Scanner (fits Wide Mechs, Golems, Dragonborn, and Bipeds)
+              const vCount = posAttr.count;
+              let lLegS = 0, lLegC = 0, rLegS = 0, rLegC = 0;
+              let lFootS = 0, lFootC = 0, rFootS = 0, rFootC = 0;
+              let lShS = 0, lShC = 0, rShS = 0, rShC = 0;
+              let lElbS = 0, lElbC = 0, rElbS = 0, rElbC = 0;
+              let lHndSX = 0, lHndSY = 0, lHndC = 0, rHndSX = 0, rHndSY = 0, rHndC = 0;
+              const xHist = new Int32Array(100);
+              const scanStep = Math.max(1, Math.floor(vCount / 18000));
+
+              for (let i = 0; i < vCount; i += scanStep) {
+                const nx = (posAttr.getX(i) - minX) / spanX;
+                const ny = (posAttr.getY(i) - minY) / spanY;
+                if (ny > 0.12 && ny < 0.28) {
+                  if (nx > 0.12 && nx < 0.48) { lLegS += nx; lLegC++; }
+                  if (nx > 0.52 && nx < 0.88) { rLegS += nx; rLegC++; }
+                }
+                if (ny > 0.01 && ny < 0.10) {
+                  if (nx < 0.48) { lFootS += nx; lFootC++; }
+                  if (nx > 0.52) { rFootS += nx; rFootC++; }
+                }
+                if (ny > 0.62 && ny < 0.75) {
+                  if (nx < 0.38) { lShS += nx; lShC++; }
+                  if (nx > 0.62) { rShS += nx; rShC++; }
+                }
+                if (ny > 0.42 && ny < 0.56) {
+                  if (nx < 0.22) { lElbS += nx; lElbC++; }
+                  if (nx > 0.78) { rElbS += nx; rElbC++; }
+                }
+                if (ny > 0.22 && ny < 0.42) {
+                  if (nx < 0.20) { lHndSX += nx; lHndSY += ny; lHndC++; }
+                  if (nx > 0.80) { rHndSX += nx; rHndSY += ny; rHndC++; }
+                }
+                if (ny > 0.22 && ny < 0.52) {
+                  const bin = Math.min(99, Math.max(0, Math.floor(nx * 100)));
+                  xHist[bin]++;
+                }
+              }
+
+              const lLegX = lLegC > 10 ? lLegS / lLegC : 0.32;
+              const rLegX = rLegC > 10 ? rLegS / rLegC : 0.68;
+              const lFootX = lFootC > 10 ? lFootS / lFootC : lLegX;
+              const rFootX = rFootC > 10 ? rFootS / rFootC : rLegX;
+              const lHipX = 0.5 * 0.35 + lLegX * 0.65;
+              const rHipX = 0.5 * 0.35 + rLegX * 0.65;
+              const lShX = lShC > 10 ? lShS / lShC : 0.26;
+              const rShX = rShC > 10 ? rShS / rShC : 0.74;
+              const lElbowX = lElbC > 10 ? lElbS / lElbC : 0.12;
+              const rElbowX = rElbC > 10 ? rElbS / rElbC : 0.88;
+              const lHandX = lHndC > 10 ? lHndSX / lHndC : lElbowX - 0.02;
+              const rHandX = rHndC > 10 ? rHndSX / rHndC : rElbowX + 0.02;
+              const lHandY = lHndC > 10 ? lHndSY / lHndC : 0.33;
+              const rHandY = rHndC > 10 ? rHndSY / rHndC : 0.33;
+
+              let lGapBin = 18, lGapMin = 1e9;
+              for (let b = 14; b <= 25; b++) {
+                if (xHist[b] < lGapMin) { lGapMin = xHist[b]; lGapBin = b; }
+              }
+              let rGapBin = 80, rGapMin = 1e9;
+              for (let b = 74; b <= 86; b++) {
+                if (xHist[b] < rGapMin) { rGapMin = xHist[b]; rGapBin = b; }
+              }
+              const lGapX = (lGapBin + 0.5) / 100;
+              const rGapX = (rGapBin + 0.5) / 100;
+
+              // 16-Bone Full Humanoid Hierarchy (Including Knees, Wrists & Ankles for Full-Body Skeleton)
               const boneRestDefs: {
                 name: string;
                 parent: number;
                 pos: [number, number, number];
-                segA: [number, number];
-                segB: [number, number];
+                segA?: [number, number];
+                segB?: [number, number];
               }[] = [
                 { name: "Hips", parent: -1, pos: toLocal(0.5, 0.43), segA: [0.5, 0.41], segB: [0.5, 0.51] },
-                { name: "Spine", parent: 0, pos: toLocal(0.5, 0.53), segA: [0.5, 0.51], segB: [0.5, 0.61] },
-                { name: "Chest", parent: 1, pos: toLocal(0.5, 0.63), segA: [0.5, 0.61], segB: [0.5, 0.72] },
-                { name: "Head", parent: 2, pos: toLocal(0.5, 0.74), segA: [0.5, 0.73], segB: [0.5, 0.98] },
-                { name: "LeftArm", parent: 2, pos: toLocal(0.34, 0.65), segA: [0.34, 0.65], segB: [0.21, 0.56] },
-                { name: "LeftForeArm", parent: 4, pos: toLocal(0.21, 0.56), segA: [0.21, 0.56], segB: [0.04, 0.44] },
-                { name: "RightArm", parent: 2, pos: toLocal(0.66, 0.65), segA: [0.66, 0.65], segB: [0.79, 0.56] },
-                { name: "RightForeArm", parent: 6, pos: toLocal(0.79, 0.56), segA: [0.79, 0.56], segB: [0.96, 0.44] },
-                { name: "LeftUpLeg", parent: 0, pos: toLocal(0.41, 0.41), segA: [0.41, 0.41], segB: [0.38, 0.05] },
-                { name: "RightUpLeg", parent: 0, pos: toLocal(0.59, 0.41), segA: [0.59, 0.41], segB: [0.62, 0.05] },
+                { name: "Spine", parent: 0, pos: toLocal(0.5, 0.54), segA: [0.5, 0.51], segB: [0.5, 0.62] },
+                { name: "Chest", parent: 1, pos: toLocal(0.5, 0.66), segA: [0.5, 0.62], segB: [0.5, 0.74] },
+                { name: "Head", parent: 2, pos: toLocal(0.5, 0.82), segA: [0.5, 0.75], segB: [0.5, 0.96] },
+                { name: "LeftArm", parent: 2, pos: toLocal(lShX, 0.68), segA: [lShX, 0.68], segB: [lElbowX, 0.50] },
+                { name: "LeftForeArm", parent: 4, pos: toLocal(lElbowX, 0.50), segA: [lElbowX, 0.50], segB: [lHandX, Math.min(lHandY, 0.28)] },
+                { name: "RightArm", parent: 2, pos: toLocal(rShX, 0.68), segA: [rShX, 0.68], segB: [rElbowX, 0.50] },
+                { name: "RightForeArm", parent: 6, pos: toLocal(rElbowX, 0.50), segA: [rElbowX, 0.50], segB: [rHandX, Math.min(rHandY, 0.28)] },
+                { name: "LeftUpLeg", parent: 0, pos: toLocal(lHipX, 0.41), segA: [lHipX, 0.41], segB: [lLegX, 0.23] },
+                { name: "RightUpLeg", parent: 0, pos: toLocal(rHipX, 0.41), segA: [rHipX, 0.41], segB: [rLegX, 0.23] },
+                { name: "LeftLeg", parent: 8, pos: toLocal(lLegX, 0.23), segA: [lLegX, 0.23], segB: [lFootX, 0.04] },
+                { name: "RightLeg", parent: 9, pos: toLocal(rLegX, 0.23), segA: [rLegX, 0.23], segB: [rFootX, 0.04] },
+                { name: "LeftHand", parent: 5, pos: toLocal(lHandX, lHandY) },
+                { name: "RightHand", parent: 7, pos: toLocal(rHandX, rHandY) },
+                { name: "LeftFoot", parent: 10, pos: toLocal(lFootX, 0.06) },
+                { name: "RightFoot", parent: 11, pos: toLocal(rFootX, 0.06) },
               ];
               gltf.scene.userData.boneRestDefs = boneRestDefs;
 
@@ -1757,7 +1794,6 @@ export default function Viewport3D({
                 return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
               };
 
-              const vCount = posAttr.count;
               const skinIndices = new Uint16Array(vCount * 4);
               const skinWeights = new Float32Array(vCount * 4);
 
@@ -1765,20 +1801,39 @@ export default function Viewport3D({
                 const nx = (posAttr.getX(vi) - minX) / spanX;
                 const ny = (posAttr.getY(vi) - minY) / spanY;
 
-                const candidates: { b: number; w: number }[] = [];
-                for (let b = 0; b < boneRestDefs.length; b++) {
-                  // Anatomical region gating to prevent cross-limb pulling
-                  if ((b === 4 || b === 5) && (nx > 0.46 || ny < 0.32)) continue;
-                  if ((b === 6 || b === 7) && (nx < 0.54 || ny < 0.32)) continue;
-                  if (b === 8 && (nx > 0.53 || ny > 0.52)) continue;
-                  if (b === 9 && (nx < 0.47 || ny > 0.52)) continue;
-                  if (b === 3 && (ny < 0.65 || nx < 0.25 || nx > 0.75)) continue;
+                const lArmBound = ny > 0.52 ? Math.min(0.32, lGapX + (ny - 0.52) * 0.48) : lGapX;
+                const rArmBound = ny > 0.52 ? Math.max(0.68, rGapX - (ny - 0.52) * 0.48) : rGapX;
+                const isLeftArmRegion = ny > 0.21 && ny < 0.86 && nx < lArmBound;
+                const isRightArmRegion = ny > 0.21 && ny < 0.86 && nx > rArmBound;
 
-                  const [ax, ay] = boneRestDefs[b].segA;
-                  const [bx, by] = boneRestDefs[b].segB;
+                const candidates: { b: number; w: number }[] = [];
+                // Weight against the 12 deforming bones (0..11, including UpperLegs 8..9 and Knees 10..11)
+                for (let b = 0; b < 12; b++) {
+                  if (isLeftArmRegion) {
+                    if (b !== 4 && b !== 5 && !(b === 2 && ny > 0.60)) continue;
+                  } else if (isRightArmRegion) {
+                    if (b !== 6 && b !== 7 && !(b === 2 && ny > 0.60)) continue;
+                  } else {
+                    if ((b === 4 || b === 5) && !(ny > 0.62 && nx < lShX + 0.05)) continue;
+                    if ((b === 6 || b === 7) && !(ny > 0.62 && nx > rShX - 0.05)) continue;
+                    if ((b === 8 || b === 10) && (nx > 0.51 || ny > 0.47)) continue;
+                    if ((b === 9 || b === 11) && (nx < 0.49 || ny > 0.47)) continue;
+                    if (b === 3 && (ny < 0.70 || nx < 0.30 || nx > 0.70)) continue;
+                    if ((b === 0 || b === 1 || b === 2) && ny < 0.34) continue;
+                  }
+
+                  // Keep forearm + weapon moving rigidly with upper arm shoulder so weapons never bend like rubber
+                  const targetBone = b === 5 ? 4 : b === 7 ? 6 : b;
+                  const [ax, ay] = boneRestDefs[b].segA!;
+                  const [bx, by] = boneRestDefs[b].segB!;
                   const d = distToSegment2D(nx, ny, ax, ay, bx, by);
-                  const w = 1 / Math.pow(d + 0.055, 3.8);
-                  candidates.push({ b, w });
+                  const w = 1 / Math.pow(d + 0.05, 4.2);
+                  const existing = candidates.find((c) => c.b === targetBone);
+                  if (existing) {
+                    existing.w += w;
+                  } else {
+                    candidates.push({ b: targetBone, w });
+                  }
                 }
 
                 candidates.sort((a, b) => b.w - a.w);
@@ -1814,10 +1869,12 @@ export default function Viewport3D({
                 const cy = (posAttr.getY(i0) + posAttr.getY(i1) + posAttr.getY(i2)) / 3;
                 const nx = (cx - minX) / spanX;
                 const ny = (cy - minY) / spanY;
+                const lArmBound = ny > 0.52 ? Math.min(0.32, lGapX + (ny - 0.52) * 0.48) : lGapX;
+                const rArmBound = ny > 0.52 ? Math.max(0.68, rGapX - (ny - 0.52) * 0.48) : rGapX;
 
                 let bIdx = 1;
-                if (nx < 0.30 && ny > 0.34) bIdx = 2;
-                else if (nx > 0.70 && ny > 0.34) bIdx = 3;
+                if (ny > 0.21 && ny < 0.86 && nx < lArmBound) bIdx = 2;
+                else if (ny > 0.21 && ny < 0.86 && nx > rArmBound) bIdx = 3;
                 else if (ny > 0.72 && nx >= 0.30 && nx <= 0.70) bIdx = 0;
                 else if (ny < 0.44) bIdx = nx < 0.5 ? 4 : 5;
                 buckets[bIdx].push(i0, i1, i2);
@@ -1864,7 +1921,7 @@ export default function Viewport3D({
       }
     }
 
-    // Build Connected Humanoid or Quadruped Rig Skeleton + Draggable 6-Point Symmetry Markers
+    // Build Connected 16-Bone Humanoid or Quadruped Rig Skeleton + Precision Crosshair Calibration Markers
     const rigGroup = new THREE.Group();
     const boneMat = new THREE.MeshBasicMaterial({
       color: "#f43f5e",
@@ -1875,7 +1932,7 @@ export default function Viewport3D({
       color: "#fb7185",
       depthTest: false,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.88,
     });
     const charType = studioOverrides?.rigCharacterType || "humanoid";
     const jointNodes: [number, number, number][] =
@@ -1892,16 +1949,22 @@ export default function Viewport3D({
             [0, 0.48, -0.95], // 8: Tail
           ]
         : [
-            [0, -0.1, 0], // 0: Hips
-            [0, 0.16, 0], // 1: Spine
+            [0, -0.05, 0], // 0: Hips
+            [0, 0.18, 0], // 1: Spine
             [0, 0.44, 0], // 2: Chest
-            [0, 0.72, 0], // 3: Head
-            [-0.28, 0.45, 0], // 4: L Shoulder
-            [-0.58, 0.18, 0], // 5: L ForeArm / Wrist
-            [0.28, 0.45, 0], // 6: R Shoulder
-            [0.58, 0.18, 0], // 7: R ForeArm / Wrist
-            [-0.18, -0.68, 0], // 8: L Leg
-            [0.18, -0.68, 0], // 9: R Leg
+            [0, 0.76, 0], // 3: Head
+            [-0.42, 0.48, 0], // 4: LeftArm (Shoulder)
+            [-0.72, 0.10, 0], // 5: LeftForeArm (Elbow)
+            [0.42, 0.48, 0], // 6: RightArm (Shoulder)
+            [0.72, 0.10, 0], // 7: RightForeArm (Elbow)
+            [-0.30, -0.09, 0], // 8: LeftUpLeg (Hip)
+            [0.30, -0.09, 0], // 9: RightUpLeg (Hip)
+            [-0.42, -0.46, 0], // 10: LeftLeg (Knee)
+            [0.42, -0.46, 0], // 11: RightLeg (Knee)
+            [-0.82, -0.22, 0], // 12: LeftHand (Wrist)
+            [0.82, -0.22, 0], // 13: RightHand (Wrist)
+            [-0.48, -0.82, 0], // 14: LeftFoot (Ankle)
+            [0.48, -0.82, 0], // 15: RightFoot (Ankle)
           ];
 
     const bonePairs: [number, number][] =
@@ -1922,15 +1985,21 @@ export default function Viewport3D({
             [2, 3],
             [2, 4],
             [4, 5],
+            [5, 12],
             [2, 6],
             [6, 7],
+            [7, 13],
             [0, 8],
+            [8, 10],
+            [10, 14],
             [0, 9],
+            [9, 11],
+            [11, 15],
           ];
 
     const visualJointMeshes: THREE.Mesh[] = [];
     for (const [jx, jy, jz] of jointNodes) {
-      const joint = new THREE.Mesh(new THREE.OctahedronGeometry(0.075, 0), boneMat);
+      const joint = new THREE.Mesh(new THREE.OctahedronGeometry(0.048, 0), boneMat);
       joint.position.set(jx, jy, jz);
       rigGroup.add(joint);
       visualJointMeshes.push(joint);
@@ -1944,7 +2013,7 @@ export default function Viewport3D({
       const dist = Math.max(0.01, pA.distanceTo(pB));
       const mid = pA.clone().add(pB).multiplyScalar(0.5);
       const dir = pB.clone().sub(pA).normalize();
-      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.032, 1, 6), linkMat);
+      const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.026, 1, 6), linkMat);
       cyl.scale.set(1, dist, 1);
       cyl.position.copy(mid);
       cyl.quaternion.setFromUnitVectors(upVec, dir);
@@ -1954,24 +2023,35 @@ export default function Viewport3D({
 
     const markerMeshes: THREE.Mesh[] = [];
     if (studioOverrides?.showRigMarkers) {
-      const markerDefs: { pos: [number, number, number]; color: string; mirrorIdx?: number }[] = [
-        { pos: [0, 0.65, 0.38], color: "#ef4444" }, // 0: Chin
-        { pos: [0, -0.15, 0.35], color: "#f59e0b" }, // 1: Groin
-        { pos: [-0.42, 0.45, 0.25], color: "#10b981", mirrorIdx: 3 }, // 2: L Shoulder
-        { pos: [0.42, 0.45, 0.25], color: "#10b981", mirrorIdx: 2 }, // 3: R Shoulder
-        { pos: [-0.68, 0.1, 0.28], color: "#ec4899", mirrorIdx: 5 }, // 4: L Wrist
-        { pos: [0.68, 0.1, 0.28], color: "#ec4899", mirrorIdx: 4 }, // 5: R Wrist
-        { pos: [-0.25, -0.58, 0.28], color: "#a855f7", mirrorIdx: 7 }, // 6: L Knee
-        { pos: [0.25, -0.58, 0.28], color: "#a855f7", mirrorIdx: 6 }, // 7: R Knee
+      const markerDefs: {
+        pos: [number, number, number];
+        color: string;
+        boneIdx: number;
+        mirrorIdx?: number;
+      }[] = [
+        { pos: [0, 0.76, 0.12], color: "#ef4444", boneIdx: 3 }, // 0: Chin / Head
+        { pos: [0, -0.05, 0.12], color: "#f59e0b", boneIdx: 0 }, // 1: Groin / Hips
+        { pos: [-0.42, 0.48, 0.12], color: "#10b981", boneIdx: 4, mirrorIdx: 3 }, // 2: L Shoulder
+        { pos: [0.42, 0.48, 0.12], color: "#10b981", boneIdx: 6, mirrorIdx: 2 }, // 3: R Shoulder
+        { pos: [-0.82, -0.22, 0.12], color: "#ec4899", boneIdx: 12, mirrorIdx: 5 }, // 4: L Wrist
+        { pos: [0.82, -0.22, 0.12], color: "#ec4899", boneIdx: 13, mirrorIdx: 4 }, // 5: R Wrist
+        { pos: [-0.42, -0.46, 0.12], color: "#a855f7", boneIdx: 10, mirrorIdx: 7 }, // 6: L Knee
+        { pos: [0.42, -0.46, 0.12], color: "#a855f7", boneIdx: 11, mirrorIdx: 6 }, // 7: R Knee
       ];
       markerDefs.forEach((mk, idx) => {
         const mMat = new THREE.MeshBasicMaterial({
           color: mk.color,
           depthTest: false,
         });
-        const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 16), mMat);
+        const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.036, 16, 16), mMat);
+        const halo = new THREE.Mesh(
+          new THREE.TorusGeometry(0.058, 0.007, 8, 24),
+          mMat
+        );
+        sphere.add(halo);
         sphere.position.set(mk.pos[0], mk.pos[1], mk.pos[2]);
         sphere.userData.markerIdx = idx;
+        sphere.userData.boneIdx = mk.boneIdx;
         sphere.userData.mirrorIdx = mk.mirrorIdx;
         rigGroup.add(sphere);
         markerMeshes.push(sphere);
@@ -1985,6 +2065,7 @@ export default function Viewport3D({
     let frameId = 0;
     const clock = new THREE.Clock();
     const tmpWorldPos = new THREE.Vector3();
+    let draggingMarker: THREE.Mesh | null = null;
 
     const animate = () => {
       frameId = requestAnimationFrame(animate);
@@ -2006,10 +2087,22 @@ export default function Viewport3D({
         const baseArmX = pose === "battle" ? -0.5 : 0;
         const baseForeArmX = pose === "battle" ? -0.48 : 0;
 
-        if (bones && bones.length >= 10) {
-          // True THREE.SkinnedMesh Bone Hierarchy Animation
-          const [, bSpine, bChest, bHead, bLArm, bLForeArm, bRArm, bRForeArm, bLLeg, bRLeg] =
-            bones;
+        if (bones && bones.length >= 12) {
+          // True 16-Bone THREE.SkinnedMesh Bone Hierarchy Animation (Including Knee Flexion)
+          const [
+            ,
+            bSpine,
+            bChest,
+            bHead,
+            bLArm,
+            bLForeArm,
+            bRArm,
+            bRForeArm,
+            bLLeg,
+            bRLeg,
+            bLKnee,
+            bRKnee,
+          ] = bones;
           bSpine.rotation.set(0, 0, 0);
           bChest.rotation.set(0, 0, 0);
           bHead.rotation.set(0, 0, 0);
@@ -2019,6 +2112,8 @@ export default function Viewport3D({
           bRForeArm.rotation.set(baseForeArmX, 0, 0);
           bLLeg.rotation.set(0, 0, 0);
           bRLeg.rotation.set(0, 0, 0);
+          bLKnee.rotation.set(0, 0, 0);
+          bRKnee.rotation.set(0, 0, 0);
 
           if (clip === "idle") {
             meshGroupRef.current.position.y = Math.sin(t * 2.5) * 0.05;
@@ -2027,37 +2122,45 @@ export default function Viewport3D({
             bLArm.rotation.z = -baseArmZ - Math.sin(t * 2.5) * 0.06;
             bRArm.rotation.z = baseArmZ + Math.sin(t * 2.5) * 0.06;
           } else if (clip === "walk") {
-            meshGroupRef.current.position.y = Math.abs(Math.sin(t * 5)) * 0.1;
-            bSpine.rotation.y = Math.sin(t * 5) * 0.12;
+            const s = Math.sin(t * 5);
+            meshGroupRef.current.position.y = Math.abs(s) * 0.09;
+            bSpine.rotation.y = s * 0.12;
             bChest.rotation.x = 0.06;
-            bLArm.rotation.x = Math.sin(t * 5) * 0.42;
-            bLForeArm.rotation.x = -0.25 - Math.max(0, Math.sin(t * 5)) * 0.25;
-            bRArm.rotation.x = -Math.sin(t * 5) * 0.42;
-            bRForeArm.rotation.x = -0.25 - Math.max(0, -Math.sin(t * 5)) * 0.25;
-            bLLeg.rotation.x = -Math.sin(t * 5) * 0.42;
-            bRLeg.rotation.x = Math.sin(t * 5) * 0.42;
-            bHead.rotation.y = -Math.sin(t * 5) * 0.08;
+            bLArm.rotation.x = s * 0.42;
+            bLForeArm.rotation.x = -0.25 - Math.max(0, s) * 0.25;
+            bRArm.rotation.x = -s * 0.42;
+            bRForeArm.rotation.x = -0.25 - Math.max(0, -s) * 0.25;
+            bLLeg.rotation.x = -s * 0.42;
+            bRLeg.rotation.x = s * 0.42;
+            bLKnee.rotation.x = Math.max(0, s) * 0.48;
+            bRKnee.rotation.x = Math.max(0, -s) * 0.48;
+            bHead.rotation.y = -s * 0.08;
             if (!inPlace) {
               meshGroupRef.current.position.z = ((t * 1.2) % 4) - 2;
             }
           } else if (clip === "run") {
-            meshGroupRef.current.position.y = Math.abs(Math.sin(t * 9)) * 0.18;
+            const s = Math.sin(t * 9);
+            meshGroupRef.current.position.y = Math.abs(s) * 0.16;
             bSpine.rotation.x = 0.16;
-            bChest.rotation.y = Math.sin(t * 9) * 0.18;
-            bLArm.rotation.x = Math.sin(t * 9) * 0.65;
+            bChest.rotation.y = s * 0.18;
+            bLArm.rotation.x = s * 0.65;
             bLForeArm.rotation.x = -0.58;
-            bRArm.rotation.x = -Math.sin(t * 9) * 0.65;
+            bRArm.rotation.x = -s * 0.65;
             bRForeArm.rotation.x = -0.58;
-            bLLeg.rotation.x = -Math.sin(t * 9) * 0.62;
-            bRLeg.rotation.x = Math.sin(t * 9) * 0.62;
+            bLLeg.rotation.x = -s * 0.58;
+            bRLeg.rotation.x = s * 0.58;
+            bLKnee.rotation.x = Math.max(0.08, s * 0.65);
+            bRKnee.rotation.x = Math.max(0.08, -s * 0.65);
             if (!inPlace) {
               meshGroupRef.current.position.z = ((t * 2.6) % 5) - 2.5;
             }
           } else if (clip === "crouch") {
-            meshGroupRef.current.position.y = -0.2 + Math.abs(Math.sin(t * 3.5)) * 0.05;
+            meshGroupRef.current.position.y = -0.18 + Math.abs(Math.sin(t * 3.5)) * 0.05;
             bSpine.rotation.x = 0.28;
-            bLLeg.rotation.x = -0.42;
-            bRLeg.rotation.x = -0.42;
+            bLLeg.rotation.x = -0.52;
+            bRLeg.rotation.x = -0.52;
+            bLKnee.rotation.x = 0.68;
+            bRKnee.rotation.x = 0.68;
             bLArm.rotation.x = -0.35;
             bLForeArm.rotation.x = -0.45;
             bRArm.rotation.x = -0.35;
@@ -2067,8 +2170,10 @@ export default function Viewport3D({
             meshGroupRef.current.position.y = jumpPhase * 0.62;
             bLArm.rotation.z = -0.52 * jumpPhase;
             bRArm.rotation.z = 0.52 * jumpPhase;
-            bLLeg.rotation.x = -0.35 * jumpPhase;
-            bRLeg.rotation.x = 0.28 * jumpPhase;
+            bLLeg.rotation.x = -0.42 * jumpPhase;
+            bRLeg.rotation.x = -0.25 * jumpPhase;
+            bLKnee.rotation.x = 0.55 * jumpPhase;
+            bRKnee.rotation.x = 0.45 * jumpPhase;
           } else if (clip === "attack") {
             meshGroupRef.current.rotation.y = baseRotY + Math.sin(t * 6) * 0.42;
             meshGroupRef.current.position.y = Math.abs(Math.sin(t * 6)) * 0.09;
@@ -2078,6 +2183,8 @@ export default function Viewport3D({
             bLArm.rotation.x = -0.25 - Math.sin(t * 8) * 0.32;
             bLLeg.rotation.x = -0.24;
             bRLeg.rotation.x = 0.24;
+            bLKnee.rotation.x = 0.28;
+            bRKnee.rotation.x = 0.18;
           } else if (clip === "boxing") {
             meshGroupRef.current.position.z = Math.sin(t * 8) * 0.12;
             bChest.rotation.y = Math.sin(t * 8) * 0.32;
@@ -2102,6 +2209,8 @@ export default function Viewport3D({
             bRArm.rotation.x = -0.65 - Math.sin(t * 6) * 0.42;
             bLLeg.rotation.x = -Math.sin(t * 6) * 0.38;
             bRLeg.rotation.x = Math.sin(t * 6) * 0.38;
+            bLKnee.rotation.x = Math.max(0, Math.sin(t * 6)) * 0.45;
+            bRKnee.rotation.x = Math.max(0, -Math.sin(t * 6)) * 0.45;
           } else if (clip === "quad_gallop") {
             meshGroupRef.current.position.y = Math.abs(Math.sin(t * 7)) * 0.22;
             meshGroupRef.current.rotation.x = Math.cos(t * 7) * 0.22;
@@ -2144,7 +2253,7 @@ export default function Viewport3D({
           }
         }
 
-        // Sync visual skeleton helper bones to live THREE.Bone world positions!
+        // Sync visual skeleton helper bones AND precision calibration markers to live THREE.Bone world positions!
         if (
           rigHelperRef.current &&
           rigHelperRef.current.visible &&
@@ -2157,6 +2266,20 @@ export default function Viewport3D({
           for (let i = 0; i < bones.length; i++) {
             bones[i].getWorldPosition(tmpWorldPos);
             visualJointMeshes[i].position.copy(tmpWorldPos);
+          }
+          if (markerMeshes.length > 0) {
+            for (const mkMesh of markerMeshes) {
+              const bIdx = mkMesh.userData.boneIdx;
+              if (typeof bIdx === "number" && visualJointMeshes[bIdx]) {
+                if (mkMesh.userData.customDragged) {
+                  visualJointMeshes[bIdx].position.x = mkMesh.position.x;
+                  visualJointMeshes[bIdx].position.y = mkMesh.position.y;
+                } else if (!draggingMarker) {
+                  mkMesh.position.copy(visualJointMeshes[bIdx].position);
+                  mkMesh.position.z += 0.08;
+                }
+              }
+            }
           }
           for (const { cyl, aIdx, bIdx } of visualLinkMeshes) {
             const pA = visualJointMeshes[aIdx].position;
@@ -2185,14 +2308,50 @@ export default function Viewport3D({
     const pointer = new THREE.Vector2();
     const dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
     const dragIntersect = new THREE.Vector3();
-    let draggingMarker: THREE.Mesh | null = null;
     let isBrushPainting = false;
     let downX = 0;
     let downY = 0;
 
     const applyUvCanvasBrushAtHit = (hit: THREE.Intersection) => {
       if (!hit.uv) return false;
-      const paintTex = texCacheRef.current.get(`paint_${currentTask.id}`);
+      let paintTex = texCacheRef.current.get(`paint_${currentTask.id}`);
+      if (!paintTex && meshGroupRef.current) {
+        const hitMat = (hit.object as THREE.Mesh)?.material as THREE.MeshStandardMaterial | undefined;
+        const srcMap = hitMat?.map;
+        const srcImg = srcMap?.image as HTMLImageElement | HTMLCanvasElement | ImageBitmap | undefined;
+        if (srcMap && srcImg && "width" in srcImg && srcImg.width > 0) {
+          const w = Math.min(1024, srcImg.width);
+          const h = Math.min(1024, srcImg.height);
+          const c = document.createElement("canvas");
+          c.width = w;
+          c.height = h;
+          const ctx = c.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(srcImg as CanvasImageSource, 0, 0, w, h);
+            const backup = document.createElement("canvas");
+            backup.width = w;
+            backup.height = h;
+            backup.getContext("2d")?.drawImage(c, 0, 0);
+            (c as unknown as { _backupCanvas?: HTMLCanvasElement })._backupCanvas = backup;
+          }
+          const cTex = new THREE.CanvasTexture(c);
+          cTex.flipY = srcMap.flipY;
+          cTex.colorSpace = THREE.SRGBColorSpace;
+          cTex.needsUpdate = true;
+          texCacheRef.current.set(`paint_${currentTask.id}`, cTex);
+          paintTex = cTex;
+          meshGroupRef.current.traverse((obj) => {
+            if ((obj as THREE.Mesh).isMesh) {
+              const m = obj as THREE.Mesh;
+              const mat = m.material as THREE.MeshStandardMaterial;
+              if (mat && mat.map) {
+                mat.map = cTex;
+                mat.needsUpdate = true;
+              }
+            }
+          });
+        }
+      }
       if (!paintTex || !paintTex.image) return false;
       const c = paintTex.image as HTMLCanvasElement;
       const ctx = c.getContext("2d");
@@ -2247,11 +2406,17 @@ export default function Viewport3D({
       raycaster.setFromCamera(pointer, camera);
 
       if (markerMeshes.length > 0 && rigGroup.visible) {
-        const hits = raycaster.intersectObjects(markerMeshes, false);
+        const hits = raycaster.intersectObjects(markerMeshes, true);
         if (hits.length > 0) {
-          draggingMarker = hits[0].object as THREE.Mesh;
-          controls.enabled = false;
-          return;
+          let obj: THREE.Object3D | null = hits[0].object;
+          while (obj && typeof obj.userData?.markerIdx !== "number") {
+            obj = obj.parent;
+          }
+          if (obj) {
+            draggingMarker = obj as THREE.Mesh;
+            controls.enabled = false;
+            return;
+          }
         }
       }
 
@@ -2277,10 +2442,12 @@ export default function Viewport3D({
         if (raycaster.ray.intersectPlane(dragPlane, dragIntersect)) {
           draggingMarker.position.x = Math.max(-1.1, Math.min(1.1, dragIntersect.x));
           draggingMarker.position.y = Math.max(-1.0, Math.min(1.2, dragIntersect.y));
+          draggingMarker.userData.customDragged = true;
           const mirrorIdx = draggingMarker.userData.mirrorIdx;
           if (typeof mirrorIdx === "number" && markerMeshes[mirrorIdx]) {
             markerMeshes[mirrorIdx].position.x = -draggingMarker.position.x;
             markerMeshes[mirrorIdx].position.y = draggingMarker.position.y;
+            markerMeshes[mirrorIdx].userData.customDragged = true;
           }
         }
         return;
