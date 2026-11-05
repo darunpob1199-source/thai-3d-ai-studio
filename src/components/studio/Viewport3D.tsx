@@ -6,6 +6,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import {
   Activity,
   Box,
@@ -718,9 +719,16 @@ export default function Viewport3D({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.15;
     container.innerHTML = "";
     container.appendChild(renderer.domElement);
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    const roomEnv = new RoomEnvironment();
+    const envMap = pmremGenerator.fromScene(roomEnv, 0.04).texture;
+    scene.environment = envMap;
+    roomEnv.dispose();
+    pmremGenerator.dispose();
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -946,7 +954,14 @@ export default function Viewport3D({
           } else if (applyPbrColors) {
             const stdMat = mesh.material as THREE.MeshStandardMaterial;
             const emInt = studioOverrides?.material.emissiveIntensity ?? 0;
-            if (!stdMat || !stdMat.map) {
+            const hasNativeMaps =
+              stdMat &&
+              (stdMat.map ||
+                stdMat.normalMap ||
+                stdMat.metalnessMap ||
+                stdMat.roughnessMap ||
+                currentTask.output_glb_url?.includes("dragon_crystal"));
+            if (!hasNativeMaps) {
               const aiColor =
                 studioOverrides?.material.primaryColor ||
                 (currentTask.output_glb_url ? "#d6d3d1" : pHex);
@@ -977,11 +992,21 @@ export default function Viewport3D({
                 customTint.toLowerCase() === "#d6d3d1" ||
                 customTint.toLowerCase() === "#ffffff" ||
                 customTint.toLowerCase() === (currentTask.primary_color || "").toLowerCase();
-              stdMat.color.set(isDefaultTint ? "#ffffff" : customTint);
-              if (studioOverrides?.material.roughness !== undefined) {
+              if (!currentTask.output_glb_url?.includes("dragon_crystal")) {
+                stdMat.color.set(isDefaultTint ? "#ffffff" : customTint);
+              } else if (!isDefaultTint && customTint) {
+                stdMat.color.set(customTint);
+              }
+              if (
+                studioOverrides?.material.roughness !== undefined &&
+                studioOverrides.material.roughness !== 0.25
+              ) {
                 stdMat.roughness = studioOverrides.material.roughness;
               }
-              if (studioOverrides?.material.metalness !== undefined) {
+              if (
+                studioOverrides?.material.metalness !== undefined &&
+                studioOverrides.material.metalness !== 0.85
+              ) {
                 stdMat.metalness = studioOverrides.material.metalness;
               }
               const forceFaceted =
@@ -991,13 +1016,11 @@ export default function Viewport3D({
               if (!isDefaultTint && customTint) {
                 stdMat.emissive = new THREE.Color(customTint);
                 stdMat.emissiveIntensity = Math.max(0.24, emInt * 0.5);
-              } else {
+              } else if (emInt > 0.08) {
                 stdMat.emissive = new THREE.Color(
-                  emInt > 0.08
-                    ? studioOverrides?.material.accentColor || "#f59e0b"
-                    : "#000000"
+                  studioOverrides?.material.accentColor || "#f59e0b"
                 );
-                stdMat.emissiveIntensity = emInt > 0.08 ? emInt * 0.45 : 0;
+                stdMat.emissiveIntensity = emInt * 0.45;
               }
               stdMat.flatShading = forceFaceted;
               stdMat.needsUpdate = true;
@@ -1126,8 +1149,6 @@ export default function Viewport3D({
         }
 
         targetMesh.visible = !hiddenSet.has(pIdx);
-        targetMesh.position.set(0, 0, 0);
-        targetMesh.rotation.set(0, 0, 0);
 
         if (pIdx < partSpecs.length && explodeAmt > 0) {
           targetMesh.position.addScaledVector(
@@ -1669,6 +1690,34 @@ export default function Viewport3D({
             });
             backdropToRemove.forEach((b) => b.parent?.remove(b));
 
+            // Bake relative node transform into geometry for single-mesh GLBs so upright orientation is preserved across 6-part segmentation
+            if (meshList.length === 1 && meshList[0].geometry) {
+              const onlyMesh = meshList[0];
+              gltf.scene.updateMatrixWorld(true);
+              const relMat = new THREE.Matrix4()
+                .copy(gltf.scene.matrixWorld)
+                .invert()
+                .multiply(onlyMesh.matrixWorld);
+              const identityMat = new THREE.Matrix4();
+              if (!relMat.equals(identityMat)) {
+                onlyMesh.geometry = onlyMesh.geometry.clone();
+                onlyMesh.geometry.applyMatrix4(relMat);
+                onlyMesh.geometry.computeVertexNormals();
+                onlyMesh.geometry.computeBoundingBox();
+                onlyMesh.position.set(0, 0, 0);
+                onlyMesh.rotation.set(0, 0, 0);
+                onlyMesh.scale.set(1, 1, 1);
+                let p: THREE.Object3D | null = onlyMesh.parent;
+                while (p && p !== gltf.scene) {
+                  p.position.set(0, 0, 0);
+                  p.rotation.set(0, 0, 0);
+                  p.scale.set(1, 1, 1);
+                  p = p.parent;
+                }
+                gltf.scene.updateMatrixWorld(true);
+              }
+            }
+
             // Normalize bounding box BEFORE partitioning/exploding so scale never shrinks when Explode > 0
             const box = new THREE.Box3().setFromObject(gltf.scene);
             const size = new THREE.Vector3();
@@ -1921,15 +1970,8 @@ export default function Viewport3D({
               buckets.forEach((indices, pIdx) => {
                 if (indices.length === 0) return;
                 const subGeom = new THREE.BufferGeometry();
-                subGeom.setAttribute("position", posAttr);
-                if (srcGeom.attributes.normal) {
-                  subGeom.setAttribute("normal", srcGeom.attributes.normal);
-                }
-                if (srcGeom.attributes.uv) {
-                  subGeom.setAttribute("uv", srcGeom.attributes.uv);
-                }
-                if (srcGeom.attributes.color) {
-                  subGeom.setAttribute("color", srcGeom.attributes.color);
+                for (const [attrName, attrVal] of Object.entries(srcGeom.attributes)) {
+                  subGeom.setAttribute(attrName, attrVal);
                 }
                 subGeom.setAttribute("skinIndex", skinIndexAttr);
                 subGeom.setAttribute("skinWeight", skinWeightAttr);
