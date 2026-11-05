@@ -31,3 +31,54 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #dc2626;
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes tripoCardEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0) scale(0.975);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* Ported from Tripo Studio pages.B-hmhTUZ.css (.gradient-stroke) */
+.tripo-gradient-stroke {
+  position: relative;
+}
+.tripo-gradient-stroke::after {
+  content: "";
+  border-radius: inherit;
+  z-index: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    95.22deg,
+    rgba(248, 113, 113, 0.65) -9.48%,
+    rgba(255, 255, 255, 0.08) 5.84%,
+    rgba(239, 68, 68, 0.12) 25.68%,
+    rgba(255, 255, 255, 0.03) 45.81%,
+    rgba(239, 68, 68, 0.12) 66.79%,
+    rgba(255, 255, 255, 0.08) 95.14%,
+    rgba(248, 113, 113, 0.65) 109.85%
+  );
+  padding: 1px;
+  position: absolute;
+  inset: -1px;
+  -webkit-mask-image: linear-gradient(#fff 0 100%), linear-gradient(#fff 0 100%);
+  mask-image: linear-gradient(#fff 0 100%), linear-gradient(#fff 0 100%);
+  -webkit-mask-clip: content-box, border-box;
+  mask-clip: content-box, border-box;
+  -webkit-mask-origin: content-box, border-box;
+  mask-origin: content-box, border-box;
+  -webkit-mask-composite: source-out;
+  mask-composite: subtract;
+}

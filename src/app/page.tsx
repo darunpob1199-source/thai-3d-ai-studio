@@ -49,6 +49,13 @@ import GmailLoginModal, {
   GoogleLogoSvg,
 } from "@/components/auth/GmailLoginModal";
 import TopupModal from "@/components/billing/TopupModal";
+import {
+  HomeInputBorderFlow,
+  TripoInspirationFan,
+  TripoFeaturedBannerCarousel,
+  TripoInteractiveCard,
+  type ShowcaseModelItem,
+} from "@/components/studio/TripoMotionComponents";
 import type {
   UserRecord,
   GenerationTaskRecord,
@@ -3393,6 +3400,8 @@ export default function SiamPrism3DStudioPage() {
 
   // Welcome page states
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  const [useCaseFilter, setUseCaseFilter] = useState<"all" | "3d_printing">("all");
+  const [inspirationOpen, setInspirationOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [filterPopoverOpen, setFilterPopoverOpen] = useState<boolean>(false);
   const [filterMeshType, setFilterMeshType] = useState<"all" | "smart_mesh" | "rigged" | "pbr">(
@@ -3961,6 +3970,13 @@ export default function SiamPrism3DStudioPage() {
   };
 
   const allGalleryModels = combinedModels.filter((item) => {
+    if (useCaseFilter === "3d_printing") {
+      const ext = item as GenerationTaskRecord & {
+        categoryTag?: string;
+        isPrintReady?: boolean;
+      };
+      if (!ext.isPrintReady && ext.categoryTag !== "3D Printing") return false;
+    }
     if (!matchesGalleryCategory(item, selectedCategory)) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -4228,301 +4244,312 @@ export default function SiamPrism3DStudioPage() {
               แปลงข้อความภาษาไทยหรือรูปภาพต้นแบบเป็นไฟล์ .GLB และ .STL สำหรับเอนจินเกม แอนิเมชัน และเครื่องพิมพ์ 3D
             </p>
 
-            {/* Studio Prompt Composer Card (Crimson-Obsidian #160c10, Nested 14px -> 8px Radius) */}
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragOverHero(true);
-              }}
-              onDragLeave={() => setIsDragOverHero(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDragOverHero(false);
-                const file = e.dataTransfer.files?.[0];
-                if (file && file.type.startsWith("image/")) {
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    setUploadedImage(reader.result as string);
-                    setInputMode("image_to_3d");
-                    triggerToast("อัปโหลดรูปภาพต้นแบบเรียบร้อยแล้ว");
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }}
-              className={`w-full rounded-[14px] p-4 flex flex-col justify-between gap-4 relative transition-colors ${
-                isDragOverHero
-                  ? "bg-[#241219] border border-[#ef4444]"
-                  : "bg-[#160c10] border border-red-500/25 shadow-[0_16px_48px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(248,113,113,0.12)]"
-              }`}
-            >
-              {/* Main Prompt Input + Inline Image Preview */}
-              <div className="flex items-start gap-4">
-                <textarea
-                  rows={3}
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="บรรยายโมเดล 3D เช่น หุ่นรบเกราะเหล็กไซไฟ, มังกรพญานาคคริสตัล, ดาบอัศวิน"
-                  className="flex-1 bg-transparent text-[15px] text-white placeholder-[#8c767e] focus:outline-none resize-none leading-[1.6]"
-                />
+            {/* Studio Prompt Composer Card (Crimson-Obsidian #160c10 + Tripo 2D Canvas Border Flow) */}
+            <div className="w-full relative">
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragOverHero(true);
+                }}
+                onDragLeave={() => setIsDragOverHero(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragOverHero(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file && file.type.startsWith("image/")) {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      setUploadedImage(reader.result as string);
+                      setInputMode("image_to_3d");
+                      triggerToast("อัปโหลดรูปภาพต้นแบบเรียบร้อยแล้ว");
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className={`w-full rounded-[14px] p-4 flex flex-col justify-between gap-4 relative transition-all duration-300 ${
+                  isDragOverHero
+                    ? "bg-[#241219] border border-[#ef4444] scale-[1.01]"
+                    : "bg-[#160c10]/95 backdrop-blur-xl border border-red-500/25 shadow-[0_16px_48px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(248,113,113,0.12)]"
+                }`}
+              >
+                {/* Ported Tripo Studio Dual-Comet Canvas Perimeter Light Beam */}
+                <HomeInputBorderFlow paused={isDragOverHero} />
 
-                {uploadedImage && (
-                  <div className="relative w-20 h-20 rounded-[8px] bg-[#0b0709] border border-red-500/30 p-1 shrink-0">
-                    <img
-                      src={uploadedImage}
-                      alt="Reference"
-                      className="w-full h-full object-contain rounded-[6px]"
-                    />
+                {/* Main Prompt Input + Inline Image Preview */}
+                <div className="flex items-start gap-4 relative z-20">
+                  <textarea
+                    rows={3}
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="บรรยายโมเดล 3D เช่น หุ่นรบเกราะเหล็กไซไฟ, มังกรพญานาคคริสตัล, ดาบอัศวิน"
+                    className="flex-1 bg-transparent text-[15px] text-white placeholder-[#8c767e] focus:outline-none resize-none leading-[1.6]"
+                  />
+
+                  {uploadedImage && (
+                    <div className="relative w-20 h-20 rounded-[8px] bg-[#0b0709] border border-red-500/30 p-1 shrink-0 animate-[tripoCardEnter_220ms_cubic-bezier(0.2,0.75,0.25,1)_both]">
+                      <img
+                        src={uploadedImage}
+                        alt="Reference"
+                        className="w-full h-full object-contain rounded-[6px]"
+                      />
+                      <button
+                        onClick={() => {
+                          setUploadedImage(null);
+                          setInputMode("text_to_3d");
+                        }}
+                        title="ลบรูปต้นแบบ"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-[4px] bg-[#dc2626] text-white text-[11px] flex items-center justify-center cursor-pointer"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Bar (Attach + Engine Tier + Fanned Inspiration Templates + Random + Generate CTA) */}
+                <div className="pt-3 border-t border-red-500/15 flex flex-wrap items-center justify-between gap-2 relative z-20">
+                  <div className="flex items-center gap-2">
+                    {/* 1. Attach Image / .GLB */}
+                    <label className="h-9 px-3 rounded-[8px] bg-[#211117] hover:bg-[#2b161e] border border-red-500/20 text-[13px] font-normal text-[#f5f0f2] flex items-center gap-2 cursor-pointer transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*,.glb,.gltf"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <ImageIcon className="w-4 h-4 stroke-[1.5] text-[#ef4444]" />
+                      <span>{uploadedImage ? "เปลี่ยนรูปต้นแบบ" : "แนบรูป / .GLB"}</span>
+                    </label>
+
+                    {/* 2. Engine Tier Switcher */}
                     <button
-                      onClick={() => {
-                        setUploadedImage(null);
-                        setInputMode("text_to_3d");
-                      }}
-                      title="ลบรูปต้นแบบ"
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-[4px] bg-[#dc2626] text-white text-[11px] flex items-center justify-center cursor-pointer"
+                      onClick={() =>
+                        setSelectedModel(
+                          selectedModel === "trellis_pbr"
+                            ? "hunyuan3d_2_1"
+                            : "trellis_pbr"
+                        )
+                      }
+                      className={`h-9 px-3 rounded-[8px] border text-[13px] font-normal flex items-center gap-2 transition-colors cursor-pointer ${
+                        selectedModel === "trellis_pbr"
+                          ? "bg-[#2b1319] border-red-500/45 text-white"
+                          : "bg-[#211117] hover:bg-[#2b161e] border-red-500/20 text-[#f5f0f2]"
+                      }`}
                     >
-                      ×
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          selectedModel === "trellis_pbr"
+                            ? "bg-[#ef4444]"
+                            : "bg-[#b8a6ad]"
+                        }`}
+                      />
+                      <span>
+                        {selectedModel === "trellis_pbr"
+                          ? "Pro Studio"
+                          : "Standard PBR"}
+                      </span>
+                      <span className="font-mono tabular-nums text-[12px] text-[#b8a6ad]">
+                        {selectedModel === "trellis_pbr" ? "6 เครดิต" : "2 เครดิต"}
+                      </span>
                     </button>
                   </div>
-                )}
-              </div>
 
-              {/* Action Bar (4 Controls, 8px Radius, Crimson Primary CTA) */}
-              <div className="pt-3 border-t border-red-500/15 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  {/* 1. Attach Image / .GLB */}
-                  <label className="h-9 px-3 rounded-[8px] bg-[#211117] hover:bg-[#2b161e] border border-red-500/20 text-[13px] font-normal text-[#f5f0f2] flex items-center gap-2 cursor-pointer transition-colors">
-                    <input
-                      type="file"
-                      accept="image/*,.glb,.gltf"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <ImageIcon className="w-4 h-4 stroke-[1.5] text-[#ef4444]" />
-                    <span>{uploadedImage ? "เปลี่ยนรูปต้นแบบ" : "แนบรูป / .GLB"}</span>
-                  </label>
-
-                  {/* 2. Engine Tier Switcher */}
-                  <button
-                    onClick={() =>
-                      setSelectedModel(
-                        selectedModel === "trellis_pbr"
-                          ? "hunyuan3d_2_1"
-                          : "trellis_pbr"
-                      )
-                    }
-                    className={`h-9 px-3 rounded-[8px] border text-[13px] font-normal flex items-center gap-2 transition-colors cursor-pointer ${
-                      selectedModel === "trellis_pbr"
-                        ? "bg-[#2b1319] border-red-500/45 text-white"
-                        : "bg-[#211117] hover:bg-[#2b161e] border-red-500/20 text-[#f5f0f2]"
-                    }`}
-                  >
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        selectedModel === "trellis_pbr"
-                          ? "bg-[#ef4444]"
-                          : "bg-[#b8a6ad]"
+                  <div className="flex items-center gap-2">
+                    {/* 3. Tripo Fanned Inspiration Templates Toggle (`HomeInputTemplates`) */}
+                    <button
+                      type="button"
+                      onClick={() => setInspirationOpen((prev) => !prev)}
+                      title="ต้นแบบแนะนำ (Inspiration Templates)"
+                      className={`h-9 px-3 rounded-[8px] tripo-gradient-stroke text-[12.5px] flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        inspirationOpen
+                          ? "bg-[#2e131b] text-white"
+                          : "bg-[#211117] hover:bg-[#2b161e] text-[#d4c5cb] hover:text-white"
                       }`}
-                    />
-                    <span>
-                      {selectedModel === "trellis_pbr"
-                        ? "Pro Studio"
-                        : "Standard PBR"}
-                    </span>
-                    <span className="font-mono tabular-nums text-[12px] text-[#b8a6ad]">
-                      {selectedModel === "trellis_pbr" ? "6 เครดิต" : "2 เครดิต"}
-                    </span>
-                  </button>
-                </div>
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-[#ef4444]" />
+                      <span className="hidden sm:inline">ไอเดียต้นแบบ</span>
+                    </button>
 
-                <div className="flex items-center gap-2">
-                  {/* 3. Random Prompt Idea */}
-                  <button
-                    onClick={handleRandomPrompt}
-                    title="สุ่มคำสั่งตัวอย่าง"
-                    className="w-9 h-9 rounded-[8px] bg-[#211117] hover:bg-[#2b161e] border border-red-500/20 flex items-center justify-center text-[#d4c5cb] hover:text-white transition-colors cursor-pointer"
-                  >
-                    <Dices className="w-4 h-4 stroke-[1.5]" />
-                  </button>
+                    {/* 4. Random Prompt Idea */}
+                    <button
+                      onClick={handleRandomPrompt}
+                      title="สุ่มคำสั่งตัวอย่าง"
+                      className="w-9 h-9 rounded-[8px] bg-[#211117] hover:bg-[#2b161e] border border-red-500/20 flex items-center justify-center text-[#d4c5cb] hover:text-white transition-colors cursor-pointer"
+                    >
+                      <Dices className="w-4 h-4 stroke-[1.5]" />
+                    </button>
 
-                  {/* 4. Primary Generate CTA (Signature Crimson Red) */}
-                  <button
-                    onClick={handleGenerate}
-                    disabled={isGenerating}
-                    className="h-9 px-4 rounded-[8px] bg-[#dc2626] hover:bg-[#ef4444] disabled:opacity-50 text-white font-medium text-[13px] flex items-center gap-2 transition-colors cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]"
-                  >
-                    <Wand2 className="w-4 h-4 stroke-[1.5]" />
-                    <span>สร้างโมเดล 3D</span>
-                    <span className="px-1.5 py-0.5 rounded-[4px] bg-black/25 text-white text-[12px] font-mono tabular-nums font-medium">
-                      {estimatedCost}
-                    </span>
-                  </button>
+                    {/* 5. Primary Generate CTA (Signature Crimson Red) */}
+                    <button
+                      onClick={handleGenerate}
+                      disabled={isGenerating}
+                      className="h-9 px-4 rounded-[8px] bg-[#dc2626] hover:bg-[#ef4444] disabled:opacity-50 text-white font-medium text-[13px] flex items-center gap-2 transition-all duration-200 hover:scale-[1.02] cursor-pointer shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]"
+                    >
+                      <Wand2 className="w-4 h-4 stroke-[1.5]" />
+                      <span>สร้างโมเดล 3D</span>
+                      <span className="px-1.5 py-0.5 rounded-[4px] bg-black/25 text-white text-[12px] font-mono tabular-nums font-medium">
+                        {estimatedCost}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {/* Fanned 3D Reference Cards Popover (`-rotate-6` / `rotate-6` -> `hover:rotate-0`) */}
+              <TripoInspirationFan
+                open={inspirationOpen}
+                onSelect={(tpl) => {
+                  setPrompt(tpl.prompt);
+                  setUploadedImage(tpl.image);
+                  setInputMode("image_to_3d");
+                  setInspirationOpen(false);
+                  triggerToast(`โหลดต้นแบบ "${tpl.title}" พร้อมรูปอ้างอิงแล้ว`);
+                }}
+              />
             </div>
           </section>
 
-          {/* Showcase & Community Gallery Section */}
-          <section className="max-w-[1360px] mx-auto space-y-4">
-            {/* Category Bar + Search */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                {GALLERY_CATEGORIES.map((cat) => {
-                  const active = selectedCategory === cat.id;
-                  const count = combinedModels.filter((m) =>
-                    matchesGalleryCategory(m, cat.id)
-                  ).length;
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className={`h-8 px-3 rounded-[8px] text-[13px] font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer ${
-                        active
-                          ? "bg-[#dc2626] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
-                          : "bg-[#160c10] text-[#b8a6ad] hover:text-white hover:bg-[#211117] border border-red-500/15"
-                      }`}
-                    >
-                      <span>{cat.label}</span>
-                      <span
-                        className={`text-[11px] font-mono tabular-nums ${
-                          active ? "text-white/90" : "text-[#8c767e]"
+          {/* Showcase & Community Gallery Section (Ported Tripo Studio Dual-Axis Filter + 3D Tilt/Split Grid) */}
+          <section className="max-w-[1380px] mx-auto space-y-4">
+            {/* Tripo Dual-Axis Glass Filter Bar (`All | 3D Printing` + Gradient Divider + Category Rail + Search) */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+                {/* Axis 1: Use Case Toggle (`All` vs `3D Printing` — matches `?use_case=3d_printing`) */}
+                <div className="h-8 p-0.5 rounded-full bg-[#160c10] border border-red-500/20 flex items-center gap-0.5 shrink-0 backdrop-blur-md">
+                  <button
+                    type="button"
+                    onClick={() => setUseCaseFilter("all")}
+                    className={`h-7 px-3 rounded-full text-[12.5px] font-medium flex items-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                      useCaseFilter === "all"
+                        ? "bg-[#2a1219] text-white border border-red-500/35"
+                        : "text-[#b8a6ad] hover:text-white"
+                    }`}
+                  >
+                    <Grid className="w-3.5 h-3.5 text-[#ef4444]" />
+                    <span>ทั้งหมด</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setUseCaseFilter((prev) =>
+                        prev === "3d_printing" ? "all" : "3d_printing"
+                      )
+                    }
+                    className={`h-7 px-3 rounded-full text-[12.5px] font-medium flex items-center gap-1.5 transition-all duration-200 cursor-pointer ${
+                      useCaseFilter === "3d_printing"
+                        ? "bg-[#dc2626] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]"
+                        : "text-[#b8a6ad] hover:text-white"
+                    }`}
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>พิมพ์ 3D</span>
+                  </button>
+                </div>
+
+                {/* Tripo Vertical Gradient Divider */}
+                <div className="h-7 w-[1px] bg-gradient-to-b from-transparent via-red-400/40 to-transparent shrink-0 mx-0.5" />
+
+                {/* Axis 2: Category Pill Rail with Expanding Active State */}
+                <div className="flex items-center gap-1.5">
+                  {GALLERY_CATEGORIES.map((cat) => {
+                    const active = selectedCategory === cat.id;
+                    const count = combinedModels.filter((m) => {
+                      if (useCaseFilter === "3d_printing") {
+                        const ext = m as GenerationTaskRecord & {
+                          categoryTag?: string;
+                          isPrintReady?: boolean;
+                        };
+                        if (!ext.isPrintReady && ext.categoryTag !== "3D Printing")
+                          return false;
+                      }
+                      return matchesGalleryCategory(m, cat.id);
+                    }).length;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`h-8 text-[12.5px] font-medium whitespace-nowrap flex items-center transition-all duration-200 ease-[cubic-bezier(0.2,0.75,0.25,1)] cursor-pointer ${
+                          active
+                            ? "px-3.5 rounded-full bg-[#dc2626] text-white gap-2 shadow-[0_4px_14px_rgba(220,38,38,0.35),inset_0_1px_0_rgba(255,255,255,0.2)]"
+                            : "px-3 rounded-[8px] bg-[#160c10] text-[#b8a6ad] hover:text-white hover:bg-[#211117] border border-red-500/15 gap-1.5"
                         }`}
                       >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span>{cat.label}</span>
+                        <span
+                          className={`text-[11px] font-mono tabular-nums ${
+                            active ? "text-white/90" : "text-[#8c767e]"
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="h-8 px-3 rounded-[8px] bg-[#160c10] border border-red-500/20 flex items-center gap-2">
-                <Search className="w-4 h-4 stroke-[1.5] text-[#ef4444]" />
+              {/* Search Input */}
+              <div className="h-8 px-3 rounded-full bg-[#160c10] border border-red-500/20 focus-within:border-red-500/50 flex items-center gap-2 shrink-0 transition-colors">
+                <Search className="w-3.5 h-3.5 stroke-[1.5] text-[#ef4444]" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ค้นหาโมเดล"
-                  className="bg-transparent text-[13px] text-white placeholder-[#8c767e] focus:outline-none w-36 sm:w-48"
+                  placeholder="ค้นหาโมเดล 3D..."
+                  className="bg-transparent text-[12.5px] text-white placeholder-[#8c767e] focus:outline-none w-40 sm:w-48"
                 />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="text-[#8c767e] hover:text-white text-[12px] cursor-pointer"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* 4-Column 3D Model Grid (Crimson-Obsidian Cards, Nested 14px -> 8px Radius) */}
+            {/* 4-Column Tripo Motion 3D Model Grid (2-Col Spotlight Carousel + 1100px 3D Tilt & Feathered Split Cards) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {allGalleryModels.map((item) => {
-                const cleanTitle = item.prompt_th
-                  .replace(/^\[.*?\]\s*/, "")
-                  .replace(/\s*\(.*?\)\s*$/, "");
-                const isPro = item.engine === "trellis_pbr";
-                const clayUrl = (item as GenerationTaskRecord & { clay_image_url?: string }).clay_image_url;
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTask(item);
-                      setTopNav("workspace");
+              {!searchQuery.trim() &&
+                (selectedCategory === "All" || selectedCategory === "Featured") && (
+                  <TripoFeaturedBannerCarousel
+                    onSelectCategory={(catId) => {
+                      if (catId === "3D Printing") {
+                        setUseCaseFilter("3d_printing");
+                        setSelectedCategory("All");
+                      } else {
+                        setSelectedCategory(catId);
+                      }
                     }}
-                    className="rounded-[14px] bg-[#160c10] border border-red-500/20 hover:border-red-500/50 p-2 flex flex-col justify-between relative group cursor-pointer transition-colors"
-                  >
-                    <div className="h-[248px] rounded-[8px] bg-gradient-to-b from-[#220e15] to-[#0a0608] border border-red-500/10 flex items-center justify-center relative overflow-hidden">
-                      {item.input_image_url ? (
-                        <>
-                          <img
-                            src={item.input_image_url}
-                            alt={cleanTitle}
-                            loading="lazy"
-                            className="w-full h-full object-contain p-3.5 transition-transform duration-300 group-hover:scale-[1.03]"
-                          />
-                          {clayUrl && (
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute inset-0 pointer-events-none">
-                              <img
-                                src={clayUrl}
-                                alt={`${cleanTitle} Clay Mesh`}
-                                loading="lazy"
-                                style={{ clipPath: "inset(0 0 0 50%)" }}
-                                className="w-full h-full object-contain p-3.5 scale-[1.03]"
-                              />
-                              <div className="absolute inset-y-3 left-1/2 w-[1px] bg-red-400/60 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div
-                          className="w-20 h-20 rounded-[12px] flex items-center justify-center border border-white/15"
-                          style={{
-                            background: `linear-gradient(135deg, ${item.primary_color}, ${item.accent_color})`,
-                          }}
-                        >
-                          <Box className="w-8 h-8 stroke-[1.5] text-white" />
-                        </div>
-                      )}
+                  />
+                )}
 
-                      {/* HUD Spec Badge */}
-                      <span
-                        className={`absolute top-2.5 left-2.5 px-2 py-0.5 rounded-[4px] border flex items-center gap-1.5 text-[11px] font-mono tabular-nums ${
-                          isPro
-                            ? "bg-[#281016]/90 border-red-500/40 text-red-200"
-                            : "bg-[#140a0e]/90 border-red-500/20 text-[#d4c5cb]"
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            isPro ? "bg-[#ef4444]" : "bg-[#b8a6ad]"
-                          }`}
-                        />
-                        <span>{isPro ? "PRO · PBR" : "STD · PBR"}</span>
-                      </span>
-
-                      {clayUrl && (
-                        <span className="absolute top-2.5 right-2.5 px-1.5 py-0.5 rounded-[4px] bg-[#140a0e]/90 border border-red-500/25 text-[10px] font-mono tabular-nums text-[#d4c5cb]">
-                          PBR ∣ CLAY
-                        </span>
-                      )}
-
-                      {/* Bottom Action Bar on Hover */}
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute inset-x-2 bottom-2 p-1.5 rounded-[6px] bg-[#140a0e]/95 border border-red-500/30 flex items-center justify-between gap-1.5">
-                        <span className="flex-1 h-7 px-2.5 rounded-[4px] bg-[#dc2626] text-white font-medium text-[12px] flex items-center justify-center gap-1.5">
-                          <span>เปิดในสตูดิโอ</span>
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveTask(item);
-                            setPrompt(cleanTitle);
-                            setTopNav("workspace");
-                            handleSelectLeftTool("generate");
-                            triggerToast(`โหลดพรอมต์ "${cleanTitle}" เพื่อสร้างใหม่แล้ว`);
-                          }}
-                          className="h-7 px-2.5 rounded-[4px] bg-[#241219] hover:bg-[#311822] text-[12px] font-normal text-white transition-colors cursor-pointer"
-                        >
-                          Remix
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveTask(item);
-                            setTopNav("workspace");
-                            handleSelectLeftTool("texture");
-                            triggerToast(`เปิด "${cleanTitle}" ในโหมดพื้นผิว PBR`);
-                          }}
-                          className="h-7 px-2.5 rounded-[4px] bg-[#241219] hover:bg-[#311822] text-[12px] font-normal text-[#d4c5cb] hover:text-white transition-colors cursor-pointer"
-                        >
-                          PBR
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Card Footer: Title + Signature Tabular Mono Spec */}
-                    <div className="pt-2.5 pb-1 px-1.5 flex items-center justify-between gap-3">
-                      <p className="text-[13px] font-medium text-white truncate">
-                        {cleanTitle}
-                      </p>
-                      <span className="text-[11px] font-mono tabular-nums text-[#ef4444]/85 shrink-0">
-                        {(item.target_poly_count / 1000).toFixed(0)}k · {item.topology.toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+              {allGalleryModels.map((item, idx) => (
+                <TripoInteractiveCard
+                  key={`${selectedCategory}-${useCaseFilter}-${item.id}`}
+                  item={item as ShowcaseModelItem}
+                  index={idx}
+                  onOpenStudio={(selected) => {
+                    setActiveTask(selected);
+                    setTopNav("workspace");
+                  }}
+                  onRemix={(selected, cleanTitle) => {
+                    setActiveTask(selected);
+                    setPrompt(cleanTitle);
+                    setTopNav("workspace");
+                    handleSelectLeftTool("generate");
+                    triggerToast(`โหลดพรอมต์ "${cleanTitle}" เพื่อสร้างใหม่แล้ว`);
+                  }}
+                  onOpenPbr={(selected, cleanTitle) => {
+                    setActiveTask(selected);
+                    setTopNav("workspace");
+                    handleSelectLeftTool("texture");
+                    triggerToast(`เปิด "${cleanTitle}" ในโหมดพื้นผิว PBR`);
+                  }}
+                />
+              ))}
             </div>
           </section>
         </div>
