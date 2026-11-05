@@ -2609,28 +2609,31 @@ export default function Viewport3D({
     const safeName = (activeTask?.preset_type || "model") + "_" + (activeTask?.id || "3d");
     const roughnessVal = String(studioOverrides?.material?.roughness ?? 0.35);
     const metalnessVal = String(studioOverrides?.material?.metalness ?? 0.65);
+    const prevVis = targetGroup.visible;
+    targetGroup.visible = true;
+
+    const pushBlobToBridge = (blob: Blob, ext: string) => {
+      if (!pushToLocalBridge) return;
+      const qs = `filename=${encodeURIComponent(`${safeName}.${ext}`)}&roughness=${encodeURIComponent(roughnessVal)}&metalness=${encodeURIComponent(metalnessVal)}`;
+      fetch(`http://127.0.0.1:28450/prism3d-import?${qs}`, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: blob,
+      }).catch(() => {});
+    };
 
     if (format === "glb") {
       const exporter = new GLTFExporter();
       exporter.parse(
         targetGroup,
         (result) => {
+          targetGroup.visible = prevVis;
           const blob =
             result instanceof ArrayBuffer
               ? new Blob([result], { type: "model/gltf-binary" })
               : new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
-          if (pushToLocalBridge) {
-            fetch("http://127.0.0.1:28450/prism3d-import", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/octet-stream",
-                "X-Prism3D-Filename": `${safeName}.glb`,
-                "X-Prism3D-Roughness": roughnessVal,
-                "X-Prism3D-Metalness": metalnessVal,
-              },
-              body: blob,
-            }).catch(() => {});
-          }
+          pushBlobToBridge(blob, "glb");
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
@@ -2640,25 +2643,17 @@ export default function Viewport3D({
           document.body.removeChild(a);
           setTimeout(() => URL.revokeObjectURL(url), 20000);
         },
-        () => {},
+        () => {
+          targetGroup.visible = prevVis;
+        },
         { binary: true }
       );
     } else if (format === "obj") {
       const exporter = new OBJExporter();
       const objText = exporter.parse(targetGroup);
+      targetGroup.visible = prevVis;
       const blob = new Blob([objText], { type: "text/plain" });
-      if (pushToLocalBridge) {
-        fetch("http://127.0.0.1:28450/prism3d-import", {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain",
-            "X-Prism3D-Filename": `${safeName}.obj`,
-            "X-Prism3D-Roughness": roughnessVal,
-            "X-Prism3D-Metalness": metalnessVal,
-          },
-          body: blob,
-        }).catch(() => {});
-      }
+      pushBlobToBridge(blob, "obj");
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

@@ -9333,7 +9333,7 @@ export default function SiamPrism3DStudioPage() {
                   scriptExt: "prism3d_blender_bridge.py",
                   buildScript: (modelName: string, glbFile: string) => `# Prism3D -> Blender 4.x Auto-Importer & Port 28450 Live Bridge Server
 # วิธีใช้: เปิดใน Blender -> แท็บ Scripting -> กด Run Script
-import bpy, os, tempfile, threading
+import bpy, os, tempfile, threading, urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 MODEL_NAME = ${JSON.stringify(modelName)}
@@ -9373,13 +9373,15 @@ class Prism3DBridgeHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        qs = urllib.parse.parse_qs(parsed.query)
         length = int(self.headers.get("Content-Length", 0))
         data = self.rfile.read(length) if length > 0 else b""
-        fname = self.headers.get("X-Prism3D-Filename", GLB_FILENAME)
-        rough = float(self.headers.get("X-Prism3D-Roughness", ROUGHNESS))
-        metal = float(self.headers.get("X-Prism3D-Metalness", METALNESS))
+        fname = qs.get("filename", [self.headers.get("X-Prism3D-Filename", GLB_FILENAME)])[0]
+        rough = float(qs.get("roughness", [self.headers.get("X-Prism3D-Roughness", ROUGHNESS)])[0])
+        metal = float(qs.get("metalness", [self.headers.get("X-Prism3D-Metalness", METALNESS)])[0])
         if data:
-            tmp_path = os.path.join(tempfile.gettempdir(), fname)
+            tmp_path = os.path.join(tempfile.gettempdir(), os.path.basename(fname))
             with open(tmp_path, "wb") as f:
                 f.write(data)
             bpy.app.timers.register(lambda: (import_prism3d_glb(tmp_path, rough, metal), None)[1])
