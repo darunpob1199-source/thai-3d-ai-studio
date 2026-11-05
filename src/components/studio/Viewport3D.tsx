@@ -1606,6 +1606,8 @@ export default function Viewport3D({
       }
     };
 
+    let isEffectDisposed = false;
+
     if (currentTask.output_glb_url && !isSpecialArtMode) {
       assetGroup.visible = false;
       const glbUrl = currentTask.output_glb_url;
@@ -1617,6 +1619,7 @@ export default function Viewport3D({
         loader.load(
           glbUrl,
           (gltf) => {
+            if (isEffectDisposed) return;
             let mIdx = 1;
             let hasNativeTexture = false;
             const meshList: THREE.Mesh[] = [];
@@ -1653,7 +1656,9 @@ export default function Viewport3D({
                 if (
                   (mat && (mat.map || mat.normalMap || mat.metalnessMap || mat.roughnessMap)) ||
                   glbUrl.includes("pro_khronos_") ||
-                  glbUrl.includes("std_trellis_")
+                  glbUrl.includes("std_trellis_") ||
+                  glbUrl.includes("KhronosGroup") ||
+                  glbUrl.includes("microsoft.github.io")
                 ) {
                   hasNativeTexture = true;
                 }
@@ -2654,6 +2659,7 @@ export default function Viewport3D({
     window.addEventListener("resize", handleResize);
 
     return () => {
+      isEffectDisposed = true;
       cameraStateRef.current = {
         taskId: activeTaskId,
         pos: [camera.position.x, camera.position.y, camera.position.z],
