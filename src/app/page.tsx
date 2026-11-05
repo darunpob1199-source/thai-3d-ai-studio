@@ -52,6 +52,7 @@ import TopupModal from "@/components/billing/TopupModal";
 import {
   HomeInputBorderFlow,
   TripoInspirationFan,
+  TripoPresetSwitch,
   TripoFeaturedBannerCarousel,
   TripoInteractiveCard,
   type ShowcaseModelItem,
@@ -4230,21 +4231,33 @@ export default function SiamPrism3DStudioPage() {
       </header>
 
       {/* =====================================================================
-          2A. WELCOME PAGE (Crimson-Obsidian Studio Composer & Showcase)
+          2A. WELCOME PAGE (Tripo 3D Canyon Volumetric Background + Composer & Showcase)
          ===================================================================== */}
       {topNav === "home" ? (
         <div className="relative z-10 flex-1 overflow-y-auto px-6 py-10 space-y-12 no-scrollbar">
+          {/* Ported Tripo Studio Full-Viewport Fixed 3D Canyon & God-Rays Background (`home-bg.webp`) */}
+          <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none">
+            <img
+              src="/images/tripo/home-bg.webp"
+              alt=""
+              fetchPriority="high"
+              className="w-full h-full object-cover object-top brightness-[1.42] contrast-[1.08] saturate-[1.35]"
+            />
+            {/* Volumetric Crimson-Amber God-Ray Overlay & Bottom Gallery Vignette */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_65%_55%_at_46%_18%,rgba(239,68,68,0.18),transparent_70%),linear-gradient(180deg,rgba(11,7,9,0.08)_0%,rgba(11,7,9,0.38)_58%,rgba(11,7,9,0.82)_100%)]" />
+          </div>
+
           {/* Hero Section */}
-          <section className="max-w-[760px] mx-auto flex flex-col items-center">
-            <h1 className="text-[28px] sm:text-[36px] font-medium tracking-[-0.02em] text-white text-center leading-[1.15]">
+          <section className="relative z-20 max-w-[760px] mx-auto flex flex-col items-center">
+            <h1 className="text-[28px] sm:text-[36px] font-medium tracking-[-0.02em] text-white text-center leading-[1.15] drop-shadow-[0_4px_24px_rgba(0,0,0,0.65)]">
               สร้างโมเดล 3D พร้อมพื้นผิว PBR และโครงกระดูก
             </h1>
 
-            <p className="text-[14px] text-[#b8a6ad] font-normal text-center mt-2 mb-8 max-w-[540px] leading-[1.5]">
+            <p className="text-[14px] text-[#d4c5cb] font-normal text-center mt-2 mb-8 max-w-[540px] leading-[1.5] drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]">
               แปลงข้อความภาษาไทยหรือรูปภาพต้นแบบเป็นไฟล์ .GLB และ .STL สำหรับเอนจินเกม แอนิเมชัน และเครื่องพิมพ์ 3D
             </p>
 
-            {/* Studio Prompt Composer Card (Crimson-Obsidian #160c10 + Tripo 2D Canvas Border Flow) */}
+            {/* Studio Prompt Composer Card (Translucent Frosted Glass `backdrop-blur-[12px]` + Tripo 2D Canvas Border Flow) */}
             <div className="w-full relative">
               <div
                 onDragOver={(e) => {
@@ -4266,10 +4279,10 @@ export default function SiamPrism3DStudioPage() {
                     reader.readAsDataURL(file);
                   }
                 }}
-                className={`w-full rounded-[14px] p-4 flex flex-col justify-between gap-4 relative transition-all duration-300 ${
+                className={`w-full rounded-[16px] p-4 flex flex-col justify-between gap-4 relative transition-all duration-300 ${
                   isDragOverHero
-                    ? "bg-[#241219] border border-[#ef4444] scale-[1.01]"
-                    : "bg-[#160c10]/95 backdrop-blur-xl border border-red-500/25 shadow-[0_16px_48px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(248,113,113,0.12)]"
+                    ? "bg-[#241219]/80 border border-[#ef4444] scale-[1.01]"
+                    : "bg-[#12080b]/55 backdrop-blur-[12px] border border-white/15 shadow-[0_20px_56px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)]"
                 }`}
               >
                 {/* Ported Tripo Studio Dual-Comet Canvas Perimeter Light Beam */}
@@ -4282,11 +4295,11 @@ export default function SiamPrism3DStudioPage() {
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="บรรยายโมเดล 3D เช่น หุ่นรบเกราะเหล็กไซไฟ, มังกรพญานาคคริสตัล, ดาบอัศวิน"
-                    className="flex-1 bg-transparent text-[15px] text-white placeholder-[#8c767e] focus:outline-none resize-none leading-[1.6]"
+                    className="flex-1 bg-transparent text-[15px] text-white placeholder-[#b8a6ad]/75 focus:outline-none resize-none leading-[1.6]"
                   />
 
                   {uploadedImage && (
-                    <div className="relative w-20 h-20 rounded-[8px] bg-[#0b0709] border border-red-500/30 p-1 shrink-0 animate-[tripoCardEnter_220ms_cubic-bezier(0.2,0.75,0.25,1)_both]">
+                    <div className="relative w-20 h-20 rounded-[8px] bg-[#0b0709]/80 border border-red-500/30 p-1 shrink-0 animate-[tripoCardEnter_220ms_cubic-bezier(0.2,0.75,0.25,1)_both]">
                       <img
                         src={uploadedImage}
                         alt="Reference"
@@ -4306,11 +4319,11 @@ export default function SiamPrism3DStudioPage() {
                   )}
                 </div>
 
-                {/* Action Bar (Attach + Engine Tier + Fanned Inspiration Templates + Random + Generate CTA) */}
-                <div className="pt-3 border-t border-red-500/15 flex flex-wrap items-center justify-between gap-2 relative z-20">
-                  <div className="flex items-center gap-2">
+                {/* Action Bar (Attach + Tripo Preset Switch with Hover Popover + Fanned Inspiration Templates + Random + Generate CTA) */}
+                <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 relative z-30">
+                  <div className="flex flex-wrap items-center gap-2">
                     {/* 1. Attach Image / .GLB */}
-                    <label className="h-9 px-3 rounded-[8px] bg-[#211117] hover:bg-[#2b161e] border border-red-500/20 text-[13px] font-normal text-[#f5f0f2] flex items-center gap-2 cursor-pointer transition-colors">
+                    <label className="h-9 px-3 rounded-full bg-black/35 hover:bg-black/55 backdrop-blur-md border border-white/15 text-[12.5px] font-normal text-[#f5f0f2] flex items-center gap-2 cursor-pointer transition-colors">
                       <input
                         type="file"
                         accept="image/*,.glb,.gltf"
@@ -4321,37 +4334,11 @@ export default function SiamPrism3DStudioPage() {
                       <span>{uploadedImage ? "เปลี่ยนรูปต้นแบบ" : "แนบรูป / .GLB"}</span>
                     </label>
 
-                    {/* 2. Engine Tier Switcher */}
-                    <button
-                      onClick={() =>
-                        setSelectedModel(
-                          selectedModel === "trellis_pbr"
-                            ? "hunyuan3d_2_1"
-                            : "trellis_pbr"
-                        )
-                      }
-                      className={`h-9 px-3 rounded-[8px] border text-[13px] font-normal flex items-center gap-2 transition-colors cursor-pointer ${
-                        selectedModel === "trellis_pbr"
-                          ? "bg-[#2b1319] border-red-500/45 text-white"
-                          : "bg-[#211117] hover:bg-[#2b161e] border-red-500/20 text-[#f5f0f2]"
-                      }`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          selectedModel === "trellis_pbr"
-                            ? "bg-[#ef4444]"
-                            : "bg-[#b8a6ad]"
-                        }`}
-                      />
-                      <span>
-                        {selectedModel === "trellis_pbr"
-                          ? "Pro Studio"
-                          : "Standard PBR"}
-                      </span>
-                      <span className="font-mono tabular-nums text-[12px] text-[#b8a6ad]">
-                        {selectedModel === "trellis_pbr" ? "6 เครดิต" : "2 เครดิต"}
-                      </span>
-                    </button>
+                    {/* 2. Ported Tripo Preset Switch (`hd_model.webp` & `low-poly.webp` Hover Preview Popover) */}
+                    <TripoPresetSwitch
+                      selectedModel={selectedModel}
+                      onSelectModel={(model) => setSelectedModel(model)}
+                    />
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -4410,7 +4397,7 @@ export default function SiamPrism3DStudioPage() {
           </section>
 
           {/* Showcase & Community Gallery Section (Ported Tripo Studio Dual-Axis Filter + 3D Tilt/Split Grid) */}
-          <section className="max-w-[1380px] mx-auto space-y-4">
+          <section className="relative z-10 max-w-[1380px] mx-auto space-y-4">
             {/* Tripo Dual-Axis Glass Filter Bar (`All | 3D Printing` + Gradient Divider + Category Rail + Search) */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">

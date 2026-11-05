@@ -264,6 +264,106 @@ export function TripoInspirationFan({
 }
 
 // ============================================================================
+// 2B. TRIPO STUDIO PRESET SWITCH WITH HOVER PREVIEW (`HomeInputPresetSwitch` port)
+// ============================================================================
+const PRESET_MODES = [
+  {
+    id: "trellis_pbr" as const,
+    pillLabel: "Best Quality · Pro",
+    credits: "6 เครดิต",
+    title: "High Detail Sculpt + 4K PBR",
+    desc: "สร้างโมเดลรายละเอียดสูงระดับ ZBrush Sculpt พร้อมพื้นผิว Metallic/Roughness คมชัดทุกมุมมอง",
+    image: "/images/tripo/hd_model.webp",
+  },
+  {
+    id: "hunyuan3d_2_1" as const,
+    pillLabel: "Clean Topology · Quad",
+    credits: "2 เครดิต",
+    title: "Smart Low-Poly Quad Mesh",
+    desc: "จัดเรียงเส้นโครงข่าย Quad Topology สะอาดตา พร้อมนำไป Rigging ลงเอนจินเกมหรือพิมพ์ 3D ทันที",
+    image: "/images/tripo/low-poly.webp",
+  },
+];
+
+export function TripoPresetSwitch({
+  selectedModel,
+  onSelectModel,
+}: {
+  selectedModel: "triposg" | "hunyuan3d_2_1" | "trellis_pbr";
+  onSelectModel: (model: "hunyuan3d_2_1" | "trellis_pbr") => void;
+}) {
+  const [hoveredPreset, setHoveredPreset] = useState<
+    "hunyuan3d_2_1" | "trellis_pbr" | null
+  >(null);
+
+  const activeHoverItem = PRESET_MODES.find((m) => m.id === hoveredPreset);
+
+  return (
+    <div
+      className="relative"
+      onMouseLeave={() => setHoveredPreset(null)}
+    >
+      <div className="tripo-gradient-stroke p-1 rounded-full bg-black/35 backdrop-blur-md flex items-center gap-1">
+        {PRESET_MODES.map((mode) => {
+          const active = selectedModel === mode.id;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => onSelectModel(mode.id)}
+              onMouseEnter={() => setHoveredPreset(mode.id)}
+              className={`h-7 px-3 rounded-full text-[12px] font-medium flex items-center gap-1.5 transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                active
+                  ? "bg-[#dc2626] text-white shadow-[0_2px_10px_rgba(220,38,38,0.4),inset_0_1px_0_rgba(255,255,255,0.25)]"
+                  : "text-[#d4c5cb] hover:text-white"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  active ? "bg-white" : "bg-[#ef4444]"
+                }`}
+              />
+              <span>{mode.pillLabel}</span>
+              <span
+                className={`text-[10.5px] font-mono tabular-nums ${
+                  active ? "text-red-100" : "text-[#9c848b]"
+                }`}
+              >
+                {mode.credits}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Floating Glass Preview Card (`hd_model.webp` / `low-poly.webp` from CROXBs8K.js) */}
+      {activeHoverItem && (
+        <div className="mt-2.5 p-2.5 rounded-[16px] bg-[#160c10]/90 backdrop-blur-[30px] border border-red-500/30 w-[270px] shadow-[0_12px_40px_rgba(0,0,0,0.65)] left-0 top-full absolute z-40 pointer-events-none animate-[tripoCardEnter_180ms_cubic-bezier(0.2,0.75,0.25,1)_both]">
+          <div className="border border-white/10 rounded-t-[11px] h-[156px] w-full overflow-hidden relative bg-[#0b0709]">
+            <img
+              src={activeHoverItem.image}
+              alt={activeHoverItem.title}
+              className="w-full h-full object-cover"
+            />
+            <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/70 border border-red-500/40 text-[10px] font-mono text-red-200">
+              {activeHoverItem.credits}
+            </span>
+          </div>
+          <div className="px-3 pb-3.5 pt-2.5 border border-white/10 border-t-0 rounded-b-[12px] bg-black/45 flex flex-col gap-1">
+            <p className="text-[13px] text-white leading-tight font-medium">
+              {activeHoverItem.title}
+            </p>
+            <p className="text-[11px] text-[#b8a6ad] leading-[1.45]">
+              {activeHoverItem.desc}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
 // 3. TRIPO STUDIO IN-GRID 2-COLUMN SPOTLIGHT CAROUSEL (`HomeCarouselCard` port)
 // ============================================================================
 const BANNER_SLIDES = [
@@ -579,16 +679,30 @@ export function TripoInteractiveCard({
     <div
       onClick={() => onOpenStudio(item)}
       style={{ animationDelay: `${staggerDelayMs}ms` }}
-      className="group rounded-[16px] bg-[#160c10] border border-red-500/20 hover:border-red-500/55 p-2 flex flex-col justify-between relative cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.2,0.75,0.25,1)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.6),0_0_24px_rgba(220,38,38,0.16)] animate-[tripoCardEnter_380ms_cubic-bezier(0.2,0.75,0.25,1)_both]"
+      className="group rounded-[16px] bg-[#14090d]/80 backdrop-blur-md border border-red-500/20 hover:border-red-500/55 p-2 flex flex-col justify-between relative cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.2,0.75,0.25,1)] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.65),0_0_24px_rgba(220,38,38,0.18)] animate-[tripoCardEnter_380ms_cubic-bezier(0.2,0.75,0.25,1)_both]"
     >
-      {/* 3D Perspective Viewport Container (`perspective-[1100px]`) */}
+      {/* 3D Perspective Viewport Container (`perspective-[1100px]` + Tripo `model_card_bg.webp` Studio Spotlight Stage) */}
       <div
         ref={hostRef}
         onPointerEnter={handlePointerEnter}
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
-        className="h-[268px] rounded-[11px] bg-[radial-gradient(circle_at_50%_42%,rgba(220,38,38,0.16),transparent_70%),linear-gradient(180deg,#210d14_0%,#090507_100%)] border border-red-500/10 relative overflow-hidden perspective-[1100px]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 22% 14%, rgba(239, 68, 68, 0.16), transparent 55%), url('/images/tripo/model_card_bg.webp')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+        className="h-[268px] rounded-[11px] bg-[#0c0608] border border-white/[0.07] relative overflow-hidden perspective-[1100px]"
       >
+        {/* Subtle Diagonal Studio Light Streak (`light.webp`) on Card Hover */}
+        <img
+          src="/images/tripo/light.webp"
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none select-none absolute -top-8 -left-8 w-56 h-56 object-contain opacity-30 group-hover:opacity-65 transition-opacity duration-500 mix-blend-screen"
+        />
+
         {/* Tilting 3D Surface (`rotateX(var(--tilt-x)) rotateY(var(--tilt-y))`) */}
         <div
           ref={surfaceRef}
