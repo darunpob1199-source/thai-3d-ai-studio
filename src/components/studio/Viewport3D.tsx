@@ -960,7 +960,8 @@ export default function Viewport3D({
                 stdMat.normalMap ||
                 stdMat.metalnessMap ||
                 stdMat.roughnessMap ||
-                currentTask.output_glb_url?.includes("dragon_crystal"));
+                currentTask.output_glb_url?.includes("pro_khronos_") ||
+                currentTask.output_glb_url?.includes("std_trellis_"));
             if (!hasNativeMaps) {
               const aiColor =
                 studioOverrides?.material.primaryColor ||
@@ -984,7 +985,11 @@ export default function Viewport3D({
                 flatShading: isFlat,
               });
             } else {
-              // Native-textured GLB (Pro Studio / Standard PBR): preserve baked texture map while supporting live PBR/Tint overrides
+              // Native-textured GLB (Pro Studio / Standard PBR): preserve baked texture map & material baseColorFactor while supporting live PBR/Tint overrides
+              if (!stdMat.userData.origColorHex && stdMat.color) {
+                stdMat.userData.origColorHex = "#" + stdMat.color.getHexString();
+              }
+              const origHex = stdMat.userData.origColorHex || "#ffffff";
               const customTint = studioOverrides?.material.primaryColor;
               const isDefaultTint =
                 !customTint ||
@@ -992,11 +997,7 @@ export default function Viewport3D({
                 customTint.toLowerCase() === "#d6d3d1" ||
                 customTint.toLowerCase() === "#ffffff" ||
                 customTint.toLowerCase() === (currentTask.primary_color || "").toLowerCase();
-              if (!currentTask.output_glb_url?.includes("dragon_crystal")) {
-                stdMat.color.set(isDefaultTint ? "#ffffff" : customTint);
-              } else if (!isDefaultTint && customTint) {
-                stdMat.color.set(customTint);
-              }
+              stdMat.color.set(isDefaultTint ? origHex : customTint);
               if (
                 studioOverrides?.material.roughness !== undefined &&
                 studioOverrides.material.roughness !== 0.25
@@ -1643,7 +1644,17 @@ export default function Viewport3D({
                 }
                 meshList.push(m);
                 const mat = m.material as THREE.MeshStandardMaterial;
-                if (mat && (mat.map || mat.normalMap || mat.metalnessMap || mat.roughnessMap)) {
+                if (mat && mat.color && !mat.userData?.origColorHex) {
+                  mat.userData = {
+                    ...mat.userData,
+                    origColorHex: "#" + mat.color.getHexString(),
+                  };
+                }
+                if (
+                  (mat && (mat.map || mat.normalMap || mat.metalnessMap || mat.roughnessMap)) ||
+                  glbUrl.includes("pro_khronos_") ||
+                  glbUrl.includes("std_trellis_")
+                ) {
                   hasNativeTexture = true;
                 }
                 if (m.geometry) {
