@@ -9331,23 +9331,17 @@ export default function SiamPrism3DStudioPage() {
                   port: "Port 28450 + .GLB & Python Addon",
                   format: "glb" as const,
                   scriptExt: "prism3d_blender_bridge.py",
-                  buildScript: (modelName: string, glbFile: string) => `# Prism3D -> Blender 4.x Auto-Importer & Port 28450 Bridge Listener
+                  buildScript: (modelName: string, glbFile: string) => `# Prism3D -> Blender 4.x Auto-Importer & Port 28450 Live Bridge Server
 # วิธีใช้: เปิดใน Blender -> แท็บ Scripting -> กด Run Script
-import bpy, os, json
+import bpy, os, tempfile, threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading
 
 MODEL_NAME = ${JSON.stringify(modelName)}
 GLB_FILENAME = ${JSON.stringify(glbFile)}
-PRIMARY_HEX = ${JSON.stringify(materialState.primaryColor)}
 ROUGHNESS = ${materialState.roughness.toFixed(3)}
 METALNESS = ${materialState.metalness.toFixed(3)}
 
-def hex_to_rgba(h):
-    h = h.lstrip('#')
-    return tuple(int(h[i:i+2], 16)/255.0 for i in (0, 2, 4)) + (1.0,)
-
-def import_prism3d_glb(filepath):
+def import_prism3d_glb(filepath, rough=ROUGHNESS, metal=METALNESS):
     if os.path.exists(filepath):
         bpy.ops.import_scene.gltf(filepath=filepath)
         for obj in bpy.context.selected_objects:
@@ -9356,13 +9350,53 @@ def import_prism3d_glb(filepath):
                     if mat and mat.use_nodes:
                         bsdf = mat.node_tree.nodes.get("Principled BSDF")
                         if bsdf:
-                            bsdf.inputs["Roughness"].default_value = ROUGHNESS
-                            bsdf.inputs["Metallic"].default_value = METALNESS
-        print("[Prism3D] Imported:", filepath)
+                            bsdf.inputs["Roughness"].default_value = float(rough)
+                            bsdf.inputs["Metallic"].default_value = float(metal)
+        print("[Prism3D] Imported into Blender:", filepath)
 
-# Auto-import from Downloads folder if present
+# 1. Auto-import immediately if file is already in ~/Downloads
 downloads_path = os.path.expanduser(f"~/Downloads/{GLB_FILENAME}")
-import_prism3d_glb(downloads_path)
+if os.path.exists(downloads_path):
+    import_prism3d_glb(downloads_path)
+
+# 2. Start Port 28450 Live HTTP Bridge inside Blender for one-click web streaming
+class Prism3DBridgeHandler(BaseHTTPRequestHandler):
+    def _send_cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._send_cors()
+        self.end_headers()
+
+    def do_POST(self):
+        length = int(self.headers.get("Content-Length", 0))
+        data = self.rfile.read(length) if length > 0 else b""
+        fname = self.headers.get("X-Prism3D-Filename", GLB_FILENAME)
+        rough = float(self.headers.get("X-Prism3D-Roughness", ROUGHNESS))
+        metal = float(self.headers.get("X-Prism3D-Metalness", METALNESS))
+        if data:
+            tmp_path = os.path.join(tempfile.gettempdir(), fname)
+            with open(tmp_path, "wb") as f:
+                f.write(data)
+            bpy.app.timers.register(lambda: (import_prism3d_glb(tmp_path, rough, metal), None)[1])
+        self.send_response(200)
+        self._send_cors()
+        self.end_headers()
+        self.wfile.write(b'{"ok":true}')
+
+def start_bridge():
+    try:
+        srv = HTTPServer(("127.0.0.1", 28450), Prism3DBridgeHandler)
+        print("[Prism3D] Port 28450 Live Bridge listening on http://127.0.0.1:28450")
+        srv.serve_forever()
+    except OSError:
+        print("[Prism3D] Port 28450 already running")
+
+threading.Thread(target=start_bridge, daemon=True).start()
 `,
                 },
                 {
@@ -9379,7 +9413,7 @@ glb_path = os.path.expanduser("~/Downloads/${glbFile}")
 task = unreal.AssetImportTask()
 task.filename = glb_path
 task.destination_path = "/Game/Prism3D"
-task.destination_name = "${ (activeTask?.id || "prism3d_asset").replace(/[^a-zA-Z0-9_]/g, "_") }"
+task.destination_name = "${(activeTask?.id || "prism3d_asset").replace(/[^a-zA-Z0-9_]/g, "_")}"
 task.replace_existing = True
 task.automated = True
 task.save = True
@@ -9429,88 +9463,72 @@ if os.path.exists(obj_path):
     print("[Prism3D] Imported OBJ into Maya:", obj_path)
 `,
                 },
-              ].map((dcc) => (
-                <div
-                  key={dcc.name}
-                  className="p-3 rounded-xl bg-white/[0.04] hover:bg-red-500/10 border border-white/10 hover:border-red-400/40 flex flex-col justify-between gap-2.5 transition"
-                >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">{dcc.name}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-[9.5px] font-mono text-red-200 uppercase">
-                        .{dcc.format}
-                      </span>
+              ].map((dcc) => {
+                const safeBaseName =
+                  (activeTask?.preset_type || "model") + "_" + (activeTask?.id || "3d");
+                const exportedFilename = `${safeBaseName}.${dcc.format}`;
+                return (
+                  <div
+                    key={dcc.name}
+                    className="p-3 rounded-xl bg-white/[0.04] hover:bg-red-500/10 border border-white/10 hover:border-red-400/40 flex flex-col justify-between gap-2.5 transition"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">{dcc.name}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-[9.5px] font-mono text-red-200 uppercase">
+                          .{dcc.format}
+                        </span>
+                      </div>
+                      <div className="text-[10.5px] text-[#b8a6ad] mt-0.5">{dcc.port}</div>
                     </div>
-                    <div className="text-[10.5px] text-[#b8a6ad] mt-0.5">{dcc.port}</div>
-                  </div>
 
-                  <div className="flex items-center gap-1.5">
-                    {/* Button 1: Real 3D Mesh Export + Localhost Port 28450 Push */}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const modelTitle = activeTask?.prompt_th || "prism3d-model";
-                        const fileExt = dcc.format;
-                        // 1. Try pushing to localhost:28450 if user has local listener running
-                        try {
-                          await fetch("http://127.0.0.1:28450/prism3d-import", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              target: dcc.id,
-                              title: modelTitle,
-                              glbUrl: activeTask?.output_glb_url || "",
-                              roughness: materialState.roughness,
-                              metalness: materialState.metalness,
-                              primaryColor: materialState.primaryColor,
-                            }),
-                          });
-                        } catch {
-                          // Local port not listening — proceed with direct 3D file export
-                        }
-                        // 2. Trigger real Three.js GLB/OBJ export from Viewport3D
-                        window.dispatchEvent(
-                          new CustomEvent("prism3d-export", {
-                            detail: { format: fileExt },
-                          })
-                        );
-                        setDccBridgeModalOpen(false);
-                        triggerToast(
-                          `ส่งออกไฟล์ 3D (.${fileExt.toUpperCase()}) สำหรับ ${dcc.name} เรียบร้อย!`
-                        );
-                      }}
-                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#dc2626] hover:bg-[#ef4444] text-white text-[11px] font-medium flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>ส่งออก .{dcc.format.toUpperCase()}</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      {/* Button 1: Real 3D Mesh Export (.glb/.obj) + Port 28450 Binary Stream */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent("prism3d-export", {
+                              detail: { format: dcc.format, pushToLocalBridge: true },
+                            })
+                          );
+                          setDccBridgeModalOpen(false);
+                          triggerToast(
+                            `ส่งออกไฟล์ ${exportedFilename} สำหรับ ${dcc.name} เรียบร้อย!`
+                          );
+                        }}
+                        className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#dc2626] hover:bg-[#ef4444] text-white text-[11px] font-medium flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>ส่งออก .{dcc.format.toUpperCase()}</span>
+                      </button>
 
-                    {/* Button 2: Download Real Auto-Import Script (.py / .cs) */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const modelTitle = activeTask?.prompt_th || "prism3d-model";
-                        const exportedFilename = `prism3d-${activeTask?.id || "model"}.${dcc.format}`;
-                        const code = dcc.buildScript(modelTitle, exportedFilename);
-                        const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = dcc.scriptExt;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        setTimeout(() => URL.revokeObjectURL(url), 10000);
-                        triggerToast(`ดาวน์โหลดสคริปต์ ${dcc.scriptExt} สำหรับ ${dcc.name} แล้ว!`);
-                      }}
-                      title={`ดาวน์โหลดสคริปต์ ${dcc.scriptExt}`}
-                      className="py-1.5 px-2 rounded-lg bg-[#241219] hover:bg-[#311822] border border-red-500/25 text-[#f5f0f2] text-[11px] font-mono transition-colors cursor-pointer"
-                    >
-                      {dcc.scriptExt.endsWith(".cs") ? ".CS" : ".PY"}
-                    </button>
+                      {/* Button 2: Download Real Auto-Import Script (.py / .cs) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const modelTitle = activeTask?.prompt_th || "prism3d-model";
+                          const code = dcc.buildScript(modelTitle, exportedFilename);
+                          const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = dcc.scriptExt;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          setTimeout(() => URL.revokeObjectURL(url), 10000);
+                          triggerToast(`ดาวน์โหลดสคริปต์ ${dcc.scriptExt} สำหรับ ${dcc.name} แล้ว!`);
+                        }}
+                        title={`ดาวน์โหลดสคริปต์ ${dcc.scriptExt}`}
+                        className="py-1.5 px-2 rounded-lg bg-[#241219] hover:bg-[#311822] border border-red-500/25 text-[#f5f0f2] text-[11px] font-mono transition-colors cursor-pointer"
+                      >
+                        {dcc.scriptExt.endsWith(".cs") ? ".CS" : ".PY"}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
