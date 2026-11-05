@@ -2624,6 +2624,27 @@ export default function Viewport3D({
     };
 
     if (format === "glb") {
+      const hasGeomMods =
+        studioOverrides?.artStyleMode === "voxel" ||
+        studioOverrides?.artStyleMode === "relief" ||
+        studioOverrides?.artStyleMode === "text3d" ||
+        studioOverrides?.filledParts?.auraRing ||
+        studioOverrides?.filledParts?.backWings ||
+        studioOverrides?.filledParts?.pedestal ||
+        studioOverrides?.addPrintBase ||
+        studioOverrides?.decalEnabled;
+
+      if (activeTask?.output_glb_url && !hasGeomMods) {
+        targetGroup.visible = prevVis;
+        const a = document.createElement("a");
+        a.href = activeTask.output_glb_url;
+        a.download = `${safeName}.glb`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+      }
+
       const exporter = new GLTFExporter();
       exporter.parse(
         targetGroup,
