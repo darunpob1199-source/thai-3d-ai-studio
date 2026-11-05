@@ -961,7 +961,10 @@ export default function Viewport3D({
                 stdMat.metalnessMap ||
                 stdMat.roughnessMap ||
                 currentTask.output_glb_url?.includes("pro_khronos_") ||
-                currentTask.output_glb_url?.includes("std_trellis_"));
+                currentTask.output_glb_url?.includes("std_trellis_") ||
+                currentTask.output_glb_url?.includes("github.io") ||
+                currentTask.output_glb_url?.includes("kiui.moe") ||
+                currentTask.input_image_url?.includes("glb_"));
             if (!hasNativeMaps) {
               const aiColor =
                 studioOverrides?.material.primaryColor ||
@@ -1658,7 +1661,8 @@ export default function Viewport3D({
                   glbUrl.includes("pro_khronos_") ||
                   glbUrl.includes("std_trellis_") ||
                   glbUrl.includes("KhronosGroup") ||
-                  glbUrl.includes("microsoft.github.io")
+                  glbUrl.includes("github.io") ||
+                  glbUrl.includes("kiui.moe")
                 ) {
                   hasNativeTexture = true;
                 }
@@ -1731,6 +1735,18 @@ export default function Viewport3D({
                   p = p.parent;
                 }
                 gltf.scene.updateMatrixWorld(true);
+              }
+              if (glbUrl.includes("spar3d.github.io")) {
+                onlyMesh.geometry = onlyMesh.geometry.clone();
+                onlyMesh.geometry.rotateX(-Math.PI / 2);
+                onlyMesh.geometry.rotateY(Math.PI / 2);
+                onlyMesh.geometry.computeVertexNormals();
+                onlyMesh.geometry.computeBoundingBox();
+              } else if (glbUrl.includes("stable-fast-3d.github.io")) {
+                onlyMesh.geometry = onlyMesh.geometry.clone();
+                onlyMesh.geometry.rotateY(Math.PI);
+                onlyMesh.geometry.computeVertexNormals();
+                onlyMesh.geometry.computeBoundingBox();
               }
             }
 
