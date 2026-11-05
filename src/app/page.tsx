@@ -320,6 +320,402 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     categoryTag: "Weapon", isFeatured: true,
   },
   {
+    id: "showcase_glb_damaged_helmet",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "หมวกเกราะนักบินรบไซไฟ 4K PBR",
+    prompt_en:
+      "Khronos AAA Studio GLB — Battle-scarred sci-fi tactical flight helmet with holographic visor HUD, emissive optics, and 4K Metallic/Roughness/Normal PBR maps",
+    input_image_url: "/models/pro_khronos_damaged_helmet.webp",
+    clay_image_url: "/models/pro_khronos_damaged_helmet_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 145000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "mecha",
+    primary_color: "#d6d3d1",
+    accent_color: "#22d3ee",
+    roughness: 0.24,
+    metalness: 0.88,
+    output_glb_url: "/models/pro_khronos_damaged_helmet.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Mecha",
+    isFeatured: true,
+    isPrintReady: true,
+  },
+  {
+    id: "showcase_glb_dragon_crystal",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "มังกรคริสตัลทับทิมจักรพรรดิ",
+    prompt_en:
+      "Khronos AAA Studio GLB — Imperial crimson ruby crystal Eastern dragon sculpture with high-gloss scales and 3D-print ready watertight geometry",
+    input_image_url: "/models/pro_khronos_dragon_crystal.webp",
+    clay_image_url: "/models/pro_khronos_dragon_crystal_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 168000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "dragon",
+    primary_color: "#dc2626",
+    accent_color: "#ef4444",
+    roughness: 0.18,
+    metalness: 0.72,
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Animal",
+    isFeatured: true,
+    isPrintReady: true,
+  },
+  {
+    id: "showcase_glb_hypercar",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "ซูเปอร์คาร์ต้นแบบไฮเปอร์คาร์แดงทมิฬ",
+    prompt_en:
+      "Khronos AAA Studio GLB — Crimson metallic concept hypercar with aerodynamic carbon-fiber splitter, forged alloy rims, and full cockpit interior",
+    input_image_url: "/models/pro_khronos_hypercar.webp",
+    clay_image_url: "/models/pro_khronos_hypercar_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 175000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "vehicle",
+    primary_color: "#dc2626",
+    accent_color: "#ef4444",
+    roughness: 0.16,
+    metalness: 0.9,
+    output_glb_url: "/models/pro_khronos_hypercar.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Vehicle",
+    isFeatured: true,
+  },
+  {
+    id: "showcase_glb_chrono_watch",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "นาฬิกาจักรกลโครโนกราฟทองคำ",
+    prompt_en:
+      "Khronos AAA Studio GLB — Tactical gold-and-obsidian chronograph wristwatch with brushed titanium bezel, sapphire dial, and world-time ring",
+    input_image_url: "/models/pro_khronos_chrono_watch.webp",
+    clay_image_url: "/models/pro_khronos_chrono_watch_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 138000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "crystal",
+    primary_color: "#f59e0b",
+    accent_color: "#ef4444",
+    roughness: 0.22,
+    metalness: 0.88,
+    output_glb_url: "/models/pro_khronos_chrono_watch.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Props",
+    isFeatured: true,
+  },
+  {
+    id: "showcase_glb_blaster",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "ปืนบลาสเตอร์พลาสมาสีแดง-ดำ",
+    prompt_en:
+      "TRELLIS Studio GLB — Futuristic crimson and obsidian heavy plasma blaster pistol with energy cell cylinder and weathered metallic barrel",
+    input_image_url: "/models/std_trellis_blaster.webp",
+    clay_image_url: "/models/std_trellis_blaster_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 112000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "sword",
+    primary_color: "#ef4444",
+    accent_color: "#dc2626",
+    roughness: 0.3,
+    metalness: 0.78,
+    output_glb_url: "/models/std_trellis_blaster.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Weapon",
+    isFeatured: true,
+    isPrintReady: true,
+  },
+  {
+    id: "showcase_glb_spherical_robot",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "หุ่นรบทรงกลมเกราะทองคำโบราณ",
+    prompt_en:
+      "TRELLIS Studio GLB — Spherical guardian automaton with brass and brushed steel armor plates and articulated mechanical limbs",
+    input_image_url: "/models/std_trellis_spherical_robot.webp",
+    clay_image_url: "/models/std_trellis_spherical_robot_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 142000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "mecha",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.28,
+    metalness: 0.82,
+    output_glb_url: "/models/std_trellis_spherical_robot.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Mecha",
+    isFeatured: true,
+    isPrintReady: true,
+  },
+  {
+    id: "showcase_glb_robot_dog",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "สุนัขจักรกลหน่วยจู่โจมไซเบอร์",
+    prompt_en:
+      "TRELLIS Studio GLB — Matte-black tactical robotic hound with articulated servo legs and glowing cyan optical sensor",
+    input_image_url: "/models/std_trellis_robot_dog.webp",
+    clay_image_url: "/models/std_trellis_robot_dog_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 124000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 1,
+    preset_type: "mecha",
+    primary_color: "#d6d3d1",
+    accent_color: "#22d3ee",
+    roughness: 0.34,
+    metalness: 0.76,
+    output_glb_url: "/models/std_trellis_robot_dog.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Mecha",
+    isFeatured: true,
+    isPrintReady: true,
+  },
+  {
+    id: "showcase_glb_motorcycle",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "มอเตอร์ไซค์ชอปเปอร์ทมิฬ-แดง",
+    prompt_en:
+      "TRELLIS Studio GLB — Custom crimson-and-chrome heavy cruiser motorcycle with leather saddle and dual exhaust pipes",
+    input_image_url: "/models/std_trellis_motorcycle.webp",
+    clay_image_url: "/models/std_trellis_motorcycle_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 118000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "vehicle",
+    primary_color: "#dc2626",
+    accent_color: "#d6d3d1",
+    roughness: 0.28,
+    metalness: 0.8,
+    output_glb_url: "/models/std_trellis_motorcycle.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Vehicle",
+    isPrintReady: true,
+  },
+  {
+    id: "showcase_glb_retro_racer",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "รถคลาสสิกเรโทรแท่นกำมะหยี่แดง",
+    prompt_en:
+      "Khronos AAA Studio GLB — Vintage emerald metallic coupe presented on a sculpted crimson velvet display pedestal",
+    input_image_url: "/models/pro_khronos_retro_racer.webp",
+    clay_image_url: "/models/pro_khronos_retro_racer_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 132000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "vehicle",
+    primary_color: "#dc2626",
+    accent_color: "#10b981",
+    roughness: 0.22,
+    metalness: 0.84,
+    output_glb_url: "/models/pro_khronos_retro_racer.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Vehicle",
+    isFeatured: true,
+  },
+  {
+    id: "showcase_glb_antique_camera",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "กล้องถ่ายภาพโบราณขาตั้งไม้สัก",
+    prompt_en:
+      "Khronos AAA Studio GLB — Antique bellows plate camera mounted on a carved walnut tripod with brushed silver lens assembly",
+    input_image_url: "/models/pro_khronos_antique_camera.webp",
+    clay_image_url: "/models/pro_khronos_antique_camera_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 148000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "crystal",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.36,
+    metalness: 0.68,
+    output_glb_url: "/models/pro_khronos_antique_camera.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Props",
+    isFeatured: true,
+  },
+  {
+    id: "showcase_glb_owl",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "ประติมากรรมนกฮูกสำริดโบราณ",
+    prompt_en:
+      "TRELLIS Studio GLB — Detailed bronze and stone owl figurine perched on a mossy rock base, ready for 3D printing",
+    input_image_url: "/models/std_trellis_owl.webp",
+    clay_image_url: "/models/std_trellis_owl_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 116000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "dragon",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.42,
+    metalness: 0.48,
+    output_glb_url: "/models/std_trellis_owl.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Animal",
+    isPrintReady: true,
+  },
+  {
+    id: "showcase_glb_mansion",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "คฤหาสน์หินวิกตอเรียนโบราณ",
+    prompt_en:
+      "TRELLIS Studio GLB — Gothic Victorian stone manor house with gabled crimson roofs, arched porches, and chimneys",
+    input_image_url: "/models/std_trellis_mansion.webp",
+    clay_image_url: "/models/std_trellis_mansion_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 152000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "crystal",
+    primary_color: "#d6d3d1",
+    accent_color: "#ef4444",
+    roughness: 0.52,
+    metalness: 0.25,
+    output_glb_url: "/models/std_trellis_mansion.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Architecture",
+    isPrintReady: true,
+  },
+  {
+    id: "showcase_glb_iron_lantern",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "เสาตะเกียงเหล็กหล่อยุคกลาง",
+    prompt_en:
+      "Khronos AAA Studio GLB — Wrought-iron medieval street lantern post with weathered brass finial and glass chamber",
+    input_image_url: "/models/pro_khronos_iron_lantern.webp",
+    clay_image_url: "/models/pro_khronos_iron_lantern_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 114000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "crystal",
+    primary_color: "#d6d3d1",
+    accent_color: "#f59e0b",
+    roughness: 0.38,
+    metalness: 0.78,
+    output_glb_url: "/models/pro_khronos_iron_lantern.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Props",
+  },
+  {
+    id: "showcase_glb_orb_pedestal",
+    user_id: "community",
+    stage: "refine_pbr",
+    engine: "trellis_pbr",
+    mode: "image_to_3d",
+    prompt_th: "แท่นศิลาลูกแก้วเวทมนตร์เรืองแสง",
+    prompt_en:
+      "TRELLIS Studio GLB — Carved rune stone pedestal cradling a glowing arcane energy orb, ready for tabletop miniatures",
+    input_image_url: "/models/std_trellis_orb_pedestal.webp",
+    clay_image_url: "/models/std_trellis_orb_pedestal_clay.webp",
+    status: "completed",
+    cost_credits: 6,
+    refunded: 0,
+    target_poly_count: 108000,
+    topology: "quad",
+    has_pbr: 1,
+    has_rig: 0,
+    preset_type: "potion",
+    primary_color: "#d6d3d1",
+    accent_color: "#ef4444",
+    roughness: 0.44,
+    metalness: 0.35,
+    output_glb_url: "/models/std_trellis_orb_pedestal.glb",
+    created_at: new Date().toISOString(),
+    categoryTag: "Props",
+    isPrintReady: true,
+  },
+  {
     id: "showcase_pro_spider_mech",
     user_id: "community",
     stage: "refine_pbr",
@@ -368,7 +764,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -396,7 +792,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -424,7 +820,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -452,7 +848,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -480,7 +876,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -508,7 +904,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -536,7 +932,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -564,7 +960,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -591,7 +987,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -619,7 +1015,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -646,7 +1042,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -674,7 +1070,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -702,7 +1098,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -730,7 +1126,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -758,7 +1154,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -786,7 +1182,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -814,7 +1210,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -842,7 +1238,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -870,7 +1266,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -898,7 +1294,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -926,7 +1322,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -954,7 +1350,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -982,7 +1378,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -1010,7 +1406,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -1038,7 +1434,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -1066,7 +1462,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -1093,7 +1489,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: false,
@@ -1121,7 +1517,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -1149,7 +1545,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -1177,7 +1573,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_paladin_knight.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isFeatured: true,
@@ -1204,7 +1600,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1231,7 +1627,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1258,7 +1654,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1285,7 +1681,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1312,7 +1708,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1339,7 +1735,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1366,7 +1762,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1393,7 +1789,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1420,7 +1816,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1447,7 +1843,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1474,7 +1870,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/49b4f85a6213f4722854dc2dc311ae9e6a871b238c1c1fb9c23f9915d8cfcf6b.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: false,
@@ -1501,7 +1897,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1528,7 +1924,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1555,7 +1951,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1582,7 +1978,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1609,7 +2005,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1636,7 +2032,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1663,7 +2059,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1690,7 +2086,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1717,7 +2113,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1744,7 +2140,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1771,7 +2167,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1798,7 +2194,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: false,
@@ -1826,7 +2222,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "https://microsoft.github.io/TRELLIS.2/assets/generation/4cd7d16c7f6f97a9ba8f4a79da3b5835f8a22f3c4223a00ff3f5ac4065f30e27.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: true,
@@ -2204,7 +2600,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_cyber_pickup.glb",
+    output_glb_url: "/models/pro_khronos_hypercar.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Vehicle",
     isFeatured: false,
@@ -2231,7 +2627,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_cyber_pickup.glb",
+    output_glb_url: "/models/pro_khronos_hypercar.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Vehicle",
     isFeatured: false,
@@ -2258,7 +2654,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_cyber_pickup.glb",
+    output_glb_url: "/models/pro_khronos_hypercar.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Vehicle",
     isFeatured: false,
@@ -2285,7 +2681,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_cyber_pickup.glb",
+    output_glb_url: "/models/pro_khronos_hypercar.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Vehicle",
     isFeatured: false,
@@ -2312,7 +2708,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_cyber_pickup.glb",
+    output_glb_url: "/models/pro_khronos_hypercar.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Vehicle",
     isFeatured: false,
@@ -2339,7 +2735,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_cyber_pickup.glb",
+    output_glb_url: "/models/pro_khronos_hypercar.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Vehicle",
     isFeatured: false,
@@ -2366,7 +2762,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_cyber_pickup.glb",
+    output_glb_url: "/models/pro_khronos_hypercar.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Vehicle",
     isFeatured: false,
@@ -2393,7 +2789,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.82,
-    output_glb_url: "/models/pro_trellis2_cyber_pickup.glb",
+    output_glb_url: "/models/pro_khronos_hypercar.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Vehicle",
     isFeatured: false,
@@ -2583,7 +2979,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.28,
     metalness: 0.78,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/monster.glb",
+    output_glb_url: "/models/std_trellis_monster.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: true,
@@ -2611,7 +3007,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.25,
     metalness: 0.88,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/knight.glb",
+    output_glb_url: "/models/pro_khronos_damaged_helmet.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -2639,7 +3035,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.24,
     metalness: 0.86,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/warrior_woman.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -2721,7 +3117,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#c084fc",
     roughness: 0.35,
     metalness: 0.32,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/warrior_woman.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -2861,7 +3257,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#38bdf8",
     roughness: 0.28,
     metalness: 0.35,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/warrior_woman.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -2888,7 +3284,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#f59e0b",
     roughness: 0.3,
     metalness: 0.65,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/warrior_woman.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -3267,7 +3663,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#f59e0b",
     roughness: 0.48,
     metalness: 0.32,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/watchtower.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
     isFeatured: true,
@@ -3348,7 +3744,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#10b981",
     roughness: 0.38,
     metalness: 0.35,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/knight.glb",
+    output_glb_url: "/models/pro_khronos_damaged_helmet.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isPrintReady: true,
@@ -3375,7 +3771,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.34,
     metalness: 0.42,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/warrior_woman.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isPrintReady: true,
@@ -3456,7 +3852,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.36,
     metalness: 0.45,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/dragon.glb",
+    output_glb_url: "/models/pro_khronos_dragon_crystal.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isFeatured: true,
@@ -3484,7 +3880,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#38bdf8",
     roughness: 0.32,
     metalness: 0.64,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/monster.glb",
+    output_glb_url: "/models/std_trellis_monster.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isPrintReady: true,
@@ -3511,7 +3907,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#10b981",
     roughness: 0.28,
     metalness: 0.72,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/guardian.glb",
+    output_glb_url: "/models/pro_trellis2_stone_golem.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isPrintReady: true,
@@ -3538,7 +3934,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.35,
     metalness: 0.58,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/monster.glb",
+    output_glb_url: "/models/std_trellis_monster.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isPrintReady: true,
@@ -3565,7 +3961,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#f59e0b",
     roughness: 0.3,
     metalness: 0.74,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/knight.glb",
+    output_glb_url: "/models/pro_khronos_damaged_helmet.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
     isPrintReady: true,
@@ -3592,7 +3988,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.38,
     metalness: 0.52,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/knight.glb",
+    output_glb_url: "/models/pro_khronos_damaged_helmet.glb",
     created_at: new Date().toISOString(),
     categoryTag: "3D Printing",
     isPrintReady: true,
@@ -3618,7 +4014,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#f59e0b",
     roughness: 0.28,
     metalness: 0.86,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/knight.glb",
+    output_glb_url: "/models/pro_khronos_damaged_helmet.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -3669,7 +4065,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#38bdf8",
     roughness: 0.25,
     metalness: 0.45,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/warrior_woman.glb",
+    output_glb_url: "/models/standard_trellis_dragonborn.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Character",
     isFeatured: true,
@@ -3745,7 +4141,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#f59e0b",
     roughness: 0.36,
     metalness: 0.48,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/gryphon.glb",
+    output_glb_url: "/models/std_trellis_owl.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
   },
@@ -3920,7 +4316,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#a855f7",
     roughness: 0.42,
     metalness: 0.3,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/medieval_house.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
   },
@@ -3970,7 +4366,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#38bdf8",
     roughness: 0.44,
     metalness: 0.28,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/watermill.glb",
+    output_glb_url: "/models/std_trellis_mansion.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Architecture",
   },
@@ -4920,7 +5316,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#f59e0b",
     roughness: 0.4,
     metalness: 0.35,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/elephant.glb",
+    output_glb_url: "/models/std_trellis_elephant.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
   },
@@ -4946,7 +5342,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#38bdf8",
     roughness: 0.48,
     metalness: 0.25,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/monster.glb",
+    output_glb_url: "/models/std_trellis_monster.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Animal",
   },
@@ -4972,7 +5368,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#f59e0b",
     roughness: 0.38,
     metalness: 0.55,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/chest.glb",
+    output_glb_url: "/models/std_trellis_chest.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Props",
   },
@@ -4998,7 +5394,7 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
     accent_color: "#ef4444",
     roughness: 0.32,
     metalness: 0.72,
-    output_glb_url: "https://microsoft.github.io/TRELLIS/assets/img2/glbs/robot_crab.glb",
+    output_glb_url: "/models/std_trellis_robot_crab.glb",
     created_at: new Date().toISOString(),
     categoryTag: "Mecha",
   },
@@ -9331,23 +9727,17 @@ export default function SiamPrism3DStudioPage() {
                   port: "Port 28450 + .GLB & Python Addon",
                   format: "glb" as const,
                   scriptExt: "prism3d_blender_bridge.py",
-                  buildScript: (modelName: string, glbFile: string) => `# Prism3D -> Blender 4.x Auto-Importer & Port 28450 Bridge Listener
+                  buildScript: (modelName: string, glbFile: string) => `# Prism3D -> Blender 4.x Auto-Importer & Port 28450 Live Bridge Server
 # วิธีใช้: เปิดใน Blender -> แท็บ Scripting -> กด Run Script
-import bpy, os, json
+import bpy, os, tempfile, threading, urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading
 
 MODEL_NAME = ${JSON.stringify(modelName)}
 GLB_FILENAME = ${JSON.stringify(glbFile)}
-PRIMARY_HEX = ${JSON.stringify(materialState.primaryColor)}
 ROUGHNESS = ${materialState.roughness.toFixed(3)}
 METALNESS = ${materialState.metalness.toFixed(3)}
 
-def hex_to_rgba(h):
-    h = h.lstrip('#')
-    return tuple(int(h[i:i+2], 16)/255.0 for i in (0, 2, 4)) + (1.0,)
-
-def import_prism3d_glb(filepath):
+def import_prism3d_glb(filepath, rough=ROUGHNESS, metal=METALNESS):
     if os.path.exists(filepath):
         bpy.ops.import_scene.gltf(filepath=filepath)
         for obj in bpy.context.selected_objects:
@@ -9356,13 +9746,55 @@ def import_prism3d_glb(filepath):
                     if mat and mat.use_nodes:
                         bsdf = mat.node_tree.nodes.get("Principled BSDF")
                         if bsdf:
-                            bsdf.inputs["Roughness"].default_value = ROUGHNESS
-                            bsdf.inputs["Metallic"].default_value = METALNESS
-        print("[Prism3D] Imported:", filepath)
+                            bsdf.inputs["Roughness"].default_value = float(rough)
+                            bsdf.inputs["Metallic"].default_value = float(metal)
+        print("[Prism3D] Imported into Blender:", filepath)
 
-# Auto-import from Downloads folder if present
+# 1. Auto-import immediately if file is already in ~/Downloads
 downloads_path = os.path.expanduser(f"~/Downloads/{GLB_FILENAME}")
-import_prism3d_glb(downloads_path)
+if os.path.exists(downloads_path):
+    import_prism3d_glb(downloads_path)
+
+# 2. Start Port 28450 Live HTTP Bridge inside Blender for one-click web streaming
+class Prism3DBridgeHandler(BaseHTTPRequestHandler):
+    def _send_cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "*")
+        self.send_header("Access-Control-Allow-Private-Network", "true")
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._send_cors()
+        self.end_headers()
+
+    def do_POST(self):
+        parsed = urllib.parse.urlparse(self.path)
+        qs = urllib.parse.parse_qs(parsed.query)
+        length = int(self.headers.get("Content-Length", 0))
+        data = self.rfile.read(length) if length > 0 else b""
+        fname = qs.get("filename", [self.headers.get("X-Prism3D-Filename", GLB_FILENAME)])[0]
+        rough = float(qs.get("roughness", [self.headers.get("X-Prism3D-Roughness", ROUGHNESS)])[0])
+        metal = float(qs.get("metalness", [self.headers.get("X-Prism3D-Metalness", METALNESS)])[0])
+        if data:
+            tmp_path = os.path.join(tempfile.gettempdir(), os.path.basename(fname))
+            with open(tmp_path, "wb") as f:
+                f.write(data)
+            bpy.app.timers.register(lambda: (import_prism3d_glb(tmp_path, rough, metal), None)[1])
+        self.send_response(200)
+        self._send_cors()
+        self.end_headers()
+        self.wfile.write(b'{"ok":true}')
+
+def start_bridge():
+    try:
+        srv = HTTPServer(("127.0.0.1", 28450), Prism3DBridgeHandler)
+        print("[Prism3D] Port 28450 Live Bridge listening on http://127.0.0.1:28450")
+        srv.serve_forever()
+    except OSError:
+        print("[Prism3D] Port 28450 already running")
+
+threading.Thread(target=start_bridge, daemon=True).start()
 `,
                 },
                 {
@@ -9379,7 +9811,7 @@ glb_path = os.path.expanduser("~/Downloads/${glbFile}")
 task = unreal.AssetImportTask()
 task.filename = glb_path
 task.destination_path = "/Game/Prism3D"
-task.destination_name = "${ (activeTask?.id || "prism3d_asset").replace(/[^a-zA-Z0-9_]/g, "_") }"
+task.destination_name = "${(activeTask?.id || "prism3d_asset").replace(/[^a-zA-Z0-9_]/g, "_")}"
 task.replace_existing = True
 task.automated = True
 task.save = True
@@ -9429,88 +9861,72 @@ if os.path.exists(obj_path):
     print("[Prism3D] Imported OBJ into Maya:", obj_path)
 `,
                 },
-              ].map((dcc) => (
-                <div
-                  key={dcc.name}
-                  className="p-3 rounded-xl bg-white/[0.04] hover:bg-red-500/10 border border-white/10 hover:border-red-400/40 flex flex-col justify-between gap-2.5 transition"
-                >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-white">{dcc.name}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-[9.5px] font-mono text-red-200 uppercase">
-                        .{dcc.format}
-                      </span>
+              ].map((dcc) => {
+                const safeBaseName =
+                  (activeTask?.preset_type || "model") + "_" + (activeTask?.id || "3d");
+                const exportedFilename = `${safeBaseName}.${dcc.format}`;
+                return (
+                  <div
+                    key={dcc.name}
+                    className="p-3 rounded-xl bg-white/[0.04] hover:bg-red-500/10 border border-white/10 hover:border-red-400/40 flex flex-col justify-between gap-2.5 transition"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">{dcc.name}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-[9.5px] font-mono text-red-200 uppercase">
+                          .{dcc.format}
+                        </span>
+                      </div>
+                      <div className="text-[10.5px] text-[#b8a6ad] mt-0.5">{dcc.port}</div>
                     </div>
-                    <div className="text-[10.5px] text-[#b8a6ad] mt-0.5">{dcc.port}</div>
-                  </div>
 
-                  <div className="flex items-center gap-1.5">
-                    {/* Button 1: Real 3D Mesh Export + Localhost Port 28450 Push */}
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const modelTitle = activeTask?.prompt_th || "prism3d-model";
-                        const fileExt = dcc.format;
-                        // 1. Try pushing to localhost:28450 if user has local listener running
-                        try {
-                          await fetch("http://127.0.0.1:28450/prism3d-import", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              target: dcc.id,
-                              title: modelTitle,
-                              glbUrl: activeTask?.output_glb_url || "",
-                              roughness: materialState.roughness,
-                              metalness: materialState.metalness,
-                              primaryColor: materialState.primaryColor,
-                            }),
-                          });
-                        } catch {
-                          // Local port not listening — proceed with direct 3D file export
-                        }
-                        // 2. Trigger real Three.js GLB/OBJ export from Viewport3D
-                        window.dispatchEvent(
-                          new CustomEvent("prism3d-export", {
-                            detail: { format: fileExt },
-                          })
-                        );
-                        setDccBridgeModalOpen(false);
-                        triggerToast(
-                          `ส่งออกไฟล์ 3D (.${fileExt.toUpperCase()}) สำหรับ ${dcc.name} เรียบร้อย!`
-                        );
-                      }}
-                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#dc2626] hover:bg-[#ef4444] text-white text-[11px] font-medium flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                    >
-                      <Download className="w-3 h-3" />
-                      <span>ส่งออก .{dcc.format.toUpperCase()}</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      {/* Button 1: Real 3D Mesh Export (.glb/.obj) + Port 28450 Binary Stream */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent("prism3d-export", {
+                              detail: { format: dcc.format, pushToLocalBridge: true },
+                            })
+                          );
+                          setDccBridgeModalOpen(false);
+                          triggerToast(
+                            `ส่งออกไฟล์ ${exportedFilename} สำหรับ ${dcc.name} เรียบร้อย!`
+                          );
+                        }}
+                        className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#dc2626] hover:bg-[#ef4444] text-white text-[11px] font-medium flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>ส่งออก .{dcc.format.toUpperCase()}</span>
+                      </button>
 
-                    {/* Button 2: Download Real Auto-Import Script (.py / .cs) */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const modelTitle = activeTask?.prompt_th || "prism3d-model";
-                        const exportedFilename = `prism3d-${activeTask?.id || "model"}.${dcc.format}`;
-                        const code = dcc.buildScript(modelTitle, exportedFilename);
-                        const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement("a");
-                        a.href = url;
-                        a.download = dcc.scriptExt;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        setTimeout(() => URL.revokeObjectURL(url), 10000);
-                        triggerToast(`ดาวน์โหลดสคริปต์ ${dcc.scriptExt} สำหรับ ${dcc.name} แล้ว!`);
-                      }}
-                      title={`ดาวน์โหลดสคริปต์ ${dcc.scriptExt}`}
-                      className="py-1.5 px-2 rounded-lg bg-[#241219] hover:bg-[#311822] border border-red-500/25 text-[#f5f0f2] text-[11px] font-mono transition-colors cursor-pointer"
-                    >
-                      {dcc.scriptExt.endsWith(".cs") ? ".CS" : ".PY"}
-                    </button>
+                      {/* Button 2: Download Real Auto-Import Script (.py / .cs) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const modelTitle = activeTask?.prompt_th || "prism3d-model";
+                          const code = dcc.buildScript(modelTitle, exportedFilename);
+                          const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = dcc.scriptExt;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          setTimeout(() => URL.revokeObjectURL(url), 10000);
+                          triggerToast(`ดาวน์โหลดสคริปต์ ${dcc.scriptExt} สำหรับ ${dcc.name} แล้ว!`);
+                        }}
+                        title={`ดาวน์โหลดสคริปต์ ${dcc.scriptExt}`}
+                        className="py-1.5 px-2 rounded-lg bg-[#241219] hover:bg-[#311822] border border-red-500/25 text-[#f5f0f2] text-[11px] font-mono transition-colors cursor-pointer"
+                      >
+                        {dcc.scriptExt.endsWith(".cs") ? ".CS" : ".PY"}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

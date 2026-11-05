@@ -6,6 +6,7 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { GLTFExporter } from "three/examples/jsm/exporters/GLTFExporter.js";
 import { OBJExporter } from "three/examples/jsm/exporters/OBJExporter.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import {
   Activity,
   Box,
@@ -718,9 +719,16 @@ export default function Viewport3D({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.15;
     container.innerHTML = "";
     container.appendChild(renderer.domElement);
+
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    const roomEnv = new RoomEnvironment();
+    const envMap = pmremGenerator.fromScene(roomEnv, 0.04).texture;
+    scene.environment = envMap;
+    roomEnv.dispose();
+    pmremGenerator.dispose();
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
@@ -946,7 +954,15 @@ export default function Viewport3D({
           } else if (applyPbrColors) {
             const stdMat = mesh.material as THREE.MeshStandardMaterial;
             const emInt = studioOverrides?.material.emissiveIntensity ?? 0;
-            if (!stdMat || !stdMat.map) {
+            const hasNativeMaps =
+              stdMat &&
+              (stdMat.map ||
+                stdMat.normalMap ||
+                stdMat.metalnessMap ||
+                stdMat.roughnessMap ||
+                currentTask.output_glb_url?.includes("pro_khronos_") ||
+                currentTask.output_glb_url?.includes("std_trellis_"));
+            if (!hasNativeMaps) {
               const aiColor =
                 studioOverrides?.material.primaryColor ||
                 (currentTask.output_glb_url ? "#d6d3d1" : pHex);
@@ -969,7 +985,11 @@ export default function Viewport3D({
                 flatShading: isFlat,
               });
             } else {
-              // Native-textured GLB (Pro Studio / Standard PBR): preserve baked texture map while supporting live PBR/Tint overrides
+              // Native-textured GLB (Pro Studio / Standard PBR): preserve baked texture map & material baseColorFactor while supporting live PBR/Tint overrides
+              if (!stdMat.userData.origColorHex && stdMat.color) {
+                stdMat.userData.origColorHex = "#" + stdMat.color.getHexString();
+              }
+              const origHex = stdMat.userData.origColorHex || "#ffffff";
               const customTint = studioOverrides?.material.primaryColor;
               const isDefaultTint =
                 !customTint ||
@@ -977,11 +997,17 @@ export default function Viewport3D({
                 customTint.toLowerCase() === "#d6d3d1" ||
                 customTint.toLowerCase() === "#ffffff" ||
                 customTint.toLowerCase() === (currentTask.primary_color || "").toLowerCase();
-              stdMat.color.set(isDefaultTint ? "#ffffff" : customTint);
-              if (studioOverrides?.material.roughness !== undefined) {
+              stdMat.color.set(isDefaultTint ? origHex : customTint);
+              if (
+                studioOverrides?.material.roughness !== undefined &&
+                studioOverrides.material.roughness !== 0.25
+              ) {
                 stdMat.roughness = studioOverrides.material.roughness;
               }
-              if (studioOverrides?.material.metalness !== undefined) {
+              if (
+                studioOverrides?.material.metalness !== undefined &&
+                studioOverrides.material.metalness !== 0.85
+              ) {
                 stdMat.metalness = studioOverrides.material.metalness;
               }
               const forceFaceted =
@@ -991,13 +1017,11 @@ export default function Viewport3D({
               if (!isDefaultTint && customTint) {
                 stdMat.emissive = new THREE.Color(customTint);
                 stdMat.emissiveIntensity = Math.max(0.24, emInt * 0.5);
-              } else {
+              } else if (emInt > 0.08) {
                 stdMat.emissive = new THREE.Color(
-                  emInt > 0.08
-                    ? studioOverrides?.material.accentColor || "#f59e0b"
-                    : "#000000"
+                  studioOverrides?.material.accentColor || "#f59e0b"
                 );
-                stdMat.emissiveIntensity = emInt > 0.08 ? emInt * 0.45 : 0;
+                stdMat.emissiveIntensity = emInt * 0.45;
               }
               stdMat.flatShading = forceFaceted;
               stdMat.needsUpdate = true;
@@ -1126,8 +1150,6 @@ export default function Viewport3D({
         }
 
         targetMesh.visible = !hiddenSet.has(pIdx);
-        targetMesh.position.set(0, 0, 0);
-        targetMesh.rotation.set(0, 0, 0);
 
         if (pIdx < partSpecs.length && explodeAmt > 0) {
           targetMesh.position.addScaledVector(
@@ -1598,12 +1620,41 @@ export default function Viewport3D({
             let mIdx = 1;
             let hasNativeTexture = false;
             const meshList: THREE.Mesh[] = [];
+            const backdropToRemove: THREE.Object3D[] = [];
             gltf.scene.traverse((child) => {
               if ((child as THREE.Mesh).isMesh) {
                 const m = child as THREE.Mesh;
+                const lowerName = (m.name || "").toLowerCase();
+                if (
+                  glbUrl.includes("dragon_crystal") &&
+                  (lowerName.includes("cloth") || lowerName.includes("backdrop") || lowerName.includes("background"))
+                ) {
+                  backdropToRemove.push(m);
+                  return;
+                }
+                if (glbUrl.includes("dragon_crystal")) {
+                  m.material = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color("#dc2626"),
+                    roughness: 0.18,
+                    metalness: 0.72,
+                    emissive: new THREE.Color("#450a0a"),
+                    emissiveIntensity: 0.35,
+                  });
+                  hasNativeTexture = true;
+                }
                 meshList.push(m);
                 const mat = m.material as THREE.MeshStandardMaterial;
-                if (mat && mat.map) {
+                if (mat && mat.color && !mat.userData?.origColorHex) {
+                  mat.userData = {
+                    ...mat.userData,
+                    origColorHex: "#" + mat.color.getHexString(),
+                  };
+                }
+                if (
+                  (mat && (mat.map || mat.normalMap || mat.metalnessMap || mat.roughnessMap)) ||
+                  glbUrl.includes("pro_khronos_") ||
+                  glbUrl.includes("std_trellis_")
+                ) {
                   hasNativeTexture = true;
                 }
                 if (m.geometry) {
@@ -1648,6 +1699,35 @@ export default function Viewport3D({
                 }
               }
             });
+            backdropToRemove.forEach((b) => b.parent?.remove(b));
+
+            // Bake relative node transform into geometry for single-mesh GLBs so upright orientation is preserved across 6-part segmentation
+            if (meshList.length === 1 && meshList[0].geometry) {
+              const onlyMesh = meshList[0];
+              gltf.scene.updateMatrixWorld(true);
+              const relMat = new THREE.Matrix4()
+                .copy(gltf.scene.matrixWorld)
+                .invert()
+                .multiply(onlyMesh.matrixWorld);
+              const identityMat = new THREE.Matrix4();
+              if (!relMat.equals(identityMat)) {
+                onlyMesh.geometry = onlyMesh.geometry.clone();
+                onlyMesh.geometry.applyMatrix4(relMat);
+                onlyMesh.geometry.computeVertexNormals();
+                onlyMesh.geometry.computeBoundingBox();
+                onlyMesh.position.set(0, 0, 0);
+                onlyMesh.rotation.set(0, 0, 0);
+                onlyMesh.scale.set(1, 1, 1);
+                let p: THREE.Object3D | null = onlyMesh.parent;
+                while (p && p !== gltf.scene) {
+                  p.position.set(0, 0, 0);
+                  p.rotation.set(0, 0, 0);
+                  p.scale.set(1, 1, 1);
+                  p = p.parent;
+                }
+                gltf.scene.updateMatrixWorld(true);
+              }
+            }
 
             // Normalize bounding box BEFORE partitioning/exploding so scale never shrinks when Explode > 0
             const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -1901,15 +1981,8 @@ export default function Viewport3D({
               buckets.forEach((indices, pIdx) => {
                 if (indices.length === 0) return;
                 const subGeom = new THREE.BufferGeometry();
-                subGeom.setAttribute("position", posAttr);
-                if (srcGeom.attributes.normal) {
-                  subGeom.setAttribute("normal", srcGeom.attributes.normal);
-                }
-                if (srcGeom.attributes.uv) {
-                  subGeom.setAttribute("uv", srcGeom.attributes.uv);
-                }
-                if (srcGeom.attributes.color) {
-                  subGeom.setAttribute("color", srcGeom.attributes.color);
+                for (const [attrName, attrVal] of Object.entries(srcGeom.attributes)) {
+                  subGeom.setAttribute(attrName, attrVal);
                 }
                 subGeom.setAttribute("skinIndex", skinIndexAttr);
                 subGeom.setAttribute("skinWeight", skinWeightAttr);
@@ -2602,21 +2675,77 @@ export default function Viewport3D({
     overridesKey,
   ]);
 
-  const handleExportFile = (format: "glb" | "obj" | "stl") => {
+  const handleExportFile = (format: "glb" | "obj" | "stl", pushToLocalBridge?: boolean) => {
     const targetGroup = meshGroupRef.current;
     if (!targetGroup) return;
 
     const safeName = (activeTask?.preset_type || "model") + "_" + (activeTask?.id || "3d");
+    const roughnessVal = String(studioOverrides?.material?.roughness ?? 0.35);
+    const metalnessVal = String(studioOverrides?.material?.metalness ?? 0.65);
+    const prevVis = targetGroup.visible;
+    targetGroup.visible = true;
+
+    const pushBlobToBridge = (blob: Blob, ext: string) => {
+      if (!pushToLocalBridge) return;
+      const qs = `filename=${encodeURIComponent(`${safeName}.${ext}`)}&roughness=${encodeURIComponent(roughnessVal)}&metalness=${encodeURIComponent(metalnessVal)}`;
+      fetch(`http://127.0.0.1:28450/prism3d-import?${qs}`, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: blob,
+      }).catch(() => {});
+    };
 
     if (format === "glb") {
+      const hasGeomMods =
+        studioOverrides?.artStyleMode === "voxel" ||
+        studioOverrides?.artStyleMode === "relief" ||
+        studioOverrides?.artStyleMode === "text3d" ||
+        studioOverrides?.filledParts?.auraRing ||
+        studioOverrides?.filledParts?.backWings ||
+        studioOverrides?.filledParts?.pedestal ||
+        studioOverrides?.addPrintBase ||
+        studioOverrides?.decalEnabled;
+
+      if (activeTask?.output_glb_url && !hasGeomMods) {
+        targetGroup.visible = prevVis;
+        const glbSrc = activeTask.output_glb_url;
+        if (glbSrc.startsWith("/")) {
+          const a = document.createElement("a");
+          a.href = glbSrc;
+          a.download = `${safeName}.glb`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          fetch(glbSrc)
+            .then((r) => r.blob())
+            .then((blob) => {
+              pushBlobToBridge(blob, "glb");
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${safeName}.glb`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(url), 20000);
+            })
+            .catch(() => {});
+        }
+        return;
+      }
+
       const exporter = new GLTFExporter();
       exporter.parse(
         targetGroup,
         (result) => {
+          targetGroup.visible = prevVis;
           const blob =
             result instanceof ArrayBuffer
               ? new Blob([result], { type: "model/gltf-binary" })
               : new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
+          pushBlobToBridge(blob, "glb");
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
@@ -2626,13 +2755,17 @@ export default function Viewport3D({
           document.body.removeChild(a);
           setTimeout(() => URL.revokeObjectURL(url), 20000);
         },
-        () => {},
+        () => {
+          targetGroup.visible = prevVis;
+        },
         { binary: true }
       );
     } else if (format === "obj") {
       const exporter = new OBJExporter();
       const objText = exporter.parse(targetGroup);
+      targetGroup.visible = prevVis;
       const blob = new Blob([objText], { type: "text/plain" });
+      pushBlobToBridge(blob, "obj");
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -2796,11 +2929,14 @@ export default function Viewport3D({
 
   useEffect(() => {
     const onCustomExport = (e: Event) => {
-      const ce = e as CustomEvent<{ format?: "glb" | "obj" | "stl" | "uv_png" }>;
+      const ce = e as CustomEvent<{
+        format?: "glb" | "obj" | "stl" | "uv_png";
+        pushToLocalBridge?: boolean;
+      }>;
       if (ce.detail?.format === "uv_png") {
         handleExportUvLayoutPng();
       } else {
-        handleExportFile(ce.detail?.format || "stl");
+        handleExportFile(ce.detail?.format || "stl", ce.detail?.pushToLocalBridge);
       }
     };
     window.addEventListener("prism3d-export", onCustomExport);
