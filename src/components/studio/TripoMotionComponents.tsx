@@ -269,16 +269,16 @@ export function TripoInspirationFan({
 const PRESET_MODES = [
   {
     id: "trellis_pbr" as const,
-    pillLabel: "Best Quality · Pro",
-    credits: "6 เครดิต",
+    pillLabel: "Best Quality",
+    credits: "6",
     title: "High Detail Sculpt + 4K PBR",
     desc: "สร้างโมเดลรายละเอียดสูงระดับ ZBrush Sculpt พร้อมพื้นผิว Metallic/Roughness คมชัดทุกมุมมอง",
     image: "/images/tripo/hd_model.webp",
   },
   {
     id: "hunyuan3d_2_1" as const,
-    pillLabel: "Clean Topology · Quad",
-    credits: "2 เครดิต",
+    pillLabel: "Clean Quad",
+    credits: "2",
     title: "Smart Low-Poly Quad Mesh",
     desc: "จัดเรียงเส้นโครงข่าย Quad Topology สะอาดตา พร้อมนำไป Rigging ลงเอนจินเกมหรือพิมพ์ 3D ทันที",
     image: "/images/tripo/low-poly.webp",
@@ -346,7 +346,7 @@ export function TripoPresetSwitch({
               className="w-full h-full object-cover"
             />
             <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/70 border border-red-500/40 text-[10px] font-mono text-red-200">
-              {activeHoverItem.credits}
+              {activeHoverItem.credits} เครดิต
             </span>
           </div>
           <div className="px-3 pb-3.5 pt-2.5 border border-white/10 border-t-0 rounded-b-[12px] bg-black/45 flex flex-col gap-1">
