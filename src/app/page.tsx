@@ -6552,7 +6552,10 @@ export default function SiamPrism3DStudioPage() {
   // Combine curated showcase + user-generated tasks for the Welcome Gallery & Studio Dock
   const showcaseGlbSet = new Set(CURATED_SHOWCASE.map((s) => s.output_glb_url));
   const customUserTasks = tasks.filter(
-    (t) => !t.output_glb_url || !showcaseGlbSet.has(t.output_glb_url)
+    (t) =>
+      String(t.id || "").startsWith("task_") ||
+      !t.output_glb_url ||
+      !showcaseGlbSet.has(t.output_glb_url)
   );
   const combinedModels = [...customUserTasks, ...CURATED_SHOWCASE];
 
@@ -6768,6 +6771,19 @@ export default function SiamPrism3DStudioPage() {
               <span>DCC Bridge</span>
             </button>
           )}
+
+          {/* Direct FAL.ai Serverless GPU Config Button */}
+          <button
+            onClick={() => {
+              setTopupInitialTab("config");
+              setTopupModalOpen(true);
+            }}
+            title="ตั้งค่าคีย์ FAL.ai API (FAL_KEY) และเบอร์พร้อมเพย์"
+            className="hidden sm:flex h-8 px-3 rounded-[8px] bg-[#170c10] hover:bg-[#241219] border border-red-500/25 items-center gap-1.5 text-[12px] font-medium text-[#f5f0f2] hover:text-white transition-colors cursor-pointer"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#ef4444] animate-pulse" />
+            <span>ตั้งค่า FAL.ai</span>
+          </button>
 
           {/* Credits + Top-Up Control (Tabular Mono Figures) */}
           <div className="h-8 p-1 rounded-[8px] bg-[#170c10] border border-red-500/20 flex items-center gap-1">
@@ -8367,6 +8383,7 @@ export default function SiamPrism3DStudioPage() {
                             operation: "retexture",
                             prompt: texturePrompt,
                             modelUrl: activeTask?.output_glb_url || null,
+                            taskId: activeTask?.id || null,
                           }),
                         });
                         const data = await res.json();
@@ -8378,6 +8395,9 @@ export default function SiamPrism3DStudioPage() {
                         }
                         if (data?.user) setUser(data.user);
                         if (Array.isArray(data?.transactions)) setTransactions(data.transactions);
+                        if (data?.outputGlbUrl && activeTask) {
+                          setActiveTask({ ...activeTask, output_glb_url: data.outputGlbUrl });
+                        }
                         triggerToast(
                           data?.message ||
                             `สร้างพื้นผิว AI Texture ตามคำสั่ง "${texturePrompt.slice(0, 28)}" สำเร็จ!`
@@ -8703,6 +8723,8 @@ export default function SiamPrism3DStudioPage() {
                         body: JSON.stringify({
                           operation: "upscale",
                           resolution: upscaleResolution,
+                          imageUrl: activeTask?.input_image_url || null,
+                          taskId: activeTask?.id || null,
                         }),
                       });
                       const data = await res.json();
@@ -8714,6 +8736,9 @@ export default function SiamPrism3DStudioPage() {
                       }
                       if (data?.user) setUser(data.user);
                       if (Array.isArray(data?.transactions)) setTransactions(data.transactions);
+                      if (data?.upscaledImageUrl && activeTask) {
+                        setActiveTask({ ...activeTask, input_image_url: data.upscaledImageUrl });
+                      }
                       triggerToast(
                         data?.message || `อัปสเกลโมเดลเป็น ${upscaleResolution} Ultra HD สำเร็จ!`
                       );

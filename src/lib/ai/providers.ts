@@ -157,6 +157,63 @@ const THAI_DICT: Array<{
   },
 ];
 
+const THAI_VOCAB_MAP: Array<[string, string]> = [
+  ["หุ่นยนต์", "armored sci-fi mecha robot"],
+  ["กันดั้ม", "mecha warrior suit"],
+  ["หมวกเกราะ", "armored sci-fi battle helmet"],
+  ["หมวกนักบิน", "futuristic visor helmet"],
+  ["หมวก", "stylized helmet"],
+  ["เกราะ", "ornate battle armor"],
+  ["อัศวิน", "armored fantasy knight"],
+  ["นักรบ", "warrior character"],
+  ["คนแคระ", "dwarf blacksmith warrior"],
+  ["ก๊อบลิน", "goblin rogue creature"],
+  ["มังกร", "mythical dragon boss"],
+  ["พญานาค", "sacred Thai Naga serpent dragon"],
+  ["ยักษ์", "Thai giant yaksha guardian"],
+  ["โกเลม", "ancient stone golem guardian"],
+  ["แมว", "cute stylized cat character"],
+  ["หมา", "stylized dog companion"],
+  ["สุนัข", "stylized dog companion"],
+  ["นกฮูก", "mystical owl"],
+  ["นก", "stylized bird creature"],
+  ["เสือ", "armored tiger beast"],
+  ["สิงโต", "majestic lion guardian"],
+  ["ดาบ", "legendary fantasy greatsword"],
+  ["มีด", "ornate tactical dagger"],
+  ["ขวาน", "heavy battle axe"],
+  ["ค้อน", "runic warhammer"],
+  ["ปืน", "sci-fi plasma blaster rifle"],
+  ["บลาสเตอร์", "cyberpunk energy blaster pistol"],
+  ["โล่", "ornate royal battle shield"],
+  ["รถสปอร์ต", "aerodynamic hypercar racer"],
+  ["รถแข่ง", "formula racing car"],
+  ["รถยนต์", "stylized modern vehicle"],
+  ["รถ", "custom vehicle"],
+  ["มอเตอร์ไซค์", "cyberpunk street motorcycle"],
+  ["ยานอวกาศ", "sci-fi starship fighter"],
+  ["เรือ", "fantasy galleon ship"],
+  ["นาฬิกา", "luxury skeleton chronograph watch"],
+  ["กล้อง", "vintage rangefinder camera"],
+  ["ตะเกียง", "magic glowing lantern"],
+  ["ขวดยา", "alchemist glowing potion flask"],
+  ["หีบสมบัติ", "ornate treasure chest"],
+  ["คริสตัล", "glowing arcane crystal"],
+  ["คฤหาสน์", "grand Victorian mansion architecture"],
+  ["ปราสาท", "fantasy royal castle"],
+  ["วิหาร", "ancient sacred temple shrine"],
+  ["บ้าน", "stylized architectural house"],
+  ["สีแดง", "crimson red"],
+  ["สีทอง", "royal gold"],
+  ["สีดำ", "obsidian black"],
+  ["สีเงิน", "polished chrome silver"],
+  ["สีเขียว", "emerald green"],
+  ["สีฟ้า", "cyan ice blue"],
+  ["สีม่วง", "neon amethyst purple"],
+  ["ไซเบอร์พังก์", "cyberpunk neon style"],
+  ["แฟนตาซี", "high fantasy RPG style"],
+];
+
 export function enhanceThaiPromptTo3D(promptTh: string): {
   promptEn: string;
   presetType: PresetArchetype;
@@ -167,7 +224,7 @@ export function enhanceThaiPromptTo3D(promptTh: string): {
 } {
   const clean = promptTh.trim().toLowerCase();
 
-  let matched = THAI_DICT[0];
+  let matched: (typeof THAI_DICT)[number] | null = null;
   for (const item of THAI_DICT) {
     if (item.keywords.some((kw) => clean.includes(kw))) {
       matched = item;
@@ -175,9 +232,31 @@ export function enhanceThaiPromptTo3D(promptTh: string): {
     }
   }
 
+  const translatedTerms: string[] = [];
+  for (const [thWord, enWord] of THAI_VOCAB_MAP) {
+    if (clean.includes(thWord)) {
+      translatedTerms.push(enWord);
+    }
+  }
+
+  const subjectEn =
+    translatedTerms.length > 0
+      ? `${translatedTerms.join(", ")} (${promptTh})`
+      : matched
+        ? `${matched.en}, inspired by "${promptTh}"`
+        : `${promptTh}, stylized 3D hero asset`;
+
+  const fallbackPreset = matched || {
+    preset: "mecha" as PresetArchetype,
+    primaryColor: "#d6d3d1",
+    accentColor: "#ef4444",
+    roughness: 0.25,
+    metalness: 0.8,
+  };
+
   // เช็กคำระบุสีภาษาไทยเพื่อปรับสี PBR ตามที่ลูกค้าสั่งจริง
-  let primaryColor = matched.primaryColor;
-  let accentColor = matched.accentColor;
+  let primaryColor = fallbackPreset.primaryColor;
+  let accentColor = fallbackPreset.accentColor;
 
   if (clean.includes("แดง") || clean.includes("ไฟ") || clean.includes("เพลิง")) {
     primaryColor = "#ef4444";
@@ -196,15 +275,15 @@ export function enhanceThaiPromptTo3D(promptTh: string): {
     accentColor = "#ec4899";
   }
 
-  const promptEn = `${matched.en}, inspired by "${promptTh}", 3D game asset, centered isometric view, clean white background, studio rim lighting, DINOv2 depth-conditioned, 4K PBR metallic-roughness texture, watertight manifold geometry`;
+  const promptEn = `${subjectEn}, 3D game asset, centered isometric full-body view, isolated on pure solid white background, studio rim lighting, DINOv2 depth-conditioned, 4K PBR metallic-roughness texture, watertight manifold geometry`;
 
   return {
     promptEn,
-    presetType: matched.preset,
+    presetType: fallbackPreset.preset,
     primaryColor,
     accentColor,
-    roughness: matched.roughness,
-    metalness: matched.metalness,
+    roughness: fallbackPreset.roughness,
+    metalness: fallbackPreset.metalness,
   };
 }
 

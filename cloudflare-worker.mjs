@@ -133,7 +133,7 @@ const THAI_DICT = [
     metalness: 0.85,
   },
   {
-    keywords: ["คริสตัล", "เพชร", "หิน", "เสา", "วิหาร", "ปราสาท", "บ้าน", "crystal", "tower"],
+    keywords: ["คริสตัล", "เพชร", "หิน", "เสา", "วิหาร", "ปราสาท", "บ้าน", "คฤหาสน์", "วัด", "เจดีย์", "crystal", "tower", "house", "mansion", "temple"],
     en: "floating arcane mana crystal obelisk shrine, carved stone base, glowing geometric facets",
     preset: "crystal",
     primaryColor: "#f43f5e",
@@ -143,22 +143,102 @@ const THAI_DICT = [
   },
 ];
 
+const THAI_VOCAB_MAP = [
+  ["หุ่นยนต์", "armored sci-fi mecha robot"],
+  ["กันดั้ม", "mecha warrior suit"],
+  ["หมวกเกราะ", "armored sci-fi battle helmet"],
+  ["หมวกนักบิน", "futuristic visor helmet"],
+  ["หมวก", "stylized helmet"],
+  ["เกราะ", "ornate battle armor"],
+  ["อัศวิน", "armored fantasy knight"],
+  ["นักรบ", "warrior character"],
+  ["คนแคระ", "dwarf blacksmith warrior"],
+  ["ก๊อบลิน", "goblin rogue creature"],
+  ["มังกร", "mythical dragon boss"],
+  ["พญานาค", "sacred Thai Naga serpent dragon"],
+  ["ยักษ์", "Thai giant yaksha guardian"],
+  ["โกเลม", "ancient stone golem guardian"],
+  ["แมว", "cute stylized cat character"],
+  ["หมา", "stylized dog companion"],
+  ["สุนัข", "stylized dog companion"],
+  ["นกฮูก", "mystical owl"],
+  ["นก", "stylized bird creature"],
+  ["เสือ", "armored tiger beast"],
+  ["สิงโต", "majestic lion guardian"],
+  ["ดาบ", "legendary fantasy greatsword"],
+  ["มีด", "ornate tactical dagger"],
+  ["ขวาน", "heavy battle axe"],
+  ["ค้อน", "runic warhammer"],
+  ["ปืน", "sci-fi plasma blaster rifle"],
+  ["บลาสเตอร์", "cyberpunk energy blaster pistol"],
+  ["โล่", "ornate royal battle shield"],
+  ["รถสปอร์ต", "aerodynamic hypercar racer"],
+  ["รถแข่ง", "formula racing car"],
+  ["รถยนต์", "stylized modern vehicle"],
+  ["รถ", "custom vehicle"],
+  ["มอเตอร์ไซค์", "cyberpunk street motorcycle"],
+  ["ยานอวกาศ", "sci-fi starship fighter"],
+  ["เรือ", "fantasy galleon ship"],
+  ["นาฬิกา", "luxury skeleton chronograph watch"],
+  ["กล้อง", "vintage rangefinder camera"],
+  ["ตะเกียง", "magic glowing lantern"],
+  ["ขวดยา", "alchemist glowing potion flask"],
+  ["หีบสมบัติ", "ornate treasure chest"],
+  ["คริสตัล", "glowing arcane crystal"],
+  ["คฤหาสน์", "grand Victorian mansion architecture"],
+  ["ปราสาท", "fantasy royal castle"],
+  ["วิหาร", "ancient sacred temple shrine"],
+  ["บ้าน", "stylized architectural house"],
+  ["สีแดง", "crimson red"],
+  ["สีทอง", "royal gold"],
+  ["สีดำ", "obsidian black"],
+  ["สีเงิน", "polished chrome silver"],
+  ["สีเขียว", "emerald green"],
+  ["สีฟ้า", "cyan ice blue"],
+  ["สีม่วง", "neon amethyst purple"],
+  ["ไซเบอร์พังก์", "cyberpunk neon style"],
+  ["แฟนตาซี", "high fantasy RPG style"],
+];
+
 function enhanceThaiPromptTo3D(promptTh) {
   const clean = String(promptTh || "").trim().toLowerCase();
-  let matched = THAI_DICT[0];
+  let matched = null;
   for (const item of THAI_DICT) {
     if (item.keywords.some((kw) => clean.includes(kw))) {
       matched = item;
       break;
     }
   }
+
+  const translatedTerms = [];
+  for (const [thWord, enWord] of THAI_VOCAB_MAP) {
+    if (clean.includes(thWord)) {
+      translatedTerms.push(enWord);
+    }
+  }
+
+  const subjectEn =
+    translatedTerms.length > 0
+      ? `${translatedTerms.join(", ")} (${promptTh})`
+      : matched
+        ? `${matched.en}, inspired by "${promptTh}"`
+        : `${promptTh}, stylized 3D hero asset`;
+
+  const fallbackPreset = matched || {
+    preset: "mecha",
+    primaryColor: "#d6d3d1",
+    accentColor: "#ef4444",
+    roughness: 0.25,
+    metalness: 0.8,
+  };
+
   return {
-    promptEn: `${matched.en}, inspired by "${promptTh}", 3D game asset, centered isometric view, 4K PBR metallic-roughness texture, watertight manifold geometry`,
-    presetType: matched.preset,
-    primaryColor: matched.primaryColor,
-    accentColor: matched.accentColor,
-    roughness: matched.roughness,
-    metalness: matched.metalness,
+    promptEn: `${subjectEn}, 3D game asset, centered isometric full-body view, isolated on pure solid white background, studio rim lighting, 4K PBR metallic-roughness texture, watertight manifold geometry`,
+    presetType: fallbackPreset.preset,
+    primaryColor: fallbackPreset.primaryColor,
+    accentColor: fallbackPreset.accentColor,
+    roughness: fallbackPreset.roughness,
+    metalness: fallbackPreset.metalness,
   };
 }
 
@@ -300,18 +380,21 @@ export default {
     }
 
     // =========================================================================
-    // 1. /api/settings (PromptPay EMVCo QR + Serverless GPU Config)
+    // 1. /api/settings (PromptPay EMVCo QR + Serverless GPU Config + Live FAL Tester)
     // =========================================================================
     if (pathname === "/api/settings") {
       if (method === "GET") {
         const amountParam = Number(url.searchParams.get("amount") || "150");
         const promptpayId = await getSetting(db, "promptpay_id", env.PROMPTPAY_ID || "0812345678");
         const falKey = await getSetting(db, "fal_api_key", env.FAL_KEY || "");
+        const keyPreview =
+          falKey.length > 8 ? `${falKey.slice(0, 6)}••••${falKey.slice(-4)}` : "";
         return jsonResponse({
           promptpayId,
           promptpayPayload: generatePromptPayPayload(promptpayId, amountParam),
           gpuProviders: {
             falConfigured: falKey.length > 8,
+            keyPreview,
             tripoConfigured: false,
             meshyConfigured: false,
             activeMode: falKey.length > 8 ? "fal_live" : "sandbox",
@@ -323,17 +406,74 @@ export default {
         if (typeof body.promptpayId === "string" && body.promptpayId.trim().length >= 10) {
           await setSetting(db, "promptpay_id", body.promptpayId.trim());
         }
-        if (typeof body.falApiKey === "string" && body.falApiKey.trim().length > 0) {
+        if (body.clearFalKey === true) {
+          await setSetting(db, "fal_api_key", "");
+        } else if (typeof body.falApiKey === "string" && body.falApiKey.trim().length > 0) {
           await setSetting(db, "fal_api_key", body.falApiKey.trim());
         }
         const promptpayId = await getSetting(db, "promptpay_id", env.PROMPTPAY_ID || "0812345678");
         const falKey = await getSetting(db, "fal_api_key", env.FAL_KEY || "");
+        const keyPreview =
+          falKey.length > 8 ? `${falKey.slice(0, 6)}••••${falKey.slice(-4)}` : "";
+
+        let falTest = null;
+        if (body.testFal === true) {
+          const candidateKey =
+            (typeof body.falApiKey === "string" && body.falApiKey.trim()) || falKey;
+          if (!candidateKey || candidateKey.length < 8) {
+            falTest = {
+              valid: false,
+              status: 400,
+              message: "กรุณาวางคีย์ FAL_KEY (รูปแบบ key_id:key_secret) ก่อนกดทดสอบ",
+            };
+          } else {
+            try {
+              const probeRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
+                method: "POST",
+                headers: {
+                  Authorization: `Key ${candidateKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({}),
+              });
+              if (probeRes.status === 401) {
+                falTest = {
+                  valid: false,
+                  status: 401,
+                  message: "คีย์ FAL_KEY ไม่ถูกต้อง (401 Unauthorized) กรุณาตรวจสอบ key_id:key_secret",
+                };
+              } else if (probeRes.status === 403) {
+                const errJson = await probeRes.json().catch(() => ({}));
+                falTest = {
+                  valid: true,
+                  status: 403,
+                  message: `เชื่อมต่อ FAL.ai สำเร็จ แต่บัญชีอาจยังไม่ได้เติมเครดิต (${errJson?.detail || "403 Forbidden"})`,
+                };
+              } else {
+                falTest = {
+                  valid: true,
+                  status: probeRes.status,
+                  message: "เชื่อมต่อ FAL.ai Serverless GPU สำเร็จ 100%! พร้อมปั้นโมเดล 3D ของจริง",
+                };
+              }
+            } catch (e) {
+              falTest = {
+                valid: false,
+                status: 500,
+                message: `ไม่สามารถติดต่อเกตเวย์ FAL.ai ได้: ${e?.message || "Network Error"}`,
+              };
+            }
+          }
+        }
+
         return jsonResponse({
           ok: true,
           promptpayId,
           promptpayPayload: generatePromptPayPayload(promptpayId, 150),
+          falTest,
           gpuProviders: {
             falConfigured: falKey.length > 8,
+            keyPreview,
             tripoConfigured: false,
             meshyConfigured: false,
             activeMode: falKey.length > 8 ? "fal_live" : "sandbox",
@@ -767,6 +907,7 @@ export default {
         mvImages && (mvImages.front || mvImages.back || mvImages.left || mvImages.right);
 
       const falKey = await getSetting(db, "fal_api_key", env.FAL_KEY || "");
+      let falNotice = null;
       if (falKey && falKey.length > 10) {
         try {
           let condImg = mvImages?.front || inputImageUrl;
@@ -789,11 +930,31 @@ export default {
             if (fluxRes.ok) {
               const fd = await fluxRes.json();
               condImg = fd?.images?.[0]?.url || null;
+              if (condImg && !inputImageUrl) {
+                inputImageUrl = condImg;
+              }
+            } else {
+              falNotice = `FAL.ai Flux status ${fluxRes.status}`;
             }
           }
 
           let gpuRes = null;
           if (hasMultiView && mvImages.front && mvImages.back) {
+            const frontFull = String(mvImages.front).startsWith("/")
+              ? `${url.origin}${mvImages.front}`
+              : mvImages.front;
+            const backFull = String(mvImages.back).startsWith("/")
+              ? `${url.origin}${mvImages.back}`
+              : mvImages.back;
+            const leftFull =
+              mvImages.left && String(mvImages.left).startsWith("/")
+                ? `${url.origin}${mvImages.left}`
+                : mvImages.left;
+            const rightFull =
+              mvImages.right && String(mvImages.right).startsWith("/")
+                ? `${url.origin}${mvImages.right}`
+                : mvImages.right;
+
             if (engine === "trellis_pbr") {
               gpuRes = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/multiview-to-3d", {
                 method: "POST",
@@ -802,20 +963,15 @@ export default {
                   "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                  front_image_url: mvImages.front,
-                  back_image_url: mvImages.back,
-                  left_image_url: mvImages.left || undefined,
-                  right_image_url: mvImages.right || undefined,
+                  front_image_url: frontFull,
+                  back_image_url: backFull,
+                  left_image_url: leftFull || undefined,
+                  right_image_url: rightFull || undefined,
                   texture: "standard",
                 }),
               });
             } else {
-              const imgList = [
-                mvImages.front,
-                mvImages.back,
-                mvImages.left,
-                mvImages.right,
-              ].filter(Boolean);
+              const imgList = [frontFull, backFull, leftFull, rightFull].filter(Boolean);
               gpuRes = await fetch("https://fal.run/fal-ai/trellis/multi", {
                 method: "POST",
                 headers: {
@@ -874,71 +1030,61 @@ export default {
               outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawGlb)}`;
               providerMode = "fal_live";
             }
+          } else if (gpuRes) {
+            falNotice = `FAL.ai 3D endpoint returned ${gpuRes.status}`;
           }
-        } catch {
+        } catch (err) {
+          falNotice = err?.message || "FAL.ai exception";
           providerMode = "sandbox";
         }
       }
 
       // Pre-Baked Genuine AI PBR Showcase Fallback (when FAL_KEY is not yet configured):
-      // Returns 100% genuine Microsoft TRELLIS.2 (Pro Studio) or Microsoft Trellis (Standard) .GLB with full 360° UV PBR textures
+      // Picks the closest match from our 25+ studio .GLB models with transparent 600x600 .webp cutouts
       if (!outputGlbUrl) {
-        const lowerPrompt = promptTh.toLowerCase();
-        if (engine === "trellis_pbr") {
-          const isGolemOrCreature =
-            lowerPrompt.includes("โกเลม") ||
-            lowerPrompt.includes("หิน") ||
-            lowerPrompt.includes("มอนสเตอร์") ||
-            lowerPrompt.includes("ยักษ์") ||
-            lowerPrompt.includes("มังกร") ||
-            lowerPrompt.includes("คริสตัล") ||
-            lowerPrompt.includes("golem") ||
-            lowerPrompt.includes("monster") ||
-            lowerPrompt.includes("stone") ||
-            lowerPrompt.includes("dragon");
-          outputGlbUrl = isGolemOrCreature
-            ? "/models/pro_trellis2_stone_golem.glb"
-            : "/models/pro_trellis2_battle_mech.glb";
-          if (!inputImageUrl) {
-            inputImageUrl = isGolemOrCreature
-              ? "/models/pro_trellis2_stone_golem.webp"
-              : "/models/pro_trellis2_battle_mech.webp";
-          }
-          providerMode = "pro_trellis2_pbr_showcase";
+        const lp = promptTh.toLowerCase();
+        const pickModel = (glb, thumb, modeTag) => {
+          outputGlbUrl = glb;
+          if (!inputImageUrl) inputImageUrl = thumb;
+          providerMode = modeTag;
+        };
+
+        if (lp.includes("รถสปอร์ต") || lp.includes("ซุปเปอร์คาร์") || lp.includes("hypercar") || lp.includes("supercar")) {
+          pickModel("/models/pro_khronos_hypercar.glb", "/models/pro_khronos_hypercar.webp", "pro_khronos_pbr_showcase");
+        } else if (lp.includes("รถแข่ง") || lp.includes("รถ") || lp.includes("car") || lp.includes("racer")) {
+          pickModel("/models/pro_khronos_retro_racer.glb", "/models/pro_khronos_retro_racer.webp", "pro_khronos_pbr_showcase");
+        } else if (lp.includes("มอเตอร์ไซค์") || lp.includes("บิ๊กไบค์") || lp.includes("motorcycle") || lp.includes("bike")) {
+          pickModel("/models/std_trellis_motorcycle.glb", "/models/std_trellis_motorcycle.webp", "standard_trellis_pbr_showcase");
+        } else if (lp.includes("หมวก") || lp.includes("เกราะ") || lp.includes("helmet") || lp.includes("armor")) {
+          pickModel("/models/pro_khronos_damaged_helmet.glb", "/models/pro_khronos_damaged_helmet.webp", "pro_khronos_pbr_showcase");
+        } else if (lp.includes("นาฬิกา") || lp.includes("watch") || lp.includes("clock")) {
+          pickModel("/models/pro_khronos_chrono_watch.glb", "/models/pro_khronos_chrono_watch.webp", "pro_khronos_pbr_showcase");
+        } else if (lp.includes("ปืน") || lp.includes("บลาสเตอร์") || lp.includes("อาวุธ") || lp.includes("gun") || lp.includes("blaster")) {
+          pickModel("/models/std_trellis_blaster.glb", "/models/std_trellis_blaster.webp", "standard_trellis_pbr_showcase");
+        } else if (lp.includes("หมา") || lp.includes("สุนัข") || lp.includes("แมว") || lp.includes("dog") || lp.includes("cat")) {
+          pickModel("/models/std_trellis_robot_dog.glb", "/models/std_trellis_robot_dog.webp", "standard_trellis_pbr_showcase");
+        } else if (lp.includes("นก") || lp.includes("นกฮูก") || lp.includes("owl") || lp.includes("bird")) {
+          pickModel("/models/std_trellis_owl.glb", "/models/std_trellis_owl.webp", "standard_trellis_pbr_showcase");
+        } else if (lp.includes("บ้าน") || lp.includes("คฤหาสน์") || lp.includes("ปราสาท") || lp.includes("วิหาร") || lp.includes("house") || lp.includes("mansion")) {
+          pickModel("/models/std_trellis_mansion.glb", "/models/std_trellis_mansion.webp", "standard_trellis_pbr_showcase");
+        } else if (lp.includes("กล้อง") || lp.includes("camera")) {
+          pickModel("/models/std_trellis_camera.glb", "/models/std_trellis_camera.webp", "standard_trellis_pbr_showcase");
+        } else if (lp.includes("ตะเกียง") || lp.includes("โคม") || lp.includes("ขวดยา") || lp.includes("lantern") || lp.includes("potion")) {
+          pickModel("/models/std_trellis_lantern.glb", "/models/std_trellis_lantern.webp", "standard_trellis_pbr_showcase");
+        } else if (lp.includes("พญานาค") || lp.includes("มังกรจีน") || lp.includes("งู") || lp.includes("loong") || lp.includes("naga")) {
+          pickModel("/models/standard_trellis_loong.glb", "/models/standard_trellis_loong.png", "standard_trellis_pbr_showcase");
+        } else if (lp.includes("มังกร") || lp.includes("คริสตัล") || lp.includes("dragon") || lp.includes("crystal")) {
+          pickModel("/models/pro_khronos_dragon_crystal.glb", "/models/pro_khronos_dragon_crystal.webp", "pro_khronos_pbr_showcase");
+        } else if (lp.includes("โกเลม") || lp.includes("หิน") || lp.includes("ยักษ์") || lp.includes("golem") || lp.includes("stone")) {
+          pickModel("/models/pro_trellis2_stone_golem.glb", "/models/pro_trellis2_stone_golem.webp", "pro_trellis2_pbr_showcase");
+        } else if (lp.includes("ก๊อบลิน") || lp.includes("คนแคระ") || lp.includes("ออร์ค") || lp.includes("goblin") || lp.includes("dwarf")) {
+          pickModel("/models/standard_trellis_goblin.glb", "/models/standard_trellis_goblin.png", "standard_trellis_pbr_showcase");
+        } else if (engine === "trellis_pbr") {
+          pickModel("/models/pro_trellis2_battle_mech.glb", "/models/pro_trellis2_battle_mech.webp", "pro_trellis2_pbr_showcase");
+        } else if (lp.includes("หุ่น") || lp.includes("กันดั้ม") || lp.includes("ไซเบอร์") || lp.includes("mech") || lp.includes("robot")) {
+          pickModel("/models/standard_trellis_mech.glb", "/models/standard_trellis_mech.png", "standard_trellis_pbr_showcase");
         } else {
-          if (
-            lowerPrompt.includes("หุ่น") ||
-            lowerPrompt.includes("กันดั้ม") ||
-            lowerPrompt.includes("ไซเบอร์") ||
-            lowerPrompt.includes("เครื่องจักร") ||
-            lowerPrompt.includes("mech") ||
-            lowerPrompt.includes("robot")
-          ) {
-            outputGlbUrl = "/models/standard_trellis_mech.glb";
-            if (!inputImageUrl) inputImageUrl = "/models/standard_trellis_mech.png";
-          } else if (
-            lowerPrompt.includes("พญานาค") ||
-            lowerPrompt.includes("มังกรจีน") ||
-            lowerPrompt.includes("งู") ||
-            lowerPrompt.includes("loong") ||
-            lowerPrompt.includes("naga")
-          ) {
-            outputGlbUrl = "/models/standard_trellis_loong.glb";
-            if (!inputImageUrl) inputImageUrl = "/models/standard_trellis_loong.png";
-          } else if (
-            lowerPrompt.includes("ก๊อบลิน") ||
-            lowerPrompt.includes("คนแคระ") ||
-            lowerPrompt.includes("ออร์ค") ||
-            lowerPrompt.includes("goblin") ||
-            lowerPrompt.includes("dwarf")
-          ) {
-            outputGlbUrl = "/models/standard_trellis_goblin.glb";
-            if (!inputImageUrl) inputImageUrl = "/models/standard_trellis_goblin.png";
-          } else {
-            outputGlbUrl = "/models/standard_trellis_dragonborn.glb";
-            if (!inputImageUrl) inputImageUrl = "/models/standard_trellis_dragonborn.png";
-          }
-          providerMode = "standard_trellis_pbr_showcase";
+          pickModel("/models/standard_trellis_dragonborn.glb", "/models/standard_trellis_dragonborn.png", "standard_trellis_pbr_showcase");
         }
       }
 
@@ -977,6 +1123,7 @@ export default {
       return jsonResponse({
         ok: true,
         providerMode,
+        falNotice,
         taskId,
         task: history.tasks?.[0] || null,
         user: updatedUser,
@@ -1042,13 +1189,16 @@ export default {
     }
 
     // =========================================================================
-    // 7B. /api/studio-op (Studio Tool Operations + Real D1 Credit Deduction)
+    // 7B. /api/studio-op (Studio Tool Operations + Real D1 Credit Deduction + FAL Cloud GPU)
     // =========================================================================
     if (pathname === "/api/studio-op" && method === "POST") {
       const body = await request.json().catch(() => ({}));
       const operation = String(body.operation || "").trim();
       const prompt = String(body.prompt || "").trim();
       const resolution = String(body.resolution || "4K").trim();
+      const rawModelUrl = String(body.modelUrl || "").trim();
+      const rawImageUrl = String(body.imageUrl || "").trim();
+      const taskId = String(body.taskId || "").trim();
 
       // Paid Cloud AI operations vs Free in-browser operations
       const opCosts = {
@@ -1106,18 +1256,121 @@ export default {
             refId
           )
           .run();
+      }
 
-        const updatedUser = await syncUserBalanceFromLedger(db, userId);
-        const history = await getUserHistory(db, userId);
+      // Optional Cloud GPU execution when FAL_KEY is configured in D1
+      let outputGlbUrl = null;
+      let upscaledImageUrl = null;
+      let provider = "browser_webgl";
 
-        return jsonResponse({
-          ok: true,
-          operation,
-          costCredits,
-          user: updatedUser,
-          ...history,
-          message: `หัก ${costCredits} 🪙 ใน Cloudflare D1 (คงเหลือ ${updatedUser.credits_balance} 🪙) — ${opLabels[operation]}`,
-        });
+      const resolveUpstreamUrl = (u) => {
+        if (!u) return "";
+        if (u.startsWith("/api/glb-proxy?url=")) {
+          return decodeURIComponent(u.replace("/api/glb-proxy?url=", ""));
+        }
+        if (u.startsWith("/")) {
+          return `${url.origin}${u}`;
+        }
+        return u;
+      };
+
+      const fullModelUrl = resolveUpstreamUrl(rawModelUrl);
+      const fullImageUrl = resolveUpstreamUrl(rawImageUrl);
+      const falKey = await getSetting(db, "fal_api_key", env.FAL_KEY || "");
+
+      if (falKey && falKey.length > 10) {
+        try {
+          if (operation === "rig" && fullModelUrl) {
+            const falRes = await fetch("https://fal.run/fal-ai/meshy/rigging", {
+              method: "POST",
+              headers: {
+                Authorization: `Key ${falKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ model_url: fullModelUrl }),
+            });
+            if (falRes.ok) {
+              const data = await falRes.json();
+              const riggedUrl = data?.model_mesh?.url || data?.rigged_character_glb_url || null;
+              if (riggedUrl) {
+                outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(riggedUrl)}`;
+                provider = "fal_meshy_rigging";
+              }
+            }
+          } else if (operation === "remesh" && fullModelUrl) {
+            const falRes = await fetch("https://fal.run/tripo3d/tripo/remesh", {
+              method: "POST",
+              headers: {
+                Authorization: `Key ${falKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model_url: fullModelUrl,
+                topology: body.topology || "quad",
+                target_polycount: Number(body.targetPolyCount) || 15000,
+              }),
+            });
+            if (falRes.ok) {
+              const data = await falRes.json();
+              const remeshedUrl = data?.model_mesh?.url || data?.mesh?.url || null;
+              if (remeshedUrl) {
+                outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(remeshedUrl)}`;
+                provider = "fal_tripo_remesh";
+              }
+            }
+          } else if (operation === "retexture" && fullModelUrl && prompt) {
+            const enhanced = enhanceThaiPromptTo3D(prompt);
+            const falRes = await fetch("https://fal.run/fal-ai/meshy/v6/retexture", {
+              method: "POST",
+              headers: {
+                Authorization: `Key ${falKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model_url: fullModelUrl,
+                text_style_prompt: enhanced.promptEn,
+                enable_pbr: true,
+              }),
+            });
+            if (falRes.ok) {
+              const data = await falRes.json();
+              const retexturedUrl = data?.model_glb?.url || data?.model_mesh?.url || null;
+              if (retexturedUrl) {
+                outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(retexturedUrl)}`;
+                provider = "fal_meshy_retexture";
+              }
+            }
+          } else if (operation === "upscale" && fullImageUrl) {
+            const falRes = await fetch("https://fal.run/fal-ai/aura-sr", {
+              method: "POST",
+              headers: {
+                Authorization: `Key ${falKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                image_url: fullImageUrl,
+                upscaling_factor: 4,
+              }),
+            });
+            if (falRes.ok) {
+              const data = await falRes.json();
+              upscaledImageUrl = data?.image?.url || null;
+              if (upscaledImageUrl) provider = "fal_aura_sr";
+            }
+          }
+        } catch {
+          provider = "browser_webgl";
+        }
+      }
+
+      if (outputGlbUrl && taskId && taskId.startsWith("task_")) {
+        await db
+          .prepare(
+            "UPDATE generation_tasks SET output_glb_url = ?, has_rig = CASE WHEN ? = 'rig' THEN 1 ELSE has_rig END WHERE id = ?"
+          )
+          .bind(outputGlbUrl, operation, taskId)
+          .run()
+          .catch(() => {});
       }
 
       let updatedUser = null;
@@ -1132,10 +1385,16 @@ export default {
       return jsonResponse({
         ok: true,
         operation,
-        costCredits: 0,
+        provider,
+        costCredits,
+        outputGlbUrl,
+        upscaledImageUrl,
         user: updatedUser,
         ...history,
-        message: opLabels[operation] || `ประมวลผล ${operation} สำเร็จ (ฟรี 0 🪙)`,
+        message:
+          costCredits > 0 && updatedUser
+            ? `หัก ${costCredits} 🪙 ใน Cloudflare D1 (คงเหลือ ${updatedUser.credits_balance} 🪙) — ${opLabels[operation]}${provider !== "browser_webgl" ? ` [${provider}]` : ""}`
+            : opLabels[operation] || `ประมวลผล ${operation} สำเร็จ (ฟรี 0 🪙)`,
       });
     }
 

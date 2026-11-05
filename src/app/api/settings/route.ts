@@ -32,6 +32,10 @@ export async function GET(req: NextRequest) {
   const falKey = getAppSetting("fal_api_key") || process.env.FAL_KEY || "";
   const tripoKey = getAppSetting("tripo_api_key") || process.env.TRIPO_API_KEY || "";
   const meshyKey = getAppSetting("meshy_api_key") || process.env.MESHY_API_KEY || "";
+  const keyPreview =
+    falKey.trim().length > 8
+      ? `${falKey.trim().slice(0, 6)}••••${falKey.trim().slice(-4)}`
+      : "";
 
   const payload = generatePromptPayPayload(promptpayId, amountParam);
 
@@ -40,6 +44,7 @@ export async function GET(req: NextRequest) {
     promptpayPayload: payload,
     gpuProviders: {
       falConfigured: falKey.trim().length > 8,
+      keyPreview,
       tripoConfigured: tripoKey.trim().length > 8,
       meshyConfigured: meshyKey.trim().length > 8,
       activeMode:
@@ -63,7 +68,10 @@ export async function POST(req: NextRequest) {
       setAppSetting("promptpay_id", cleanId);
       updateEnvLocalKey("PROMPTPAY_ID", cleanId);
     }
-    if (typeof body.falApiKey === "string" && body.falApiKey.trim().length > 0) {
+    if (body.clearFalKey === true) {
+      setAppSetting("fal_api_key", "");
+      updateEnvLocalKey("FAL_KEY", "");
+    } else if (typeof body.falApiKey === "string" && body.falApiKey.trim().length > 0) {
       const cleanFal = body.falApiKey.trim();
       setAppSetting("fal_api_key", cleanFal);
       updateEnvLocalKey("FAL_KEY", cleanFal);
@@ -87,13 +95,69 @@ export async function POST(req: NextRequest) {
     const falKey = getAppSetting("fal_api_key") || process.env.FAL_KEY || "";
     const tripoKey = getAppSetting("tripo_api_key") || process.env.TRIPO_API_KEY || "";
     const meshyKey = getAppSetting("meshy_api_key") || process.env.MESHY_API_KEY || "";
+    const keyPreview =
+      falKey.trim().length > 8
+        ? `${falKey.trim().slice(0, 6)}••••${falKey.trim().slice(-4)}`
+        : "";
+
+    let falTest: { valid: boolean; status: number; message: string } | null = null;
+    if (body.testFal === true) {
+      const candidateKey =
+        (typeof body.falApiKey === "string" && body.falApiKey.trim()) || falKey.trim();
+      if (!candidateKey || candidateKey.length < 8) {
+        falTest = {
+          valid: false,
+          status: 400,
+          message: "กรุณาวางคีย์ FAL_KEY (รูปแบบ key_id:key_secret) ก่อนกดทดสอบ",
+        };
+      } else {
+        try {
+          const probeRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
+            method: "POST",
+            headers: {
+              Authorization: `Key ${candidateKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({}),
+          });
+          if (probeRes.status === 401) {
+            falTest = {
+              valid: false,
+              status: 401,
+              message: "คีย์ FAL_KEY ไม่ถูกต้อง (401 Unauthorized) กรุณาตรวจสอบ key_id:key_secret",
+            };
+          } else if (probeRes.status === 403) {
+            const errJson = await probeRes.json().catch(() => ({}));
+            falTest = {
+              valid: true,
+              status: 403,
+              message: `เชื่อมต่อ FAL.ai สำเร็จ แต่บัญชีอาจยังไม่ได้เติมเครดิต (${errJson?.detail || "403 Forbidden"})`,
+            };
+          } else {
+            falTest = {
+              valid: true,
+              status: probeRes.status,
+              message: "เชื่อมต่อ FAL.ai Serverless GPU สำเร็จ 100%! พร้อมปั้นโมเดล 3D ของจริง",
+            };
+          }
+        } catch (e) {
+          falTest = {
+            valid: false,
+            status: 500,
+            message: `ไม่สามารถติดต่อเกตเวย์ FAL.ai ได้: ${e instanceof Error ? e.message : "Network Error"}`,
+          };
+        }
+      }
+    }
 
     return NextResponse.json({
       ok: true,
       promptpayId,
       promptpayPayload: generatePromptPayPayload(promptpayId, 150),
+      falTest,
       gpuProviders: {
         falConfigured: falKey.trim().length > 8,
+        keyPreview,
         tripoConfigured: tripoKey.trim().length > 8,
         meshyConfigured: meshyKey.trim().length > 8,
         activeMode:

@@ -82,11 +82,18 @@ export default function TopupModal({
   const [selectedPkg, setSelectedPkg] = useState(PACKAGES[1]);
   const [promptpayId, setPromptpayId] = useState("0812345678");
   const [falApiKey, setFalApiKey] = useState("");
+  const [keyPreview, setKeyPreview] = useState("");
   const [gpuMode, setGpuMode] = useState<string>("sandbox");
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [slipName, setSlipName] = useState<string>("");
   const [slipRef, setSlipRef] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [testingFal, setTestingFal] = useState(false);
+  const [falTestResult, setFalTestResult] = useState<{
+    valid: boolean;
+    status: number;
+    message: string;
+  } | null>(null);
   const [configSavedMsg, setConfigSavedMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,6 +110,9 @@ export default function TopupModal({
       .then((d) => {
         if (d.promptpayId) setPromptpayId(d.promptpayId);
         if (d.gpuProviders?.activeMode) setGpuMode(d.gpuProviders.activeMode);
+        if (typeof d.gpuProviders?.keyPreview === "string") {
+          setKeyPreview(d.gpuProviders.keyPreview);
+        }
       })
       .catch(() => {});
   }, [isOpen, selectedPkg.amountThb]);
@@ -160,21 +170,84 @@ export default function TopupModal({
   const handleSaveStudioConfig = async () => {
     setLoading(true);
     setConfigSavedMsg(null);
+    setFalTestResult(null);
+    setError(null);
+    try {
+      const hasNewKey = falApiKey.trim().length > 0;
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          promptpayId,
+          ...(hasNewKey ? { falApiKey: falApiKey.trim(), testFal: true } : {}),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "บันทึกไม่สำเร็จ");
+      if (data.gpuProviders?.activeMode) setGpuMode(data.gpuProviders.activeMode);
+      if (typeof data.gpuProviders?.keyPreview === "string") {
+        setKeyPreview(data.gpuProviders.keyPreview);
+      }
+      if (data.falTest) {
+        setFalTestResult(data.falTest);
+      }
+      setFalApiKey("");
+      setConfigSavedMsg("บันทึก PromptPay ID & Serverless GPU ลงฐานข้อมูล Cloudflare D1 เรียบร้อยแล้ว!");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestFalConnection = async () => {
+    setTestingFal(true);
+    setConfigSavedMsg(null);
+    setFalTestResult(null);
     setError(null);
     try {
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          promptpayId,
+          testFal: true,
           ...(falApiKey.trim().length > 0 ? { falApiKey: falApiKey.trim() } : {}),
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "บันทึกไม่สำเร็จ");
+      if (!res.ok) throw new Error(data.error || "ทดสอบไม่สำเร็จ");
       if (data.gpuProviders?.activeMode) setGpuMode(data.gpuProviders.activeMode);
+      if (typeof data.gpuProviders?.keyPreview === "string") {
+        setKeyPreview(data.gpuProviders.keyPreview);
+      }
+      if (data.falTest) {
+        setFalTestResult(data.falTest);
+      }
+      if (falApiKey.trim().length > 0) setFalApiKey("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
+    } finally {
+      setTestingFal(false);
+    }
+  };
+
+  const handleClearFalKey = async () => {
+    setLoading(true);
+    setConfigSavedMsg(null);
+    setFalTestResult(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clearFalKey: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ลบคีย์ไม่สำเร็จ");
+      setGpuMode(data.gpuProviders?.activeMode || "sandbox");
+      setKeyPreview("");
       setFalApiKey("");
-      setConfigSavedMsg("บันทึก PromptPay ID & Serverless GPU เรียบร้อยแล้ว!");
+      setConfigSavedMsg("สลับกลับสู่โหมด Sandbox (ใช้คลังโมเดล .GLB ในระบบ ฟรี 0 บาท) เรียบร้อยแล้ว");
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
     } finally {
@@ -470,25 +543,86 @@ export default function TopupModal({
                 <div className="flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-red-400" />
                   <div>
-                    <div className="text-xs font-bold text-white">
-                      สถานะ AI 3D GPU Pipeline ปัจจุบัน
+                    <div className="text-xs font-bold text-white flex items-center gap-2">
+                      <span>สถานะ AI 3D GPU Pipeline ปัจจุบัน</span>
+                      {keyPreview && (
+                        <span className="px-1.5 py-0.5 rounded bg-black/50 border border-emerald-500/30 text-[10px] font-mono text-emerald-300">
+                          {keyPreview}
+                        </span>
+                      )}
                     </div>
-                    <div className="text-[10px] text-slate-300">
+                    <div className="text-[10px] text-slate-300 mt-0.5">
                       {gpuMode === "fal_live"
-                        ? "เชื่อมต่อ Serverless GPU แท้ (Flux Schnell -> TRELLIS / Hunyuan3D)"
-                        : "โหมด Procedural Sandbox (สร้างโมเดล 3D ทันที ฟรี 0 บาท)"}
+                        ? "เชื่อมต่อ Serverless GPU แท้ (Flux Schnell -> Microsoft Trellis / Tripo3D v2.5)"
+                        : "โหมด Pre-Baked Studio Sandbox (ใช้โมเดล .GLB แท้ในระบบ ฟรี 0 บาท)"}
                     </div>
                   </div>
                 </div>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase shrink-0 ${
                     gpuMode === "fal_live"
                       ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40"
                       : "bg-red-500/20 text-red-300 border border-red-400/40"
                   }`}
                 >
-                  {gpuMode}
+                  {gpuMode === "fal_live" ? "FAL_LIVE" : "SANDBOX"}
                 </span>
+              </div>
+
+              {/* 3-Step Quick Onboarding Guide for fal.ai */}
+              <div className="p-3 rounded-xl bg-[#160d11] border border-white/[0.08] space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-red-300">
+                    วิธีสมัครและนำคีย์ FAL.ai มาใส่ (ใช้เวลา 1 นาที)
+                  </span>
+                  <a
+                    href="https://fal.ai/dashboard/keys"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-2 py-0.5 rounded-md bg-red-600/25 hover:bg-red-600/40 border border-red-400/40 text-[10px] font-bold text-red-200 transition"
+                  >
+                    เปิดหน้าสร้างคีย์ fal.ai ↗
+                  </a>
+                </div>
+                <ol className="text-[10px] text-slate-300 space-y-1 list-decimal list-inside leading-relaxed">
+                  <li>
+                    ล็อกอินด้วย GitHub/Google ที่{" "}
+                    <span className="text-white font-mono">fal.ai/dashboard/keys</span> แล้วกด{" "}
+                    <span className="text-red-300 font-semibold">Add Key</span>
+                  </li>
+                  <li>
+                    คัดลอกคีย์ที่ได้ (รูปแบบ{" "}
+                    <span className="text-emerald-300 font-mono">key_id:key_secret</span>) มาวางในช่องด้านล่าง
+                  </li>
+                  <li>
+                    กดปุ่ม{" "}
+                    <span className="text-white font-semibold">
+                      บันทึก & ทดสอบการเชื่อมต่อ FAL.ai
+                    </span>{" "}
+                    เพื่อเปิดโหมดปั้น 3D ของจริงทันที
+                  </li>
+                </ol>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-red-400" />
+                  <span>FAL.ai Serverless GPU Key (`FAL_KEY` สำหรับ Trellis / Tripo3D / Meshy)</span>
+                </label>
+                <input
+                  type="password"
+                  value={falApiKey}
+                  onChange={(e) => setFalApiKey(e.target.value)}
+                  placeholder={
+                    keyPreview
+                      ? `มีคีย์บันทึกไว้แล้ว (${keyPreview}) — วางคีย์ใหม่หากต้องการเปลี่ยน...`
+                      : "วางคีย์ key_id:key_secret เพื่อเปิดโหมด Cloud GPU ของจริง..."
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#090709] border border-red-500/25 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
+                />
+                <p className="text-[10px] text-slate-400">
+                  รองรับครบทั้ง 5 ไปป์ไลน์: Text-to-2D (`fal-ai/flux/schnell`), Image-to-3D (`fal-ai/trellis` & `tripo3d/v2.5`), Multi-View 3D, Auto-Rig (`fal-ai/meshy/rigging`) และ AI Retexture
+                </p>
               </div>
 
               <div className="space-y-1.5">
@@ -508,22 +642,17 @@ export default function TopupModal({
                 </p>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-red-400" />
-                  <span>FAL.ai Serverless GPU Key (`FAL_KEY` สำหรับ TRELLIS / Hunyuan3D)</span>
-                </label>
-                <input
-                  type="password"
-                  value={falApiKey}
-                  onChange={(e) => setFalApiKey(e.target.value)}
-                  placeholder="ใส่คีย์ key_id:key_secret เพื่อเปิดโหมด GPU ของจริง..."
-                  className="w-full px-3 py-2 rounded-xl bg-[#090709] border border-red-500/25 text-xs text-white focus:outline-none focus:border-red-500"
-                />
-                <p className="text-[10px] text-slate-400">
-                  เมื่อใส่คีย์ ระบบจะรัน Stage 1 (Flux Schnell 2D) ต่อด้วย Stage 2 (TRELLIS / Hunyuan3D-2.1) และดาวน์โหลดไฟล์ .GLB เก็บลงเซิร์ฟเวอร์อัตโนมัติ
-                </p>
-              </div>
+              {falTestResult && (
+                <div
+                  className={`p-2.5 rounded-xl border text-xs text-center font-medium ${
+                    falTestResult.valid
+                      ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-300"
+                      : "bg-rose-500/15 border-rose-500/35 text-rose-300"
+                  }`}
+                >
+                  {falTestResult.message}
+                </div>
+              )}
 
               {configSavedMsg && (
                 <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-xs text-emerald-300 text-center">
@@ -537,13 +666,34 @@ export default function TopupModal({
                 </div>
               )}
 
-              <button
-                disabled={loading}
-                onClick={handleSaveStudioConfig}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs transition cursor-pointer"
-              >
-                {loading ? "กำลังบันทึก..." : "บันทึกการตั้งค่า PromptPay & GPU"}
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={loading || testingFal}
+                  onClick={handleSaveStudioConfig}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs transition cursor-pointer"
+                >
+                  {loading
+                    ? "กำลังบันทึก & ตรวจสอบ..."
+                    : "บันทึก & ทดสอบการเชื่อมต่อ FAL.ai"}
+                </button>
+                <button
+                  disabled={loading || testingFal}
+                  onClick={handleTestFalConnection}
+                  className="px-3 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-xs font-semibold text-slate-200 transition cursor-pointer shrink-0"
+                >
+                  {testingFal ? "กำลังเช็ค..." : "เช็คคีย์ (ฟรี 0฿)"}
+                </button>
+              </div>
+
+              {keyPreview && (
+                <button
+                  disabled={loading || testingFal}
+                  onClick={handleClearFalKey}
+                  className="w-full py-1.5 rounded-xl bg-transparent hover:bg-white/[0.04] border border-white/10 text-[11px] text-slate-400 hover:text-white transition cursor-pointer"
+                >
+                  สลับกลับโหมด Sandbox (ลบคีย์ FAL.ai ออกจาก D1)
+                </button>
+              )}
             </div>
           )}
         </div>
