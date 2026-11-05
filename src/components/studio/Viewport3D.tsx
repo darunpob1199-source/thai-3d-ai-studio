@@ -1598,12 +1598,31 @@ export default function Viewport3D({
             let mIdx = 1;
             let hasNativeTexture = false;
             const meshList: THREE.Mesh[] = [];
+            const backdropToRemove: THREE.Object3D[] = [];
             gltf.scene.traverse((child) => {
               if ((child as THREE.Mesh).isMesh) {
                 const m = child as THREE.Mesh;
+                const lowerName = (m.name || "").toLowerCase();
+                if (
+                  glbUrl.includes("dragon_crystal") &&
+                  (lowerName.includes("cloth") || lowerName.includes("backdrop") || lowerName.includes("background"))
+                ) {
+                  backdropToRemove.push(m);
+                  return;
+                }
+                if (glbUrl.includes("dragon_crystal")) {
+                  m.material = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color("#dc2626"),
+                    roughness: 0.18,
+                    metalness: 0.72,
+                    emissive: new THREE.Color("#450a0a"),
+                    emissiveIntensity: 0.35,
+                  });
+                  hasNativeTexture = true;
+                }
                 meshList.push(m);
                 const mat = m.material as THREE.MeshStandardMaterial;
-                if (mat && mat.map) {
+                if (mat && (mat.map || mat.normalMap || mat.metalnessMap || mat.roughnessMap)) {
                   hasNativeTexture = true;
                 }
                 if (m.geometry) {
@@ -1648,6 +1667,7 @@ export default function Viewport3D({
                 }
               }
             });
+            backdropToRemove.forEach((b) => b.parent?.remove(b));
 
             // Normalize bounding box BEFORE partitioning/exploding so scale never shrinks when Explode > 0
             const box = new THREE.Box3().setFromObject(gltf.scene);
@@ -2636,12 +2656,30 @@ export default function Viewport3D({
 
       if (activeTask?.output_glb_url && !hasGeomMods) {
         targetGroup.visible = prevVis;
-        const a = document.createElement("a");
-        a.href = activeTask.output_glb_url;
-        a.download = `${safeName}.glb`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const glbSrc = activeTask.output_glb_url;
+        if (glbSrc.startsWith("/")) {
+          const a = document.createElement("a");
+          a.href = glbSrc;
+          a.download = `${safeName}.glb`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          fetch(glbSrc)
+            .then((r) => r.blob())
+            .then((blob) => {
+              pushBlobToBridge(blob, "glb");
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${safeName}.glb`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(url), 20000);
+            })
+            .catch(() => {});
+        }
         return;
       }
 
