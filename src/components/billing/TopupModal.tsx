@@ -6,6 +6,7 @@ import {
   Coins,
   Cpu,
   FileCheck2,
+  Flame,
   History,
   KeyRound,
   QrCode,
@@ -13,47 +14,118 @@ import {
   Settings,
   ShieldCheck,
   Smartphone,
+  Sparkles,
   Upload,
   X,
+  Zap,
 } from "lucide-react";
 import { generatePromptPayPayload } from "@/lib/payment/promptpay";
 import type { CreditTransactionRecord, TopupOrderRecord, UserRecord } from "@/lib/db/database";
 
+export interface PendingCheckoutAction {
+  type: "generate" | "studio_op";
+  title: string;
+  modeLabel: string;
+  costCredits: number;
+  directPriceThb: 25 | 39;
+  previewImage?: string | null;
+  opPayload?: any;
+}
+
 interface TopupModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (data: any) => void;
+  onSuccess: (data: any, completedPendingAction?: PendingCheckoutAction | null) => void;
   user?: UserRecord | null;
   initialTab?: "topup" | "ledger" | "config";
   onRefreshD1?: () => void;
   transactions?: CreditTransactionRecord[];
   orders?: TopupOrderRecord[];
+  pendingAction?: PendingCheckoutAction | null;
+  onClearPendingAction?: () => void;
 }
 
-const PACKAGES = [
+export interface CreditPkgItem {
+  id: string;
+  name: string;
+  amountThb: number;
+  credits: number;
+  bonus: number;
+  badge: string;
+  subLabel: string;
+  isDirect?: boolean;
+  popular?: boolean;
+}
+
+const DIRECT_PAY_ITEMS: CreditPkgItem[] = [
   {
-    id: "starter_50",
-    name: "Starter",
-    amountThb: 50,
-    credits: 50,
+    id: "direct_25",
+    name: "Clean Quad / Studio Op",
+    amountThb: 25,
+    credits: 2,
     bonus: 0,
-    badge: "เริ่มต้นประหยัด",
+    badge: "จ่ายรายตัว • ปั้นทันที",
+    subLabel: "ปั้นโมเดล Clean Quad หรือ Auto-Rig 1 ครั้ง",
+    isDirect: true,
   },
   {
-    id: "indie_150",
-    name: "Indie Dev",
-    amountThb: 150,
-    credits: 170,
-    bonus: 20,
-    badge: "ขายดี +20 ฟรี",
+    id: "direct_39",
+    name: "Best Quality Pro HD",
+    amountThb: 39,
+    credits: 4,
+    bonus: 0,
+    badge: "ตัวท็อป 4K PBR • ปั้นทันที",
+    subLabel: "ปั้นโมเดลตัวท็อป Tripo H3.1 Pro HD 1 ตัว",
+    isDirect: true,
+  },
+];
+
+const CREDIT_PACK_ITEMS: CreditPkgItem[] = [
+  {
+    id: "mini_59",
+    name: "Mini Pack",
+    amountThb: 59,
+    credits: 8,
+    bonus: 0,
+    badge: "ชุดเปิดใจ",
+    subLabel: "ปั้นได้ 4 ตัว (เฉลี่ย 14.75฿/ตัว)",
   },
   {
-    id: "pro_390",
+    id: "starter_99",
+    name: "Starter Pack",
+    amountThb: 99,
+    credits: 15,
+    bonus: 1,
+    badge: "ชุดเริ่มต้น",
+    subLabel: "ปั้นได้ 7 ตัว (เฉลี่ย 13.20฿/ตัว)",
+  },
+  {
+    id: "creator_299",
+    name: "Creator Pack",
+    amountThb: 299,
+    credits: 50,
+    bonus: 5,
+    badge: "ขายดีอันดับ 1 🔥",
+    subLabel: "ปั้นได้ 25 ตัว (เฉลี่ย 11.96฿/ตัว)",
+    popular: true,
+  },
+  {
+    id: "pro_690",
     name: "Pro Studio",
-    amountThb: 390,
-    credits: 500,
-    bonus: 110,
-    badge: "คุ้มสุด +110 ฟรี",
+    amountThb: 690,
+    credits: 120,
+    bonus: 15,
+    badge: "สายผลิตจริง",
+    subLabel: "ปั้นได้ 60 ตัว (เฉลี่ย 11.50฿/ตัว)",
+  },
+  {
+    id: "agency_1990",
+    name: "Agency Pack",
+    amountThb: 1990,
+    credits: 360,
+    bonus: 60,
+    badge: "คุ้มสุด -55%",
+    subLabel: "ปั้นได้ 180 ตัว (เฉลี่ย 11.05฿/ตัว)",
   },
 ];
 
@@ -77,12 +149,16 @@ export default function TopupModal({
   onRefreshD1,
   transactions = [],
   orders = [],
+  pendingAction = null,
+  onClearPendingAction,
 }: TopupModalProps) {
   const [activeTab, setActiveTab] = useState<"topup" | "ledger" | "config">(initialTab);
-  const [selectedPkg, setSelectedPkg] = useState(PACKAGES[1]);
+  const [selectedPkg, setSelectedPkg] = useState<CreditPkgItem>(CREDIT_PACK_ITEMS[2]);
   const [promptpayId, setPromptpayId] = useState("0812345678");
   const [falApiKey, setFalApiKey] = useState("");
+  const [tripoApiKey, setTripoApiKey] = useState("");
   const [keyPreview, setKeyPreview] = useState("");
+  const [tripoKeyPreview, setTripoKeyPreview] = useState("");
   const [gpuMode, setGpuMode] = useState<string>("sandbox");
   const [slipPreview, setSlipPreview] = useState<string | null>(null);
   const [slipName, setSlipName] = useState<string>("");
@@ -100,8 +176,15 @@ export default function TopupModal({
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
+      if (pendingAction) {
+        const targetDirect =
+          pendingAction.directPriceThb === 39 ? DIRECT_PAY_ITEMS[1] : DIRECT_PAY_ITEMS[0];
+        setSelectedPkg(targetDirect);
+      } else {
+        setSelectedPkg(CREDIT_PACK_ITEMS[2]); // Default to Creator Pack 299฿
+      }
     }
-  }, [isOpen, initialTab]);
+  }, [isOpen, initialTab, pendingAction]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -112,6 +195,9 @@ export default function TopupModal({
         if (d.gpuProviders?.activeMode) setGpuMode(d.gpuProviders.activeMode);
         if (typeof d.gpuProviders?.keyPreview === "string") {
           setKeyPreview(d.gpuProviders.keyPreview);
+        }
+        if (typeof d.gpuProviders?.tripoKeyPreview === "string") {
+          setTripoKeyPreview(d.gpuProviders.tripoKeyPreview);
         }
       })
       .catch(() => {});
@@ -155,10 +241,12 @@ export default function TopupModal({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "เติมเครดิตไม่สำเร็จ");
+      const actionToRun = pendingAction;
       setSlipPreview(null);
       setSlipRef("");
       setSlipName("");
-      onSuccess(data);
+      if (onClearPendingAction) onClearPendingAction();
+      onSuccess(data, actionToRun);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
@@ -173,13 +261,15 @@ export default function TopupModal({
     setFalTestResult(null);
     setError(null);
     try {
-      const hasNewKey = falApiKey.trim().length > 0;
+      const hasNewFalKey = falApiKey.trim().length > 0;
+      const hasNewTripoKey = tripoApiKey.trim().length > 0;
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           promptpayId,
-          ...(hasNewKey ? { falApiKey: falApiKey.trim(), testFal: true } : {}),
+          ...(hasNewFalKey ? { falApiKey: falApiKey.trim(), testFal: true } : {}),
+          ...(hasNewTripoKey ? { tripoApiKey: tripoApiKey.trim() } : {}),
         }),
       });
       const data = await res.json();
@@ -188,10 +278,14 @@ export default function TopupModal({
       if (typeof data.gpuProviders?.keyPreview === "string") {
         setKeyPreview(data.gpuProviders.keyPreview);
       }
+      if (typeof data.gpuProviders?.tripoKeyPreview === "string") {
+        setTripoKeyPreview(data.gpuProviders.tripoKeyPreview);
+      }
       if (data.falTest) {
         setFalTestResult(data.falTest);
       }
       setFalApiKey("");
+      setTripoApiKey("");
       setConfigSavedMsg("บันทึก PromptPay ID & Serverless GPU ลงฐานข้อมูล Cloudflare D1 เรียบร้อยแล้ว!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
@@ -240,13 +334,15 @@ export default function TopupModal({
       const res = await fetch("/api/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clearFalKey: true }),
+        body: JSON.stringify({ clearFalKey: true, clearTripoKey: true }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "ลบคีย์ไม่สำเร็จ");
       setGpuMode(data.gpuProviders?.activeMode || "sandbox");
       setKeyPreview("");
+      setTripoKeyPreview("");
       setFalApiKey("");
+      setTripoApiKey("");
       setConfigSavedMsg("สลับกลับสู่โหมด Sandbox (ใช้คลังโมเดล .GLB ในระบบ ฟรี 0 บาท) เรียบร้อยแล้ว");
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
@@ -257,24 +353,32 @@ export default function TopupModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-[#110b0e] border border-red-500/25 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-xl bg-[#110b0e] border border-red-500/25 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="px-5 py-3.5 border-b border-red-500/15 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center text-white">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-red-600 to-rose-600 flex items-center justify-center text-white shadow-[0_0_16px_rgba(239,68,68,0.4)]">
               <QrCode className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white leading-tight">
-                PromptPay QR & Studio Ledger
+              <h3 className="text-sm font-bold text-white leading-tight flex items-center gap-2">
+                <span>PromptPay QR Checkout & แพ็กเกจเครดิต</span>
+                {pendingAction && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-[10px] font-bold text-amber-300">
+                    ⚡ พร้อมปั้นทันทีหลังโอน
+                  </span>
+                )}
               </h3>
               <p className="text-[10px] text-slate-400">
-                มาตรฐาน EMVCo Thai QR • เช็คสลิปกันซ้ำด้วย SHA-256
+                จ่ายรายตัว 25฿ / 39฿ หรือเติมแพ็กสุดคุ้ม • เครดิตไม่มีวันหมดอายุ
               </p>
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => {
+              if (onClearPendingAction) onClearPendingAction();
+              onClose();
+            }}
             className="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
           >
             <X className="w-4 h-4" />
@@ -289,13 +393,16 @@ export default function TopupModal({
             </div>
             <div className="min-w-0">
               <div className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                <span>เครดิตจริงใน Cloudflare D1:</span>
+                <span>เครดิตคงเหลือของคุณ:</span>
                 <span className="text-red-400 text-sm">{user ? user.credits_balance : 0} 🪙</span>
+                <span className="text-[10px] font-normal text-slate-400">
+                  (Clean Quad = 2 🪙 • Best Quality Pro HD = 4 🪙)
+                </span>
               </div>
               <div className="text-[10px] text-slate-400 truncate">
                 {user
-                  ? `บัญชี: ${user.name} (${user.email}) • บันทึกธุรกรรม ${transactions.length} รายการ`
-                  : "กรุณาเข้าสู่ระบบเพื่อซิงค์เครดิตจาก Cloudflare D1"}
+                  ? `บัญชี: ${user.name} (${user.email}) • ซิงค์ตรงกับ Cloudflare D1`
+                  : "กรุณาเข้าสู่ระบบด้วย Gmail ก่อนทำรายการ"}
               </div>
             </div>
           </div>
@@ -320,7 +427,7 @@ export default function TopupModal({
             }`}
           >
             <Smartphone className="w-3.5 h-3.5" />
-            <span>เติมเครดิต QR</span>
+            <span>สแกนจ่าย / เติมแพ็ก</span>
           </button>
           <button
             onClick={() => setActiveTab("ledger")}
@@ -347,42 +454,150 @@ export default function TopupModal({
         </div>
 
         {/* Body Content */}
-        <div className="p-5 space-y-4 overflow-y-auto no-scrollbar">
+        <div className="p-4 sm:p-5 space-y-3.5 overflow-y-auto no-scrollbar">
           {activeTab === "topup" && (
             <>
-              {/* แพ็กเกจ 3 ปุ่ม */}
-              <div className="grid grid-cols-3 gap-2">
-                {PACKAGES.map((pkg) => {
-                  const active = selectedPkg.id === pkg.id;
-                  return (
-                    <button
-                      key={pkg.id}
-                      onClick={() => setSelectedPkg(pkg)}
-                      className={`p-3 rounded-xl border text-center transition cursor-pointer relative ${
-                        active
-                          ? "bg-red-600/20 border-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.2)]"
-                          : "bg-zinc-900/70 border-white/[0.07] text-zinc-400 hover:text-zinc-200"
-                      }`}
-                    >
-                      <span className="inline-block px-1.5 py-0.2 rounded-full bg-red-500/20 text-[9px] text-red-300 font-semibold mb-1">
-                        {pkg.badge}
-                      </span>
-                      <div className="text-xs font-medium text-zinc-300">{pkg.name}</div>
-                      <div className="text-base font-extrabold text-white mt-0.5">
-                        {pkg.credits} 🪙
+              {/* Pending Action Alert Banner when triggered from Generate / Studio Op */}
+              {pendingAction && (
+                <div className="p-3 rounded-xl bg-gradient-to-r from-red-600/20 via-rose-600/15 to-amber-500/15 border border-red-500/40 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {pendingAction.previewImage ? (
+                      <img
+                        src={pendingAction.previewImage}
+                        alt="Pending task"
+                        className="w-10 h-10 rounded-lg object-cover border border-red-400/40 shrink-0 bg-black/50"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-red-500/20 border border-red-400/40 flex items-center justify-center shrink-0">
+                        <Sparkles className="w-5 h-5 text-red-300" />
                       </div>
-                      <div className="text-xs font-bold text-red-400 mt-0.5">
-                        ฿{pkg.amountThb}.00
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-bold text-amber-300 flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5" />
+                        <span>รายการที่รอปั้นทันทีหลังสแกนจ่าย ({pendingAction.modeLabel})</span>
                       </div>
-                    </button>
-                  );
-                })}
+                      <div className="text-xs font-extrabold text-white truncate">
+                        “{pendingAction.title}”
+                      </div>
+                      <div className="text-[10px] text-slate-300">
+                        ใช้ {pendingAction.costCredits} เครดิต • สแกนจ่ายเฉพาะตัวนี้เพียง{" "}
+                        <span className="text-red-300 font-bold">฿{pendingAction.directPriceThb}.00</span>{" "}
+                        หรือเติมแพ็กเครดิตด้านล่างได้เลย
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Section 1: Instant Pay-Per-Model QR (25฿ / 39฿) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-200 flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <span>1. ขาจรจ่ายรายตัว (Instant Pay-Per-Model QR • ไม่ต้องซื้อแพ็ก)</span>
+                  </span>
+                  <span className="text-[10px] text-amber-300/90 font-medium">
+                    สแกนปุ๊บ ปั้นโมเดลให้ทันที!
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {DIRECT_PAY_ITEMS.map((item) => {
+                    const active = selectedPkg.id === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setSelectedPkg(item)}
+                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between gap-2 ${
+                          active
+                            ? "bg-gradient-to-r from-red-600/25 to-amber-500/15 border-red-400 text-white shadow-[0_0_18px_rgba(239,68,68,0.25)]"
+                            : "bg-zinc-900/70 border-white/[0.07] text-zinc-400 hover:text-zinc-200 hover:border-white/15"
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <span className="inline-block px-1.5 py-0.5 rounded bg-amber-500/20 text-[9px] text-amber-300 font-bold mb-0.5">
+                            {item.badge}
+                          </span>
+                          <div className="text-xs font-extrabold text-white truncate">
+                            {item.name}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {item.subLabel}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-sm font-black text-red-400">
+                            ฿{item.amountThb}
+                          </div>
+                          <div className="text-[10px] font-bold text-slate-300">
+                            +{item.credits} 🪙
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Section 2: 5 Value Credit Packages (59฿ / 99฿ / 299฿ / 690฿ / 1,990฿) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-200 flex items-center gap-1.5">
+                    <Flame className="w-3.5 h-3.5 text-red-400" />
+                    <span>2. แพ็กเกจเครดิตสุดคุ้ม (ถูกกว่ารายตัวสูงสุด 55% • เครดิตไม่มีวันหมดอายุ)</span>
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+                  {CREDIT_PACK_ITEMS.map((pkg) => {
+                    const active = selectedPkg.id === pkg.id;
+                    return (
+                      <button
+                        key={pkg.id}
+                        onClick={() => setSelectedPkg(pkg)}
+                        className={`p-2.5 rounded-xl border text-center transition cursor-pointer relative flex flex-col justify-between ${
+                          active
+                            ? "bg-red-600/25 border-red-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.25)]"
+                            : pkg.popular
+                              ? "bg-red-950/30 border-red-500/35 text-zinc-200 hover:border-red-400"
+                              : "bg-zinc-900/70 border-white/[0.07] text-zinc-400 hover:text-zinc-200"
+                        }`}
+                      >
+                        <div>
+                          <span
+                            className={`inline-block px-1.5 py-0.5 rounded-full text-[8px] font-bold mb-1 ${
+                              pkg.popular
+                                ? "bg-red-500 text-white"
+                                : "bg-red-500/20 text-red-300"
+                            }`}
+                          >
+                            {pkg.badge}
+                          </span>
+                          <div className="text-[11px] font-bold text-zinc-200 truncate">
+                            {pkg.name}
+                          </div>
+                        </div>
+                        <div className="my-1">
+                          <div className="text-sm font-black text-white leading-tight">
+                            {pkg.credits} 🪙
+                          </div>
+                          <div className="text-[9px] text-slate-400 leading-tight mt-0.5">
+                            {pkg.subLabel.split(" ")[0]} {pkg.subLabel.split(" ")[1]}{" "}
+                            {pkg.subLabel.split(" ")[2]}
+                          </div>
+                        </div>
+                        <div className="text-xs font-extrabold text-red-400">
+                          ฿{pkg.amountThb.toLocaleString()}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* EMVCo Thai PromptPay QR Code & Slip Upload Side-by-Side */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Real EMVCo QR Box */}
-                <div className="bg-white rounded-xl p-3.5 flex flex-col items-center text-zinc-900 shadow-inner">
+                <div className="bg-white rounded-xl p-3 flex flex-col items-center text-zinc-900 shadow-inner">
                   <div className="w-full flex items-center justify-between px-2 pb-1.5 mb-1.5 border-b border-zinc-200">
                     <span className="text-[10px] font-extrabold text-[#113566] tracking-wide">
                       THAI QR PAYMENT
@@ -394,29 +609,32 @@ export default function TopupModal({
                   <img
                     src={qrImageUrl}
                     alt="Thai PromptPay QR"
-                    className="w-36 h-36 object-contain rounded-lg border border-zinc-200"
+                    className="w-32 h-32 object-contain rounded-lg border border-zinc-200"
                   />
-                  <div className="text-xs font-extrabold mt-2 text-zinc-900">
-                    ยอดโอน ฿{selectedPkg.amountThb}.00 บาท
+                  <div className="text-xs font-extrabold mt-1.5 text-zinc-900">
+                    ยอดโอน ฿{selectedPkg.amountThb.toLocaleString()}.00 บาท
                   </div>
-                  <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                  <div className="text-[10px] text-red-600 font-bold">
+                    ({selectedPkg.name} • รับ +{selectedPkg.credits} เครดิต)
+                  </div>
+                  <div className="text-[9px] text-zinc-500 font-mono mt-0.5">
                     ID: {promptpayId} • CRC: {emvPayload.slice(-4)}
                   </div>
                 </div>
 
                 {/* Slip Verification Upload Box */}
-                <div className="rounded-xl bg-[#160d11] border border-red-500/20 p-3.5 flex flex-col justify-between space-y-2.5">
+                <div className="rounded-xl bg-[#160d11] border border-red-500/20 p-3 flex flex-col justify-between space-y-2">
                   <div>
                     <div className="flex items-center gap-1.5 text-xs font-bold text-white">
                       <FileCheck2 className="w-3.5 h-3.5 text-red-400" />
                       <span>แนบสลิปโอนเงิน (Verify Slip)</span>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1 leading-relaxed">
-                      อัปโหลดภาพสลิปธนาคาร ระบบจะเข้ารหัส SHA-256 เพื่อป้องกันสลิปซ้ำและเติมเครดิตทันที
+                    <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                      อัปโหลดภาพสลิปธนาคาร ระบบตรวจสอบ SHA-256 ป้องกันสลิปซ้ำและเติมเครดิตทันที
                     </p>
                   </div>
 
-                  <label className="flex-1 min-h-[104px] rounded-xl border border-dashed border-red-400/35 hover:border-red-400 bg-black/30 hover:bg-red-500/[0.06] flex flex-col items-center justify-center p-2 text-center cursor-pointer transition">
+                  <label className="flex-1 min-h-[96px] rounded-xl border border-dashed border-red-400/35 hover:border-red-400 bg-black/30 hover:bg-red-500/[0.06] flex flex-col items-center justify-center p-2 text-center cursor-pointer transition">
                     <input
                       type="file"
                       accept="image/*"
@@ -428,7 +646,7 @@ export default function TopupModal({
                         <img
                           src={slipPreview}
                           alt="Slip preview"
-                          className="h-14 w-auto object-contain rounded border border-white/20 mb-1"
+                          className="h-12 w-auto object-contain rounded border border-white/20 mb-1"
                         />
                         <span className="text-[10px] text-emerald-300 font-semibold truncate max-w-[160px]">
                           ✓ {slipName}
@@ -452,7 +670,7 @@ export default function TopupModal({
 
                   <div className="flex items-center gap-1.5 text-[10px] text-emerald-300">
                     <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                    <span>เครดิตไม่มีวันหมดอายุ • ออกใบเสร็จอัตโนมัติ</span>
+                    <span>เครดิตไม่มีวันหมดอายุ • ปั้นโมเดลต่อให้อัตโนมัติ</span>
                   </div>
                 </div>
               </div>
@@ -471,10 +689,12 @@ export default function TopupModal({
                 <CheckCircle2 className="w-4 h-4" />
                 <span>
                   {loading
-                    ? "กำลังตรวจสอบสลิปและเติมเครดิต..."
-                    : slipRef
-                      ? `ยืนยันสลิป ${slipRef.slice(0, 12)}... (+${selectedPkg.credits} เครดิต)`
-                      : `ยืนยันการโอนเงิน (+${selectedPkg.credits} เครดิต)`}
+                    ? "กำลังตรวจสอบสลิปและดำเนินการ..."
+                    : pendingAction
+                      ? `ยืนยันการโอน ฿${selectedPkg.amountThb.toLocaleString()} (+${selectedPkg.credits} 🪙) & เริ่มปั้นโมเดลทันที!`
+                      : slipRef
+                        ? `ยืนยันสลิป ${slipRef.slice(0, 12)}... (฿${selectedPkg.amountThb.toLocaleString()} • +${selectedPkg.credits} เครดิต)`
+                        : `ยืนยันการโอนเงิน ฿${selectedPkg.amountThb.toLocaleString()} (+${selectedPkg.credits} เครดิต)`}
                 </span>
               </button>
             </>
@@ -543,85 +763,95 @@ export default function TopupModal({
                 <div className="flex items-center gap-2">
                   <Cpu className="w-4 h-4 text-red-400" />
                   <div>
-                    <div className="text-xs font-bold text-white flex items-center gap-2">
+                    <div className="text-xs font-bold text-white flex items-center gap-2 flex-wrap">
                       <span>สถานะ AI 3D GPU Pipeline ปัจจุบัน</span>
+                      {tripoKeyPreview && (
+                        <span className="px-1.5 py-0.5 rounded bg-black/50 border border-amber-500/30 text-[10px] font-mono text-amber-300">
+                          Tripo: {tripoKeyPreview}
+                        </span>
+                      )}
                       {keyPreview && (
                         <span className="px-1.5 py-0.5 rounded bg-black/50 border border-emerald-500/30 text-[10px] font-mono text-emerald-300">
-                          {keyPreview}
+                          FAL: {keyPreview}
                         </span>
                       )}
                     </div>
                     <div className="text-[10px] text-slate-300 mt-0.5">
-                      {gpuMode === "fal_live"
-                        ? "เชื่อมต่อ Serverless GPU แท้ (Flux Schnell -> Microsoft Trellis / Tripo3D v2.5)"
+                      {gpuMode !== "sandbox"
+                        ? "เชื่อมต่อ Serverless GPU แท้ (Tripo3D v3.1 / H3.1 Pro HD + Flux Schnell + Meshy Rig)"
                         : "โหมด Pre-Baked Studio Sandbox (ใช้โมเดล .GLB แท้ในระบบ ฟรี 0 บาท)"}
                     </div>
                   </div>
                 </div>
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase shrink-0 ${
-                    gpuMode === "fal_live"
+                    gpuMode !== "sandbox"
                       ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40"
                       : "bg-red-500/20 text-red-300 border border-red-400/40"
                   }`}
                 >
-                  {gpuMode === "fal_live" ? "FAL_LIVE" : "SANDBOX"}
+                  {gpuMode.toUpperCase()}
                 </span>
               </div>
 
-              {/* 3-Step Quick Onboarding Guide for fal.ai */}
-              <div className="p-3 rounded-xl bg-[#160d11] border border-white/[0.08] space-y-1.5">
+              {/* Option A: Official Tripo3D OpenAPI Key */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-red-300">
-                    วิธีสมัครและนำคีย์ FAL.ai มาใส่ (ใช้เวลา 1 นาที)
-                  </span>
+                  <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Tripo3D Official API Key (`TRIPO_API_KEY` สำหรับ Tripo v3.1 / H3.1 แท้)</span>
+                  </label>
+                  <a
+                    href="https://platform.tripo3d.ai/api-keys"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] font-bold text-amber-300 hover:underline"
+                  >
+                    รับคีย์ tsk_... ที่ platform.tripo3d.ai ↗
+                  </a>
+                </div>
+                <input
+                  type="password"
+                  value={tripoApiKey}
+                  onChange={(e) => setTripoApiKey(e.target.value)}
+                  placeholder={
+                    tripoKeyPreview
+                      ? `มีคีย์ Tripo3D บันทึกไว้แล้ว (${tripoKeyPreview}) — วางคีย์ใหม่หากต้องการเปลี่ยน...`
+                      : "วางคีย์ tsk_... จาก platform.tripo3d.ai (ถ้ามี)..."
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#090709] border border-red-500/25 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
+                />
+              </div>
+
+              {/* Option B: FAL.ai Serverless GPU Key */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-red-400" />
+                    <span>FAL.ai Serverless GPU Key (`FAL_KEY` สำหรับ Tripo3D v2.5 HD / Flux / Meshy Rig)</span>
+                  </label>
                   <a
                     href="https://fal.ai/dashboard/keys"
                     target="_blank"
                     rel="noreferrer"
-                    className="px-2 py-0.5 rounded-md bg-red-600/25 hover:bg-red-600/40 border border-red-400/40 text-[10px] font-bold text-red-200 transition"
+                    className="text-[10px] font-bold text-red-300 hover:underline"
                   >
-                    เปิดหน้าสร้างคีย์ fal.ai ↗
+                    รับคีย์ที่ fal.ai/dashboard/keys ↗
                   </a>
                 </div>
-                <ol className="text-[10px] text-slate-300 space-y-1 list-decimal list-inside leading-relaxed">
-                  <li>
-                    ล็อกอินด้วย GitHub/Google ที่{" "}
-                    <span className="text-white font-mono">fal.ai/dashboard/keys</span> แล้วกด{" "}
-                    <span className="text-red-300 font-semibold">Add Key</span>
-                  </li>
-                  <li>
-                    คัดลอกคีย์ที่ได้ (รูปแบบ{" "}
-                    <span className="text-emerald-300 font-mono">key_id:key_secret</span>) มาวางในช่องด้านล่าง
-                  </li>
-                  <li>
-                    กดปุ่ม{" "}
-                    <span className="text-white font-semibold">
-                      บันทึก & ทดสอบการเชื่อมต่อ FAL.ai
-                    </span>{" "}
-                    เพื่อเปิดโหมดปั้น 3D ของจริงทันที
-                  </li>
-                </ol>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-red-400" />
-                  <span>FAL.ai Serverless GPU Key (`FAL_KEY` สำหรับ Trellis / Tripo3D / Meshy)</span>
-                </label>
                 <input
                   type="password"
                   value={falApiKey}
                   onChange={(e) => setFalApiKey(e.target.value)}
                   placeholder={
                     keyPreview
-                      ? `มีคีย์บันทึกไว้แล้ว (${keyPreview}) — วางคีย์ใหม่หากต้องการเปลี่ยน...`
-                      : "วางคีย์ key_id:key_secret เพื่อเปิดโหมด Cloud GPU ของจริง..."
+                      ? `มีคีย์ FAL.ai บันทึกไว้แล้ว (${keyPreview}) — วางคีย์ใหม่หากต้องการเปลี่ยน...`
+                      : "วางคีย์ key_id:key_secret เพื่อเปิดโหมด Cloud GPU ครบวงจร..."
                   }
                   className="w-full px-3 py-2 rounded-xl bg-[#090709] border border-red-500/25 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
                 />
                 <p className="text-[10px] text-slate-400">
-                  รองรับครบทั้ง 5 ไปป์ไลน์: Text-to-2D (`fal-ai/flux/schnell`), Image-to-3D (`fal-ai/trellis` & `tripo3d/v2.5`), Multi-View 3D, Auto-Rig (`fal-ai/meshy/rigging`) และ AI Retexture
+                  รองรับครบทั้ง Text-to-2D (`fal-ai/flux/schnell`), Image/Multiview-to-3D (`fal-ai/tripo3d/v2.5` Standard & HD PBR), Auto-Rig (`fal-ai/meshy/rigging`) และ AI Retexture
                 </p>
               </div>
 
@@ -638,7 +868,7 @@ export default function TopupModal({
                   className="w-full px-3 py-2 rounded-xl bg-[#090709] border border-red-500/25 text-xs text-white focus:outline-none focus:border-red-500"
                 />
                 <p className="text-[10px] text-slate-400">
-                  ใช้สร้าง EMVCo Thai QR Code สแกนจ่ายเข้าบัญชีของคุณโดยตรง
+                  ใช้สร้าง EMVCo Thai QR Code สแกนจ่ายเข้าบัญชีของคุณโดยตรง (ทั้งรายตัว 25฿/39฿ และแพ็ก 59฿-1,990฿)
                 </p>
               </div>
 
@@ -674,24 +904,24 @@ export default function TopupModal({
                 >
                   {loading
                     ? "กำลังบันทึก & ตรวจสอบ..."
-                    : "บันทึก & ทดสอบการเชื่อมต่อ FAL.ai"}
+                    : "บันทึกการตั้งค่า GPU & PromptPay"}
                 </button>
                 <button
                   disabled={loading || testingFal}
                   onClick={handleTestFalConnection}
                   className="px-3 py-2.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-xs font-semibold text-slate-200 transition cursor-pointer shrink-0"
                 >
-                  {testingFal ? "กำลังเช็ค..." : "เช็คคีย์ (ฟรี 0฿)"}
+                  {testingFal ? "กำลังเช็ค..." : "เช็คคีย์ FAL (0฿)"}
                 </button>
               </div>
 
-              {keyPreview && (
+              {(keyPreview || tripoKeyPreview) && (
                 <button
                   disabled={loading || testingFal}
                   onClick={handleClearFalKey}
                   className="w-full py-1.5 rounded-xl bg-transparent hover:bg-white/[0.04] border border-white/10 text-[11px] text-slate-400 hover:text-white transition cursor-pointer"
                 >
-                  สลับกลับโหมด Sandbox (ลบคีย์ FAL.ai ออกจาก D1)
+                  สลับกลับโหมด Sandbox (ลบคีย์ GPU ออกจาก D1)
                 </button>
               )}
             </div>

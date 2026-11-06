@@ -330,7 +330,7 @@ async function findOrCreateGoogleUserD1(db, { email, name, avatar_url, google_su
   }
 
   const userId = `usr_${randomHex(8)}`;
-  const initialCredits = 15;
+  const initialCredits = 0;
   await db
     .prepare(
       `INSERT INTO users (id, email, name, avatar_url, provider, google_sub, credits_balance, total_generated, role)
@@ -343,7 +343,7 @@ async function findOrCreateGoogleUserD1(db, { email, name, avatar_url, google_su
   await db
     .prepare(
       `INSERT INTO credit_transactions (id, user_id, type, amount, balance_after, description, reference_id)
-       VALUES (?, ?, 'signup_bonus', ?, ?, 'โบนัสต้อนรับสมาชิกใหม่ (ยืนยันบัญชี Gmail สำเร็จ)', 'welcome_15')`
+       VALUES (?, ?, 'signup_bonus', ?, ?, 'เปิดบัญชีสมาชิกใหม่สำเร็จ (ดูคลัง 122 .GLB ฟรี • สแกนจ่ายรายตัว 25฿/39฿ หรือเติมแพ็ก 59฿+)', 'welcome_0')`
     )
     .bind(txId, userId, initialCredits, initialCredits)
     .run();
@@ -353,9 +353,58 @@ async function findOrCreateGoogleUserD1(db, { email, name, avatar_url, google_su
 }
 
 const CREDIT_PACKAGES = {
-  starter_50: { id: "starter_50", name: "Starter ทดลองปั้น", amountThb: 50, credits: 50, bonus: 0 },
-  indie_150: { id: "indie_150", name: "Indie Game Dev", amountThb: 150, credits: 170, bonus: 20 },
-  pro_390: { id: "pro_390", name: "Pro Studio Creator", amountThb: 390, credits: 500, bonus: 110 },
+  direct_25: {
+    id: "direct_25",
+    name: "จ่ายรายตัว Clean Quad / Studio Op",
+    amountThb: 25,
+    credits: 2,
+    bonus: 0,
+  },
+  direct_39: {
+    id: "direct_39",
+    name: "จ่ายรายตัว Best Quality Pro HD",
+    amountThb: 39,
+    credits: 4,
+    bonus: 0,
+  },
+  mini_59: {
+    id: "mini_59",
+    name: "Mini Pack (ชุดเปิดใจ)",
+    amountThb: 59,
+    credits: 8,
+    bonus: 0,
+  },
+  starter_99: {
+    id: "starter_99",
+    name: "Starter Pack (ชุดเริ่มต้น)",
+    amountThb: 99,
+    credits: 15,
+    bonus: 1,
+  },
+  creator_299: {
+    id: "creator_299",
+    name: "Creator Pack (ขายดีที่สุด 🔥)",
+    amountThb: 299,
+    credits: 50,
+    bonus: 5,
+  },
+  pro_690: {
+    id: "pro_690",
+    name: "Pro Studio Pack (สายผลิตจริง)",
+    amountThb: 690,
+    credits: 120,
+    bonus: 15,
+  },
+  agency_1990: {
+    id: "agency_1990",
+    name: "Agency / Game Studio",
+    amountThb: 1990,
+    credits: 360,
+    bonus: 60,
+  },
+  starter_50: { id: "starter_50", name: "Starter ทดลองปั้น", amountThb: 50, credits: 8, bonus: 0 },
+  indie_150: { id: "indie_150", name: "Indie Game Dev", amountThb: 150, credits: 24, bonus: 2 },
+  pro_390: { id: "pro_390", name: "Pro Studio Creator", amountThb: 390, credits: 65, bonus: 10 },
 };
 
 export default {
@@ -387,17 +436,28 @@ export default {
         const amountParam = Number(url.searchParams.get("amount") || "150");
         const promptpayId = await getSetting(db, "promptpay_id", env.PROMPTPAY_ID || "0812345678");
         const falKey = await getSetting(db, "fal_api_key", env.FAL_KEY || "");
+        const tripoKey = await getSetting(db, "tripo_api_key", env.TRIPO_API_KEY || "");
         const keyPreview =
           falKey.length > 8 ? `${falKey.slice(0, 6)}••••${falKey.slice(-4)}` : "";
+        const tripoKeyPreview =
+          tripoKey.length > 8 ? `${tripoKey.slice(0, 6)}••••${tripoKey.slice(-4)}` : "";
         return jsonResponse({
           promptpayId,
           promptpayPayload: generatePromptPayPayload(promptpayId, amountParam),
           gpuProviders: {
             falConfigured: falKey.length > 8,
             keyPreview,
-            tripoConfigured: false,
+            tripoConfigured: tripoKey.length > 8,
+            tripoKeyPreview,
             meshyConfigured: false,
-            activeMode: falKey.length > 8 ? "fal_live" : "sandbox",
+            activeMode:
+              tripoKey.length > 8 && falKey.length > 8
+                ? "tripo_and_fal_live"
+                : tripoKey.length > 8
+                  ? "tripo_live"
+                  : falKey.length > 8
+                    ? "fal_live"
+                    : "sandbox",
           },
         });
       }
@@ -411,10 +471,18 @@ export default {
         } else if (typeof body.falApiKey === "string" && body.falApiKey.trim().length > 0) {
           await setSetting(db, "fal_api_key", body.falApiKey.trim());
         }
+        if (body.clearTripoKey === true) {
+          await setSetting(db, "tripo_api_key", "");
+        } else if (typeof body.tripoApiKey === "string" && body.tripoApiKey.trim().length > 0) {
+          await setSetting(db, "tripo_api_key", body.tripoApiKey.trim());
+        }
         const promptpayId = await getSetting(db, "promptpay_id", env.PROMPTPAY_ID || "0812345678");
         const falKey = await getSetting(db, "fal_api_key", env.FAL_KEY || "");
+        const tripoKey = await getSetting(db, "tripo_api_key", env.TRIPO_API_KEY || "");
         const keyPreview =
           falKey.length > 8 ? `${falKey.slice(0, 6)}••••${falKey.slice(-4)}` : "";
+        const tripoKeyPreview =
+          tripoKey.length > 8 ? `${tripoKey.slice(0, 6)}••••${tripoKey.slice(-4)}` : "";
 
         let falTest = null;
         if (body.testFal === true) {
@@ -474,9 +542,17 @@ export default {
           gpuProviders: {
             falConfigured: falKey.length > 8,
             keyPreview,
-            tripoConfigured: false,
+            tripoConfigured: tripoKey.length > 8,
+            tripoKeyPreview,
             meshyConfigured: false,
-            activeMode: falKey.length > 8 ? "fal_live" : "sandbox",
+            activeMode:
+              tripoKey.length > 8 && falKey.length > 8
+                ? "tripo_and_fal_live"
+                : tripoKey.length > 8
+                  ? "tripo_live"
+                  : falKey.length > 8
+                    ? "fal_live"
+                    : "sandbox",
           },
         });
       }
@@ -859,9 +935,9 @@ export default {
       const hasRig = Boolean(body.hasRig);
       let inputImageUrl = body.inputImageUrl || null;
 
-      const engineCosts = { triposg: 2, hunyuan3d_2_1: 2, trellis_pbr: 6 };
+      const engineCosts = { triposg: 2, hunyuan3d_2_1: 2, trellis_pbr: 4 };
       const costCredits =
-        stage === "draft_3d" ? 2 : (engineCosts[engine] || 2) + (hasRig ? 3 : 0);
+        stage === "draft_3d" ? 2 : (engineCosts[engine] || 2) + (hasRig ? 2 : 0);
 
       if (Number(user.credits_balance) < costCredits) {
         return jsonResponse(
@@ -906,10 +982,80 @@ export default {
       const hasMultiView =
         mvImages && (mvImages.front || mvImages.back || mvImages.left || mvImages.right);
 
+      const tripoKey = await getSetting(db, "tripo_api_key", env.TRIPO_API_KEY || "");
       const falKey = await getSetting(db, "fal_api_key", env.FAL_KEY || "");
       let falNotice = null;
-      if (falKey && falKey.length > 10) {
+
+      // TIER 0: Official Tripo3D OpenAPI (v3.1 / H3.1 Direct)
+      if (tripoKey && tripoKey.length > 10 && !hasMultiView) {
         try {
+          const isProHd = engine === "trellis_pbr";
+          let condImg = inputImageUrl;
+          if (condImg && String(condImg).startsWith("/")) {
+            condImg = `${url.origin}${condImg}`;
+          }
+          const taskPayload =
+            condImg && condImg.startsWith("http")
+              ? {
+                  type: "image_to_model",
+                  file: { type: "png", url: condImg },
+                  texture: true,
+                  pbr: true,
+                  texture_quality: isProHd ? "detailed" : "standard",
+                }
+              : {
+                  type: "text_to_model",
+                  prompt: enhanced.promptEn,
+                  texture: true,
+                  pbr: true,
+                  texture_quality: isProHd ? "detailed" : "standard",
+                };
+          const createRes = await fetch("https://api.tripo3d.ai/v2/openapi/task", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${tripoKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(taskPayload),
+          });
+          if (createRes.ok) {
+            const createData = await createRes.json();
+            const tripoTaskId = createData?.data?.task_id;
+            if (tripoTaskId) {
+              for (let poll = 0; poll < 16; poll++) {
+                await new Promise((r) => setTimeout(r, 2500));
+                const statusRes = await fetch(
+                  `https://api.tripo3d.ai/v2/openapi/task/${tripoTaskId}`,
+                  { headers: { Authorization: `Bearer ${tripoKey}` } }
+                );
+                if (statusRes.ok) {
+                  const statusData = await statusRes.json();
+                  const st = statusData?.data?.status;
+                  if (st === "success") {
+                    const glbUrl =
+                      statusData?.data?.output?.pbr_model ||
+                      statusData?.data?.output?.model ||
+                      null;
+                    if (glbUrl) {
+                      outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(glbUrl)}`;
+                      providerMode = "tripo_live";
+                    }
+                    break;
+                  }
+                  if (st === "failed" || st === "cancelled") break;
+                }
+              }
+            }
+          }
+        } catch (err) {
+          falNotice = err?.message || "Tripo API exception";
+        }
+      }
+
+      // TIER 1: FAL.ai Serverless GPU (Tripo3D v2.5 HD / Standard PBR)
+      if (!outputGlbUrl && falKey && falKey.length > 10) {
+        try {
+          const isProHd = engine === "trellis_pbr";
           let condImg = mvImages?.front || inputImageUrl;
           if (condImg && String(condImg).startsWith("/")) {
             condImg = `${url.origin}${condImg}`;
@@ -955,43 +1101,25 @@ export default {
                 ? `${url.origin}${mvImages.right}`
                 : mvImages.right;
 
-            if (engine === "trellis_pbr") {
-              gpuRes = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/multiview-to-3d", {
-                method: "POST",
-                headers: {
-                  Authorization: `Key ${falKey}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  front_image_url: frontFull,
-                  back_image_url: backFull,
-                  left_image_url: leftFull || undefined,
-                  right_image_url: rightFull || undefined,
-                  texture: "standard",
-                }),
-              });
-            } else {
-              const imgList = [frontFull, backFull, leftFull, rightFull].filter(Boolean);
-              gpuRes = await fetch("https://fal.run/fal-ai/trellis/multi", {
-                method: "POST",
-                headers: {
-                  Authorization: `Key ${falKey}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  image_urls: imgList,
-                  texture_size: 1024,
-                }),
-              });
-            }
+            gpuRes = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/multiview-to-3d", {
+              method: "POST",
+              headers: {
+                Authorization: `Key ${falKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                front_image_url: frontFull,
+                back_image_url: backFull,
+                left_image_url: leftFull || undefined,
+                right_image_url: rightFull || undefined,
+                texture: isProHd ? "HD" : "standard",
+                pbr: true,
+              }),
+            });
           }
 
           if (!gpuRes || !gpuRes.ok) {
-            const primaryEndpoint =
-              engine === "trellis_pbr"
-                ? "https://fal.run/fal-ai/tripo3d/v2.5/image-to-3d"
-                : "https://fal.run/fal-ai/trellis";
-            gpuRes = await fetch(primaryEndpoint, {
+            gpuRes = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/image-to-3d", {
               method: "POST",
               headers: {
                 Authorization: `Key ${falKey}`,
@@ -1000,22 +1128,10 @@ export default {
               body: JSON.stringify({
                 prompt: enhanced.promptEn,
                 image_url: condImg || undefined,
-                texture: "standard",
+                texture: isProHd ? "HD" : "standard",
+                pbr: true,
               }),
             });
-            if (!gpuRes.ok && primaryEndpoint !== "https://fal.run/fal-ai/trellis") {
-              gpuRes = await fetch("https://fal.run/fal-ai/trellis", {
-                method: "POST",
-                headers: {
-                  Authorization: `Key ${falKey}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  prompt: enhanced.promptEn,
-                  image_url: condImg || undefined,
-                }),
-              });
-            }
           }
 
           if (gpuRes && gpuRes.ok) {
@@ -1202,8 +1318,8 @@ export default {
 
       // Paid Cloud AI operations vs Free in-browser operations
       const opCosts = {
-        rig: 3,
-        retexture: 3,
+        rig: 2,
+        retexture: 2,
         upscale: 1,
         remesh: 0,
       };

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     let costCredits = stageSpec.credits;
     if (stage === "refine_pbr") {
-      costCredits = engineSpec.costCredits + (hasRig ? 3 : 0);
+      costCredits = engineSpec.costCredits + (hasRig ? 2 : 0);
     } else if (stage === "draft_3d") {
       costCredits = 2;
     }

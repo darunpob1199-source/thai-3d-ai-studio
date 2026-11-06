@@ -49,7 +49,7 @@ import GmailLoginModal, {
   triggerGooglePopupLogin,
   GoogleLogoSvg,
 } from "@/components/auth/GmailLoginModal";
-import TopupModal from "@/components/billing/TopupModal";
+import TopupModal, { type PendingCheckoutAction } from "@/components/billing/TopupModal";
 import {
   HomeInputBorderFlow,
   TripoInspirationFan,
@@ -179,15 +179,15 @@ const MODEL_OPTIONS: {
   {
     id: "trellis_pbr",
     code: "PRO",
-    name: "Pro Studio HD (TRELLIS.2)",
-    sub: "Full 360° PBR (Albedo · Metallic · Roughness)",
-    credits: 6,
+    name: "Best Quality (Tripo H3.1 Pro HD)",
+    sub: "4K PBR + Clean Quad · สแกนจ่ายรายตัว 39฿",
+    credits: 4,
   },
   {
     id: "hunyuan3d_2_1",
     code: "STD",
-    name: "Standard PBR (Microsoft Trellis)",
-    sub: "360° Baked UV Texture · เร็วและประหยัดเครดิต",
+    name: "Clean Quad (Tripo H3.1 Standard)",
+    sub: "Quad Mesh + PBR · สแกนจ่ายรายตัว 25฿",
     credits: 2,
   },
 ];
@@ -3595,6 +3595,8 @@ export default function SiamPrism3DStudioPage() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [topupModalOpen, setTopupModalOpen] = useState(false);
   const [topupInitialTab, setTopupInitialTab] = useState<"topup" | "ledger" | "config">("topup");
+  const [pendingCheckoutAction, setPendingCheckoutAction] =
+    useState<PendingCheckoutAction | null>(null);
   const [dccBridgeModalOpen, setDccBridgeModalOpen] = useState(false);
   const [printCheckModalOpen, setPrintCheckModalOpen] = useState(false);
   const [oauthToast, setOauthToast] = useState<string | null>(null);
@@ -4029,9 +4031,10 @@ export default function SiamPrism3DStudioPage() {
   const currentModelSpec =
     MODEL_OPTIONS.find((m) => m.id === selectedModel) || MODEL_OPTIONS[0];
   const estimatedCost =
-    (enablePbr8k ? currentModelSpec.credits : 2) + (enableAutoRig ? 3 : 0);
+    (enablePbr8k ? currentModelSpec.credits : 2) + (enableAutoRig ? 2 : 0);
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (bypassBalanceCheck?: boolean | React.MouseEvent) => {
+    const isBypass = bypassBalanceCheck === true;
     setErrorBanner(null);
     if (!user) {
       setAuthModalOpen(true);
@@ -4044,10 +4047,21 @@ export default function SiamPrism3DStudioPage() {
       setErrorBanner("กรุณาพิมพ์คำสั่ง Prompt หรืออัปโหลดรูปภาพต้นแบบ");
       return;
     }
-    if (user.credits_balance < estimatedCost) {
-      setErrorBanner(
-        `เครดิตไม่เพียงพอ (ต้องใช้ ${estimatedCost} เครดิต แต่มี ${user.credits_balance} เครดิต)`
-      );
+    const taskTitle =
+      prompt.trim() ||
+      (hasMvSlots
+        ? "โมเดล 3D Multi-View 4 มุม (Front/Back/Left/Right)"
+        : "โมเดล 3D จากรูปภาพต้นแบบ");
+    if (!isBypass && user.credits_balance < estimatedCost) {
+      setPendingCheckoutAction({
+        type: "generate",
+        title: taskTitle,
+        modeLabel: currentModelSpec.name,
+        costCredits: estimatedCost,
+        directPriceThb: estimatedCost >= 4 ? 39 : 25,
+        previewImage: uploadedImage || multiViewImages.front || null,
+      });
+      setTopupInitialTab("topup");
       setTopupModalOpen(true);
       return;
     }
@@ -4107,6 +4121,15 @@ export default function SiamPrism3DStudioPage() {
         if (res.status === 401) {
           setAuthModalOpen(true);
         } else if (res.status === 402) {
+          setPendingCheckoutAction({
+            type: "generate",
+            title: taskTitle,
+            modeLabel: currentModelSpec.name,
+            costCredits: estimatedCost,
+            directPriceThb: estimatedCost >= 4 ? 39 : 25,
+            previewImage: uploadedImage || multiViewImages.front || null,
+          });
+          setTopupInitialTab("topup");
           setTopupModalOpen(true);
         }
         throw new Error(data.error || "สร้างโมเดล 3D ไม่สำเร็จ");
@@ -5450,7 +5473,7 @@ export default function SiamPrism3DStudioPage() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-slate-200">Humanoid Rigging</span>
                         <span className="text-[9px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">
-                          +3 เครดิต
+                          +2 เครดิต
                         </span>
                       </div>
                       <button
@@ -5977,9 +6000,23 @@ export default function SiamPrism3DStudioPage() {
                         });
                         const data = await res.json();
                         if (res.status === 402) {
+                          setPendingCheckoutAction({
+                            type: "studio_op",
+                            title: `AI Texture: ${texturePrompt.slice(0, 32)}`,
+                            modeLabel: "สร้างพื้นผิว AI Texture (2 เครดิต)",
+                            costCredits: 2,
+                            directPriceThb: 25,
+                            previewImage: activeTask?.input_image_url || null,
+                            opPayload: {
+                              operation: "retexture",
+                              prompt: texturePrompt,
+                              modelUrl: activeTask?.output_glb_url || null,
+                              taskId: activeTask?.id || null,
+                            },
+                          });
                           setTopupInitialTab("topup");
                           setTopupModalOpen(true);
-                          triggerToast(data.error || "เครดิตใน D1 ไม่เพียงพอ");
+                          triggerToast(data.error || "สแกนจ่าย 25฿ หรือเติมเครดิตเพื่อสร้างพื้นผิว AI Texture");
                           return;
                         }
                         if (data?.user) setUser(data.user);
@@ -5999,7 +6036,7 @@ export default function SiamPrism3DStudioPage() {
                   >
                     <span>สร้างพื้นผิว AI Texture</span>
                     <span className="px-1.5 py-0.5 rounded-[4px] bg-black/25 text-[11px] font-mono tabular-nums font-medium">
-                      3 เครดิต
+                      2 เครดิต
                     </span>
                   </button>
                 </div>
@@ -6642,9 +6679,21 @@ export default function SiamPrism3DStudioPage() {
                       });
                       const data = await res.json();
                       if (res.status === 402) {
+                        setPendingCheckoutAction({
+                          type: "studio_op",
+                          title: `ผูกกระดูก Auto-Rig: ${activeTask?.prompt_th || "โมเดล 3D"}`,
+                          modeLabel: "Auto-Rigging & Skinning (2 เครดิต)",
+                          costCredits: 2,
+                          directPriceThb: 25,
+                          previewImage: activeTask?.input_image_url || null,
+                          opPayload: {
+                            operation: "rig",
+                            modelUrl: activeTask?.output_glb_url || null,
+                          },
+                        });
                         setTopupInitialTab("topup");
                         setTopupModalOpen(true);
-                        triggerToast(data.error || "เครดิตใน D1 ไม่เพียงพอ");
+                        triggerToast(data.error || "สแกนจ่าย 25฿ หรือเติมเครดิตเพื่อผูกกระดูก Auto-Rig");
                         return;
                       }
                       if (data?.user) setUser(data.user);
@@ -6663,7 +6712,7 @@ export default function SiamPrism3DStudioPage() {
                 >
                   <span>ผูกกระดูก Auto-Rig</span>
                   <span className="px-1.5 py-0.5 rounded-[4px] bg-black/25 text-[11px] font-mono tabular-nums font-medium">
-                    3 เครดิต
+                    2 เครดิต
                   </span>
                 </button>
               </div>
@@ -7290,13 +7339,15 @@ export default function SiamPrism3DStudioPage() {
         onClose={() => setTopupModalOpen(false)}
         user={user}
         initialTab={topupInitialTab}
+        pendingAction={pendingCheckoutAction}
+        onClearPendingAction={() => setPendingCheckoutAction(null)}
         onRefreshD1={() => {
           fetchSession();
           triggerToast("ซิงค์ยอดเครดิตและประวัติธุรกรรมล่าสุดจาก Cloudflare D1 เรียบร้อย!");
         }}
         transactions={transactions}
         orders={orders}
-        onSuccess={(data) => {
+        onSuccess={async (data, completedPendingAction) => {
           if (data?.user) {
             setUser(data.user);
           }
@@ -7307,6 +7358,38 @@ export default function SiamPrism3DStudioPage() {
             setOrders(data.orders);
           }
           fetchSession();
+
+          if (completedPendingAction?.type === "generate") {
+            triggerToast(
+              `ชำระเงินสำเร็จ! กำลังเริ่มปั้น "${completedPendingAction.title}" ทันที...`
+            );
+            setTimeout(() => {
+              handleGenerate(true);
+            }, 150);
+          } else if (
+            completedPendingAction?.type === "studio_op" &&
+            completedPendingAction.opPayload
+          ) {
+            triggerToast(
+              `ชำระเงินสำเร็จ! กำลังประมวลผล "${completedPendingAction.title}" ทันที...`
+            );
+            try {
+              const opRes = await fetch("/api/studio-op", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(completedPendingAction.opPayload),
+              });
+              const opData = await opRes.json();
+              if (opData?.user) setUser(opData.user);
+              if (Array.isArray(opData?.transactions)) setTransactions(opData.transactions);
+              if (opData?.outputGlbUrl && activeTask) {
+                setActiveTask({ ...activeTask, output_glb_url: opData.outputGlbUrl });
+              }
+              if (opData?.message) triggerToast(opData.message);
+            } catch {
+              // Ignore
+            }
+          }
         }}
       />
 
