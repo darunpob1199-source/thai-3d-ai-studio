@@ -38,6 +38,7 @@ interface TopupModalProps {
   onSuccess: (data: any, completedPendingAction?: PendingCheckoutAction | null) => void;
   user?: UserRecord | null;
   initialTab?: "topup" | "ledger" | "config";
+  initialPackageId?: string | null;
   onRefreshD1?: () => void;
   transactions?: CreditTransactionRecord[];
   orders?: TopupOrderRecord[];
@@ -57,7 +58,7 @@ export interface CreditPkgItem {
   popular?: boolean;
 }
 
-const DIRECT_PAY_ITEMS: CreditPkgItem[] = [
+export const DIRECT_PAY_ITEMS: CreditPkgItem[] = [
   {
     id: "direct_25",
     name: "Clean Quad / Studio Op",
@@ -80,7 +81,7 @@ const DIRECT_PAY_ITEMS: CreditPkgItem[] = [
   },
 ];
 
-const CREDIT_PACK_ITEMS: CreditPkgItem[] = [
+export const CREDIT_PACK_ITEMS: CreditPkgItem[] = [
   {
     id: "mini_59",
     name: "Mini Pack",
@@ -146,6 +147,7 @@ export default function TopupModal({
   onSuccess,
   user = null,
   initialTab = "topup",
+  initialPackageId = null,
   onRefreshD1,
   transactions = [],
   orders = [],
@@ -180,11 +182,15 @@ export default function TopupModal({
         const targetDirect =
           pendingAction.directPriceThb === 39 ? DIRECT_PAY_ITEMS[1] : DIRECT_PAY_ITEMS[0];
         setSelectedPkg(targetDirect);
+      } else if (initialPackageId) {
+        const allItems = [...DIRECT_PAY_ITEMS, ...CREDIT_PACK_ITEMS];
+        const matched = allItems.find((item) => item.id === initialPackageId);
+        setSelectedPkg(matched || CREDIT_PACK_ITEMS[2]);
       } else {
         setSelectedPkg(CREDIT_PACK_ITEMS[2]); // Default to Creator Pack 299฿
       }
     }
-  }, [isOpen, initialTab, pendingAction]);
+  }, [isOpen, initialTab, initialPackageId, pendingAction]);
 
   useEffect(() => {
     if (!isOpen) return;
