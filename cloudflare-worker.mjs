@@ -936,8 +936,7 @@ export default {
       let inputImageUrl = body.inputImageUrl || null;
 
       const engineCosts = { triposg: 2, hunyuan3d_2_1: 2, trellis_pbr: 4 };
-      const costCredits =
-        stage === "draft_3d" ? 2 : (engineCosts[engine] || 2) + (hasRig ? 2 : 0);
+      const costCredits = (engineCosts[engine] || 2) + (hasRig ? 2 : 0);
 
       if (Number(user.credits_balance) < costCredits) {
         return jsonResponse(

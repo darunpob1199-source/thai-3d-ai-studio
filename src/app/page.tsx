@@ -4030,8 +4030,7 @@ export default function SiamPrism3DStudioPage() {
 
   const currentModelSpec =
     MODEL_OPTIONS.find((m) => m.id === selectedModel) || MODEL_OPTIONS[0];
-  const estimatedCost =
-    (enablePbr8k ? currentModelSpec.credits : 2) + (enableAutoRig ? 2 : 0);
+  const estimatedCost = currentModelSpec.credits + (enableAutoRig ? 2 : 0);
 
   const handleGenerate = async (bypassBalanceCheck?: boolean | React.MouseEvent) => {
     const isBypass = bypassBalanceCheck === true;
