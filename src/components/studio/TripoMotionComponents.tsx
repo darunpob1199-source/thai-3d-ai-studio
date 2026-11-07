@@ -270,17 +270,17 @@ const PRESET_MODES = [
   {
     id: "trellis_pbr" as const,
     pillLabel: "Best Quality",
-    credits: "6",
-    title: "High Detail Sculpt + 4K PBR",
-    desc: "สร้างโมเดลรายละเอียดสูงระดับ ZBrush Sculpt พร้อมพื้นผิว Metallic/Roughness คมชัดทุกมุมมอง",
+    credits: "4",
+    title: "Tripo H3.1 Pro HD Sculpt + 4K PBR",
+    desc: "ปั้นโมเดลตัวท็อปรายละเอียดสูงระดับ ZBrush Sculpt + 4K PBR Metallic/Roughness (4 เครดิต • สแกนจ่ายรายตัว 39฿)",
     image: "/images/tripo/hd_model.webp",
   },
   {
     id: "hunyuan3d_2_1" as const,
     pillLabel: "Clean Quad",
     credits: "2",
-    title: "Smart Low-Poly Quad Mesh",
-    desc: "จัดเรียงเส้นโครงข่าย Quad Topology สะอาดตา พร้อมนำไป Rigging ลงเอนจินเกมหรือพิมพ์ 3D ทันที",
+    title: "Tripo H3.1 Clean Quad Mesh + PBR",
+    desc: "จัดเรียงเส้นโครงข่าย Quad Topology สะอาดตา พร้อมนำไป Rigging ลงเอนจินเกมหรือพิมพ์ 3D ทันที (2 เครดิต • สแกนจ่ายรายตัว 25฿)",
     image: "/images/tripo/low-poly.webp",
   },
 ];

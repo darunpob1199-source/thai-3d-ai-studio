@@ -36,29 +36,29 @@ export const ENGINE_SPECS: Record<AI3DEngine, EngineSpec> = {
   },
   hunyuan3d_2_1: {
     id: "hunyuan3d_2_1",
-    name: "Standard (Microsoft Trellis PBR)",
-    vendor: "Microsoft Research / FAL.ai",
-    badge: "คุ้มสุด • ต้นทุน 0.68฿/ชิ้น ($0.02)",
+    name: "Clean Quad (Tripo H3.1 Standard PBR)",
+    vendor: "Tripo3D H3.1 / FAL.ai",
+    badge: "2 เครดิต • สแกนด่วน 25฿",
     visionBackbone: "DINOv2 Giant Patch Extractor",
-    diffusionBackbone: "Microsoft Trellis Structured 3D Latents + PBR",
+    diffusionBackbone: "Tripo H3.1 Standard PBR + Clean Topology",
     costCredits: 2,
-    realGpuCostThb: 0.68,
+    realGpuCostThb: 7.3,
     estSeconds: 15,
-    license: "MIT License (เชิงพาณิชย์ 100%)",
-    description: "ปั้นโมเดล 3D พร้อมสีและพื้นผิว PBR รอบตัว 360° ด้วย Microsoft Trellis ต้นทุนจริงเพียง $0.02 (~0.68 บาท/ชิ้น)",
+    license: "Commercial License 100%",
+    description: "ปั้นโมเดล 3D คมชัดพร้อมพื้นผิว PBR รอบตัว 360° ด้วย Tripo H3.1 (ใช้เพียง 2 เครดิต หรือสแกนจ่ายด่วน 25 บาท)",
   },
   trellis_pbr: {
     id: "trellis_pbr",
-    name: "Pro Studio (TRELLIS.2 / Tripo v2.5 HD)",
-    vendor: "Microsoft TRELLIS.2 4B / Tripo3D v2.5",
-    badge: "ตัวท็อปสุด • ต้นทุน 6.80฿/ชิ้น ($0.20)",
+    name: "Best Quality (Tripo H3.1 Pro HD + Quad)",
+    vendor: "Tripo3D H3.1 Detailed HD / TRELLIS.2 4B",
+    badge: "4 เครดิต • สแกนด่วน 39฿",
     visionBackbone: "DINOv2 Dense Feature Grid",
-    diffusionBackbone: "TRELLIS.2 4B Cascade + O-Voxel Full PBR",
-    costCredits: 15,
-    realGpuCostThb: 6.8,
+    diffusionBackbone: "Tripo H3.1 Detailed 4K PBR + High-Def Geometry",
+    costCredits: 4,
+    realGpuCostThb: 16.5,
     estSeconds: 22,
-    license: "MIT License (เชิงพาณิชย์ 100%)",
-    description: "ตัวท็อประดับสตูดิโอเกม เก็บรายละเอียดซับซ้อน + พื้นผิว PBR (BaseColor, Metallic, Roughness) คมกริบ",
+    license: "Commercial License 100%",
+    description: "ตัวท็อประดับสตูดิโอเกม เก็บรายละเอียดสูงสุด 2 ล้านโพลีกอน + พื้นผิว PBR (BaseColor, Metallic, Roughness, Normal) คมกริบ (4 เครดิต หรือสแกนจ่ายด่วน 39 บาท)",
   },
 };
 
@@ -73,21 +73,21 @@ export const STAGE_COSTS: Record<
     desc: "ดูภาพก่อนปั้นจริง ป้องกันการเสียเครดิตปั้น 3D ฟรี",
   },
   draft_3d: {
-    label: "ขั้นที่ 1: ปั้นโครง 3D ด่วน (DINOv2 + TripoSG White Mesh)",
+    label: "ขั้นที่ 1: ปั้นโมเดล Clean Quad PBR (Tripo H3.1 Standard)",
     credits: 2,
-    realCostThb: 0.25,
-    desc: "ปั้นหุ่น 3 มิติสีขาวเพื่อเช็กรูปทรงรอบทิศทาง 360°",
+    realCostThb: 7.3,
+    desc: "ปั้นโมเดล 3 มิติพร้อมพื้นผิว PBR มาตรฐาน 360°",
   },
   refine_pbr: {
-    label: "ขั้นที่ 2: ปั้นตัวเต็ม + ลงสี HD PBR (TRELLIS / Hunyuan3D)",
-    credits: 7,
-    realCostThb: 0.65,
+    label: "ขั้นที่ 2: ปั้นตัวเต็ม + ลงสี HD PBR (Tripo H3.1)",
+    credits: 4,
+    realCostThb: 16.5,
     desc: "สร้างพื้นผิว PBR (BaseColor, Metallic, Roughness, Normal) ความละเอียดสูง",
   },
   remesh_rig: {
-    label: "ขั้นที่ 3: ลดโพลีกอน Quad + Auto-Rig กระดูก (Blender + UniRig)",
-    credits: 3,
-    realCostThb: 0.15,
+    label: "ขั้นที่ 3: ลดโพลีกอน Quad + Auto-Rig กระดูก (Tripo Auto-Rig)",
+    credits: 2,
+    realCostThb: 9.1,
     desc: "ลด Polygon ให้พร้อมใส่ Roblox / FiveM / Unity พร้อมใส่กระดูก Biped",
   },
 };
@@ -323,7 +323,68 @@ export async function dispatchToServerlessGpu(params: {
 }> {
   const enhanced = enhanceThaiPromptTo3D(params.promptTh);
 
-  // Tier 1: VIP Serverless GPU (FAL.ai: Flux Schnell -> TRELLIS / Hunyuan3D-2.1)
+  // Tier 0: Official Tripo3D OpenAPI (H3.1 / v3.1-20260211 & v2.5)
+  const tripoKey = (getAppSetting("tripo_api_key") || process.env.TRIPO_API_KEY || "").trim();
+  if (tripoKey.length > 10) {
+    try {
+      const createRes = await fetch("https://api.tripo3d.ai/v2/openapi/task", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tripoKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "text_to_model",
+          model_version: "v2.5-20250123",
+          prompt: enhanced.promptEn,
+          texture: true,
+          pbr: true,
+          texture_quality: params.engine === "trellis_pbr" ? "detailed" : "standard",
+        }),
+      });
+      if (createRes.ok) {
+        const createData = await createRes.json();
+        const tripoTaskId = createData?.data?.task_id;
+        if (tripoTaskId) {
+          for (let attempt = 0; attempt < 25; attempt++) {
+            await new Promise((r) => setTimeout(r, 2000));
+            const pollRes = await fetch(
+              `https://api.tripo3d.ai/v2/openapi/task/${tripoTaskId}`,
+              {
+                headers: { Authorization: `Bearer ${tripoKey}` },
+              }
+            );
+            if (pollRes.ok) {
+              const pollData = await pollRes.json();
+              const status = pollData?.data?.status;
+              if (status === "success") {
+                const remoteGlb =
+                  pollData?.data?.output?.pbr_model ||
+                  pollData?.data?.output?.model ||
+                  pollData?.data?.result?.pbr_model?.url ||
+                  null;
+                if (remoteGlb) {
+                  const cachedGlb = await cacheGlbLocally(remoteGlb, params.taskId);
+                  return {
+                    providerMode: "fal_live",
+                    ...enhanced,
+                    outputGlbUrl: cachedGlb,
+                  };
+                }
+                break;
+              } else if (status === "failed" || status === "cancelled") {
+                break;
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // Fall through to FAL.ai
+    }
+  }
+
+  // Tier 1: VIP Serverless GPU (FAL.ai: Flux Schnell -> Tripo3D v2.5 Flagship)
   const falKey = (getAppSetting("fal_api_key") || process.env.FAL_KEY || "").trim();
   if (falKey.length > 10) {
     try {
@@ -348,12 +409,7 @@ export async function dispatchToServerlessGpu(params: {
         }
       }
 
-      const endpoint =
-        params.engine === "trellis_pbr"
-          ? "https://fal.run/fal-ai/tripo3d/v2.5/image-to-3d"
-          : "https://fal.run/fal-ai/trellis";
-
-      const res = await fetch(endpoint, {
+      const res = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/image-to-3d", {
         method: "POST",
         headers: {
           Authorization: `Key ${falKey}`,
@@ -362,7 +418,8 @@ export async function dispatchToServerlessGpu(params: {
         body: JSON.stringify({
           prompt: enhanced.promptEn,
           image_url: conditioningImageUrl || undefined,
-          texture: "standard",
+          texture: params.engine === "trellis_pbr" ? "HD" : "standard",
+          pbr: true,
         }),
       });
 

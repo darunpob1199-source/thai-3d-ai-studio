@@ -49,7 +49,11 @@ import GmailLoginModal, {
   triggerGooglePopupLogin,
   GoogleLogoSvg,
 } from "@/components/auth/GmailLoginModal";
-import TopupModal from "@/components/billing/TopupModal";
+import TopupModal, {
+  type PendingCheckoutAction,
+  DIRECT_PAY_ITEMS,
+  CREDIT_PACK_ITEMS,
+} from "@/components/billing/TopupModal";
 import {
   HomeInputBorderFlow,
   TripoInspirationFan,
@@ -179,15 +183,15 @@ const MODEL_OPTIONS: {
   {
     id: "trellis_pbr",
     code: "PRO",
-    name: "Pro Studio HD (TRELLIS.2)",
-    sub: "Full 360° PBR (Albedo · Metallic · Roughness)",
-    credits: 6,
+    name: "Best Quality (Tripo H3.1 Pro HD)",
+    sub: "4K PBR + Clean Quad · สแกนจ่ายรายตัว 39฿",
+    credits: 4,
   },
   {
     id: "hunyuan3d_2_1",
     code: "STD",
-    name: "Standard PBR (Microsoft Trellis)",
-    sub: "360° Baked UV Texture · เร็วและประหยัดเครดิต",
+    name: "Clean Quad (Tripo H3.1 Standard)",
+    sub: "Quad Mesh + PBR · สแกนจ่ายรายตัว 25฿",
     credits: 2,
   },
 ];
@@ -3588,13 +3592,16 @@ const CURATED_SHOWCASE: (GenerationTaskRecord & { categoryTag: string; clay_imag
 ];
 
 export default function SiamPrism3DStudioPage() {
-  const [topNav, setTopNav] = useState<"home" | "workspace">("home");
+  const [topNav, setTopNav] = useState<"home" | "workspace" | "pricing">("home");
 
   // User & Auth state
   const [user, setUser] = useState<UserRecord | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [topupModalOpen, setTopupModalOpen] = useState(false);
   const [topupInitialTab, setTopupInitialTab] = useState<"topup" | "ledger" | "config">("topup");
+  const [topupInitialPkgId, setTopupInitialPkgId] = useState<string | null>(null);
+  const [pendingCheckoutAction, setPendingCheckoutAction] =
+    useState<PendingCheckoutAction | null>(null);
   const [dccBridgeModalOpen, setDccBridgeModalOpen] = useState(false);
   const [printCheckModalOpen, setPrintCheckModalOpen] = useState(false);
   const [oauthToast, setOauthToast] = useState<string | null>(null);
@@ -4028,10 +4035,10 @@ export default function SiamPrism3DStudioPage() {
 
   const currentModelSpec =
     MODEL_OPTIONS.find((m) => m.id === selectedModel) || MODEL_OPTIONS[0];
-  const estimatedCost =
-    (enablePbr8k ? currentModelSpec.credits : 2) + (enableAutoRig ? 3 : 0);
+  const estimatedCost = currentModelSpec.credits + (enableAutoRig ? 2 : 0);
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (bypassBalanceCheck?: boolean | React.MouseEvent) => {
+    const isBypass = bypassBalanceCheck === true;
     setErrorBanner(null);
     if (!user) {
       setAuthModalOpen(true);
@@ -4044,10 +4051,21 @@ export default function SiamPrism3DStudioPage() {
       setErrorBanner("กรุณาพิมพ์คำสั่ง Prompt หรืออัปโหลดรูปภาพต้นแบบ");
       return;
     }
-    if (user.credits_balance < estimatedCost) {
-      setErrorBanner(
-        `เครดิตไม่เพียงพอ (ต้องใช้ ${estimatedCost} เครดิต แต่มี ${user.credits_balance} เครดิต)`
-      );
+    const taskTitle =
+      prompt.trim() ||
+      (hasMvSlots
+        ? "โมเดล 3D Multi-View 4 มุม (Front/Back/Left/Right)"
+        : "โมเดล 3D จากรูปภาพต้นแบบ");
+    if (!isBypass && user.credits_balance < estimatedCost) {
+      setPendingCheckoutAction({
+        type: "generate",
+        title: taskTitle,
+        modeLabel: currentModelSpec.name,
+        costCredits: estimatedCost,
+        directPriceThb: estimatedCost >= 4 ? 39 : 25,
+        previewImage: uploadedImage || multiViewImages.front || null,
+      });
+      setTopupInitialTab("topup");
       setTopupModalOpen(true);
       return;
     }
@@ -4107,6 +4125,15 @@ export default function SiamPrism3DStudioPage() {
         if (res.status === 401) {
           setAuthModalOpen(true);
         } else if (res.status === 402) {
+          setPendingCheckoutAction({
+            type: "generate",
+            title: taskTitle,
+            modeLabel: currentModelSpec.name,
+            costCredits: estimatedCost,
+            directPriceThb: estimatedCost >= 4 ? 39 : 25,
+            previewImage: uploadedImage || multiViewImages.front || null,
+          });
+          setTopupInitialTab("topup");
           setTopupModalOpen(true);
         }
         throw new Error(data.error || "สร้างโมเดล 3D ไม่สำเร็จ");
@@ -4337,6 +4364,18 @@ export default function SiamPrism3DStudioPage() {
             >
               <Box className="w-3.5 h-3.5 stroke-[1.5]" />
               <span>สตูดิโอ 3D</span>
+            </button>
+
+            <button
+              onClick={() => setTopNav("pricing")}
+              className={`h-6 px-3 rounded-[6px] text-[13px] font-medium flex items-center gap-2 transition-colors cursor-pointer ${
+                topNav === "pricing"
+                  ? "bg-[#dc2626] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
+                  : "text-[#b8a6ad] hover:text-white"
+              }`}
+            >
+              <Coins className="w-3.5 h-3.5 stroke-[1.5]" />
+              <span>แพ็กเกจราคา</span>
             </button>
           </div>
         </nav>
@@ -4756,6 +4795,341 @@ export default function SiamPrism3DStudioPage() {
               ))}
             </div>
           </section>
+        </div>
+      ) : topNav === "pricing" ? (
+        /* =====================================================================
+           2C. PRICING & PACKAGES VIEW — PAY-PER-MODEL QR (25฿/39฿) & 5 PACKS
+           ===================================================================== */
+        <div className="relative z-10 flex-1 overflow-y-auto px-6 py-10 space-y-10 no-scrollbar">
+          <div className="max-w-[1180px] mx-auto space-y-8">
+            {/* Hero Title */}
+            <div className="text-center space-y-2.5 max-w-[680px] mx-auto">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-xs font-bold text-red-300">
+                <Sparkles className="w-3.5 h-3.5 text-red-400" />
+                <span>ไม่บังคับตัดบัตรรายเดือน • เครดิตไม่มีวันหมดอายุ • สแกน PromptPay QR ได้ทันที</span>
+              </div>
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
+                ตารางราคา & แพ็กเกจเครดิต <span className="text-[#ef4444]">Prism3D</span>
+              </h1>
+              <p className="text-xs sm:text-sm text-[#d4c5cb] leading-relaxed">
+                เลือกสแกนจ่ายรายตัวเฉพาะตอนปั้น (<span className="text-white font-semibold">25฿ / 39฿</span>) หรือเติมแพ็กเกจเครดิตสุดคุ้ม (<span className="text-red-300 font-semibold">ประหยัดสูงสุด 56% เหลือเฉลี่ยตัวละ 11.05฿</span>) ด้วยโมเดลรุ่นท็อป Tripo H3.1 Pro HD + 4K PBR
+              </p>
+            </div>
+
+            {/* Section 1: Instant Pay-Per-Model QR (25฿ / 39฿) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-400/40 text-xs font-extrabold text-amber-300">
+                    ทางเลือกที่ 1
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold text-white">
+                    ขาจรจ่ายรายตัว (Instant Pay-Per-Model QR — ไม่ต้องเติมแพ็ก)
+                  </h2>
+                </div>
+                <span className="text-xs text-slate-400">
+                  กดปั้นเมื่อไหร่ ค่อยสแกน QR จ่ายเฉพาะตัวนั้น ระบบปั้นต่อให้อัตโนมัติทันที
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  {
+                    id: "direct_25",
+                    title: "Clean Quad / Auto-Rig / AI Texture",
+                    badge: "ยอดฮิตสายเกม & พิมพ์ 3D",
+                    price: 25,
+                    credits: 2,
+                    engine: "Tripo H3.1 Standard PBR + Clean Quad",
+                    features: [
+                      "ปั้นโมเดล 3D Clean Quad Topology + PBR ครบ 360° (1 ตัว)",
+                      "หรือใช้ผูกกระดูก Auto-Rig 16 ข้อต่อ / เปลี่ยนพื้นผิว AI Texture",
+                      "ส่งออกไฟล์ .GLB, .OBJ, .STL พร้อมใช้งานเชิงพาณิชย์ 100%",
+                    ],
+                  },
+                  {
+                    id: "direct_39",
+                    title: "Best Quality Pro HD (4K PBR Sculpt)",
+                    badge: "รุ่นท็อปสุด คมชัดระดับ ZBrush",
+                    price: 39,
+                    credits: 4,
+                    engine: "Tripo H3.1 Pro HD + 4K Metallic/Roughness PBR",
+                    features: [
+                      "ปั้นโมเดลรุ่นท็อปสุด High-Detail Sculpt + พื้นผิว 4K PBR คมกริบ (1 ตัว)",
+                      "รองรับทั้ง Text-to-3D, Image-to-3D และ Multi-View 4 มุม",
+                      "การันตีไม่หักเครดิตหาก GPU ต้นทางขัดข้อง (Auto-Refund)",
+                    ],
+                  },
+                ].map((tier) => (
+                  <div
+                    key={tier.id}
+                    className="p-5 rounded-2xl bg-[#140a0e]/95 border border-red-500/30 hover:border-red-400 transition flex flex-col justify-between gap-4 shadow-[0_12px_32px_rgba(0,0,0,0.45)]"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-2.5 py-0.5 rounded-full bg-red-500/20 border border-red-400/35 text-[11px] font-bold text-red-200">
+                          {tier.badge}
+                        </span>
+                        <span className="text-xs font-mono text-amber-300 font-semibold">
+                          ใช้ {tier.credits} เครดิต (🪙)
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between">
+                        <div>
+                          <h3 className="text-lg font-extrabold text-white">{tier.title}</h3>
+                          <p className="text-xs text-slate-400 mt-0.5">{tier.engine}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-3xl font-black text-red-400">฿{tier.price}</span>
+                          <span className="text-xs text-slate-400 block">ต่อ 1 รายการ</span>
+                        </div>
+                      </div>
+                      <ul className="space-y-1.5 pt-2 border-t border-white/10 text-xs text-slate-300">
+                        {tier.features.map((f) => (
+                          <li key={f} className="flex items-center gap-2">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setTopupInitialTab("topup");
+                        setTopupInitialPkgId(tier.id);
+                        setTopupModalOpen(true);
+                      }}
+                      className="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-[0_6px_18px_rgba(220,38,38,0.3)]"
+                    >
+                      <span>สแกน QR จ่ายรายตัว ฿{tier.price}.00 (+{tier.credits} เครดิต)</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Section 2: 5 Value Credit Packages (59฿ - 1,990฿) */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md bg-red-500/20 border border-red-400/40 text-xs font-extrabold text-red-300">
+                    ทางเลือกที่ 2 (คุ้มที่สุด 🔥)
+                  </span>
+                  <h2 className="text-base sm:text-lg font-bold text-white">
+                    แพ็กเกจเครดิตสุดคุ้ม 5 ระดับ (เครดิตไม่มีวันหมดอายุ)
+                  </h2>
+                </div>
+                <span className="text-xs text-emerald-300 font-medium">
+                  ✓ ถูกกว่าจ่ายรายตัวสูงสุด 56% • เติมครั้งเดียวเก็บไว้ใช้ข้ามปีได้
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                {[
+                  {
+                    id: "mini_59",
+                    name: "Mini Pack",
+                    sub: "ชุดเปิดใจทดลองปั้น",
+                    price: 59,
+                    credits: 8,
+                    cleanCount: 4,
+                    proCount: 2,
+                    avgClean: "14.75",
+                    savePct: "41%",
+                    popular: false,
+                  },
+                  {
+                    id: "starter_99",
+                    name: "Starter Pack",
+                    sub: "ชุดเริ่มต้นสายทำโปรเจกต์",
+                    price: 99,
+                    credits: 15,
+                    cleanCount: 7,
+                    proCount: 3,
+                    avgClean: "13.20",
+                    savePct: "47%",
+                    popular: false,
+                  },
+                  {
+                    id: "creator_299",
+                    name: "Creator Pack",
+                    sub: "ขายดีอันดับ 1 🔥",
+                    price: 299,
+                    credits: 50,
+                    cleanCount: 25,
+                    proCount: 12,
+                    avgClean: "11.96",
+                    savePct: "52%",
+                    popular: true,
+                  },
+                  {
+                    id: "pro_690",
+                    name: "Pro Studio",
+                    sub: "สายผลิตเกม / พิมพ์ 3D จริงจัง",
+                    price: 690,
+                    credits: 120,
+                    cleanCount: 60,
+                    proCount: 30,
+                    avgClean: "11.50",
+                    savePct: "54%",
+                    popular: false,
+                  },
+                  {
+                    id: "agency_1990",
+                    name: "Agency Pack",
+                    sub: "สตูดิโอเกม & เอเจนซี่",
+                    price: 1990,
+                    credits: 360,
+                    cleanCount: 180,
+                    proCount: 90,
+                    avgClean: "11.05",
+                    savePct: "56%",
+                    popular: false,
+                  },
+                ].map((pkg) => (
+                  <div
+                    key={pkg.id}
+                    className={`p-4 rounded-2xl border flex flex-col justify-between gap-4 transition relative ${
+                      pkg.popular
+                        ? "bg-gradient-to-b from-[#2b0f17] to-[#14090d] border-red-500 shadow-[0_0_28px_rgba(239,68,68,0.28)] scale-[1.02]"
+                        : "bg-[#140a0e]/90 border-white/10 hover:border-red-500/40"
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            pkg.popular
+                              ? "bg-red-500 text-white"
+                              : "bg-red-500/15 text-red-300"
+                          }`}
+                        >
+                          ประหยัด {pkg.savePct}
+                        </span>
+                        <span className="text-[11px] font-mono text-slate-400">
+                          {pkg.sub}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-extrabold text-white">{pkg.name}</h3>
+                        <div className="flex items-baseline gap-1 mt-1">
+                          <span className="text-2xl font-black text-white">
+                            ฿{pkg.price.toLocaleString()}
+                          </span>
+                          <span className="text-xs text-red-300 font-bold">
+                            / {pkg.credits} 🪙
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] space-y-1 text-[11px]">
+                        <div className="flex justify-between text-slate-200">
+                          <span>ปั้น Clean Quad:</span>
+                          <span className="font-bold text-white">{pkg.cleanCount} ตัว</span>
+                        </div>
+                        <div className="flex justify-between text-slate-300">
+                          <span>ปั้น Best Quality:</span>
+                          <span className="font-bold text-amber-300">{pkg.proCount} ตัว</span>
+                        </div>
+                        <div className="flex justify-between text-emerald-300 pt-1 border-t border-white/10">
+                          <span>เฉลี่ยตัวละ:</span>
+                          <span className="font-bold">฿{pkg.avgClean}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setTopupInitialTab("topup");
+                        setTopupInitialPkgId(pkg.id);
+                        setTopupModalOpen(true);
+                      }}
+                      className={`w-full py-2.5 rounded-xl font-bold text-xs transition cursor-pointer ${
+                        pkg.popular
+                          ? "bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg"
+                          : "bg-white/[0.08] hover:bg-red-600 text-white"
+                      }`}
+                    >
+                      เลือกแพ็ก ฿{pkg.price.toLocaleString()}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Section 3: Credit Rate Sheet & Comparison vs Global Subscription */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="p-5 rounded-2xl bg-[#140a0e]/90 border border-red-500/20 space-y-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-red-400" />
+                  <span>อัตราการใช้เครดิตต่อฟีเจอร์ (Credit Rate Sheet)</span>
+                </h3>
+                <div className="space-y-2 text-xs">
+                  {[
+                    {
+                      feature: "ปั้นโมเดล 3D โหมด Clean Quad (Tripo H3.1 Standard + PBR)",
+                      cost: "2 เครดิต (25฿ รายตัว)",
+                    },
+                    {
+                      feature: "ปั้นโมเดล 3D โหมด Best Quality (Tripo H3.1 Pro HD + 4K PBR)",
+                      cost: "4 เครดิต (39฿ รายตัว)",
+                    },
+                    {
+                      feature: "ผูกกระดูก Auto-Rigging 16 ข้อต่อ / สร้างพื้นผิว AI Texture ใหม่",
+                      cost: "2 เครดิต (25฿ รายตัว)",
+                    },
+                    {
+                      feature: "อัปสเกลภาพพื้นผิว AI Aura-SR 4x (8K Ultra HD)",
+                      cost: "1 เครดิต",
+                    },
+                    {
+                      feature: "ชมคลังโมเดล 122 .GLB + กาง UV + เช็คพิมพ์ 3D + ส่งออก .GLB/.STL",
+                      cost: "ฟรี 0 เครดิต",
+                    },
+                  ].map((row) => (
+                    <div
+                      key={row.feature}
+                      className="flex items-center justify-between py-1.5 border-b border-white/[0.06] last:border-0 gap-2"
+                    >
+                      <span className="text-slate-300">{row.feature}</span>
+                      <span className="font-mono font-bold text-red-300 shrink-0">
+                        {row.cost}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-5 rounded-2xl bg-[#140a0e]/90 border border-red-500/20 space-y-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>ทำไมครีเอเตอร์ไทยเลือก Prism3D แทนเว็บนอก?</span>
+                </h3>
+                <div className="space-y-2 text-xs text-slate-300">
+                  <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] flex justify-between items-center">
+                    <span>ขั้นต่ำในการเริ่มต้นใช้งาน</span>
+                    <span className="text-emerald-300 font-bold">
+                      Prism3D เริ่ม 25฿ (เว็บนอกบังคับ 680฿/เดือน)
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] flex justify-between items-center">
+                    <span>วันหมดอายุของเครดิต</span>
+                    <span className="text-emerald-300 font-bold">
+                      ไม่มีวันหมดอายุ (เว็บนอกตัดเครดิตทิ้งทุกสิ้นเดือน)
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] flex justify-between items-center">
+                    <span>ช่องทางชำระเงิน & ภาษา</span>
+                    <span className="text-emerald-300 font-bold">
+                      สแกน PromptPay QR ทุกธนาคาร • สั่งงานภาษาไทยได้ทันที
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         /* =====================================================================
@@ -5450,7 +5824,7 @@ export default function SiamPrism3DStudioPage() {
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs text-slate-200">Humanoid Rigging</span>
                         <span className="text-[9px] font-mono tabular-nums px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300">
-                          +3 เครดิต
+                          +2 เครดิต
                         </span>
                       </div>
                       <button
@@ -5977,9 +6351,23 @@ export default function SiamPrism3DStudioPage() {
                         });
                         const data = await res.json();
                         if (res.status === 402) {
+                          setPendingCheckoutAction({
+                            type: "studio_op",
+                            title: `AI Texture: ${texturePrompt.slice(0, 32)}`,
+                            modeLabel: "สร้างพื้นผิว AI Texture (2 เครดิต)",
+                            costCredits: 2,
+                            directPriceThb: 25,
+                            previewImage: activeTask?.input_image_url || null,
+                            opPayload: {
+                              operation: "retexture",
+                              prompt: texturePrompt,
+                              modelUrl: activeTask?.output_glb_url || null,
+                              taskId: activeTask?.id || null,
+                            },
+                          });
                           setTopupInitialTab("topup");
                           setTopupModalOpen(true);
-                          triggerToast(data.error || "เครดิตใน D1 ไม่เพียงพอ");
+                          triggerToast(data.error || "สแกนจ่าย 25฿ หรือเติมเครดิตเพื่อสร้างพื้นผิว AI Texture");
                           return;
                         }
                         if (data?.user) setUser(data.user);
@@ -5999,7 +6387,7 @@ export default function SiamPrism3DStudioPage() {
                   >
                     <span>สร้างพื้นผิว AI Texture</span>
                     <span className="px-1.5 py-0.5 rounded-[4px] bg-black/25 text-[11px] font-mono tabular-nums font-medium">
-                      3 เครดิต
+                      2 เครดิต
                     </span>
                   </button>
                 </div>
@@ -6642,9 +7030,21 @@ export default function SiamPrism3DStudioPage() {
                       });
                       const data = await res.json();
                       if (res.status === 402) {
+                        setPendingCheckoutAction({
+                          type: "studio_op",
+                          title: `ผูกกระดูก Auto-Rig: ${activeTask?.prompt_th || "โมเดล 3D"}`,
+                          modeLabel: "Auto-Rigging & Skinning (2 เครดิต)",
+                          costCredits: 2,
+                          directPriceThb: 25,
+                          previewImage: activeTask?.input_image_url || null,
+                          opPayload: {
+                            operation: "rig",
+                            modelUrl: activeTask?.output_glb_url || null,
+                          },
+                        });
                         setTopupInitialTab("topup");
                         setTopupModalOpen(true);
-                        triggerToast(data.error || "เครดิตใน D1 ไม่เพียงพอ");
+                        triggerToast(data.error || "สแกนจ่าย 25฿ หรือเติมเครดิตเพื่อผูกกระดูก Auto-Rig");
                         return;
                       }
                       if (data?.user) setUser(data.user);
@@ -6663,7 +7063,7 @@ export default function SiamPrism3DStudioPage() {
                 >
                   <span>ผูกกระดูก Auto-Rig</span>
                   <span className="px-1.5 py-0.5 rounded-[4px] bg-black/25 text-[11px] font-mono tabular-nums font-medium">
-                    3 เครดิต
+                    2 เครดิต
                   </span>
                 </button>
               </div>
@@ -7287,16 +7687,22 @@ export default function SiamPrism3DStudioPage() {
 
       <TopupModal
         isOpen={topupModalOpen}
-        onClose={() => setTopupModalOpen(false)}
+        onClose={() => {
+          setTopupModalOpen(false);
+          setTopupInitialPkgId(null);
+        }}
         user={user}
         initialTab={topupInitialTab}
+        initialPackageId={topupInitialPkgId}
+        pendingAction={pendingCheckoutAction}
+        onClearPendingAction={() => setPendingCheckoutAction(null)}
         onRefreshD1={() => {
           fetchSession();
           triggerToast("ซิงค์ยอดเครดิตและประวัติธุรกรรมล่าสุดจาก Cloudflare D1 เรียบร้อย!");
         }}
         transactions={transactions}
         orders={orders}
-        onSuccess={(data) => {
+        onSuccess={async (data, completedPendingAction) => {
           if (data?.user) {
             setUser(data.user);
           }
@@ -7307,6 +7713,38 @@ export default function SiamPrism3DStudioPage() {
             setOrders(data.orders);
           }
           fetchSession();
+
+          if (completedPendingAction?.type === "generate") {
+            triggerToast(
+              `ชำระเงินสำเร็จ! กำลังเริ่มปั้น "${completedPendingAction.title}" ทันที...`
+            );
+            setTimeout(() => {
+              handleGenerate(true);
+            }, 150);
+          } else if (
+            completedPendingAction?.type === "studio_op" &&
+            completedPendingAction.opPayload
+          ) {
+            triggerToast(
+              `ชำระเงินสำเร็จ! กำลังประมวลผล "${completedPendingAction.title}" ทันที...`
+            );
+            try {
+              const opRes = await fetch("/api/studio-op", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(completedPendingAction.opPayload),
+              });
+              const opData = await opRes.json();
+              if (opData?.user) setUser(opData.user);
+              if (Array.isArray(opData?.transactions)) setTransactions(opData.transactions);
+              if (opData?.outputGlbUrl && activeTask) {
+                setActiveTask({ ...activeTask, output_glb_url: opData.outputGlbUrl });
+              }
+              if (opData?.message) triggerToast(opData.message);
+            } catch {
+              // Ignore
+            }
+          }
         }}
       />
 

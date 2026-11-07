@@ -157,7 +157,7 @@ export function findOrCreateGoogleUser(params: {
   }
 
   const userId = `usr_${crypto.randomBytes(8).toString("hex")}`;
-  const initialCredits = 15; // แจกฟรี 15 เครดิตสำหรับสมาชิกใหม่ที่ล็อกอินด้วย Gmail (ทดลองปั้นครบทุกขั้นได้ 1 ชิ้นเต็ม!)
+  const initialCredits = 0; // สมาชิกใหม่เริ่มต้น 0 เครดิต (ดูและแต่งคลัง 122 .GLB ฟรี • สแกนจ่ายรายตัว 25฿/39฿ หรือเติมแพ็ก 59฿+)
 
   db.prepare(
     `INSERT INTO users (id, email, name, avatar_url, provider, google_sub, credits_balance, total_generated, role)

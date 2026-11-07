@@ -54,12 +54,7 @@ export async function POST(req: NextRequest) {
     const engineSpec = ENGINE_SPECS[engine] || ENGINE_SPECS.trellis_pbr;
     const stageSpec = STAGE_COSTS[stage] || STAGE_COSTS.refine_pbr;
 
-    let costCredits = stageSpec.credits;
-    if (stage === "refine_pbr") {
-      costCredits = engineSpec.costCredits + (hasRig ? 3 : 0);
-    } else if (stage === "draft_3d") {
-      costCredits = 2;
-    }
+    const costCredits = engineSpec.costCredits + (hasRig ? 2 : 0);
 
     const taskId = `task_${crypto.randomBytes(7).toString("hex")}`;
 

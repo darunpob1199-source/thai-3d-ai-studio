@@ -36,6 +36,10 @@ export async function GET(req: NextRequest) {
     falKey.trim().length > 8
       ? `${falKey.trim().slice(0, 6)}••••${falKey.trim().slice(-4)}`
       : "";
+  const tripoKeyPreview =
+    tripoKey.trim().length > 8
+      ? `${tripoKey.trim().slice(0, 6)}••••${tripoKey.trim().slice(-4)}`
+      : "";
 
   const payload = generatePromptPayPayload(promptpayId, amountParam);
 
@@ -46,15 +50,18 @@ export async function GET(req: NextRequest) {
       falConfigured: falKey.trim().length > 8,
       keyPreview,
       tripoConfigured: tripoKey.trim().length > 8,
+      tripoKeyPreview,
       meshyConfigured: meshyKey.trim().length > 8,
       activeMode:
-        falKey.trim().length > 8
-          ? "fal_live"
+        tripoKey.trim().length > 8 && falKey.trim().length > 8
+          ? "tripo_and_fal_live"
           : tripoKey.trim().length > 8
             ? "tripo_live"
-            : meshyKey.trim().length > 8
-              ? "meshy_live"
-              : "sandbox",
+            : falKey.trim().length > 8
+              ? "fal_live"
+              : meshyKey.trim().length > 8
+                ? "meshy_live"
+                : "sandbox",
     },
   });
 }
@@ -76,7 +83,10 @@ export async function POST(req: NextRequest) {
       setAppSetting("fal_api_key", cleanFal);
       updateEnvLocalKey("FAL_KEY", cleanFal);
     }
-    if (typeof body.tripoApiKey === "string" && body.tripoApiKey.trim().length > 0) {
+    if (body.clearTripoKey === true) {
+      setAppSetting("tripo_api_key", "");
+      updateEnvLocalKey("TRIPO_API_KEY", "");
+    } else if (typeof body.tripoApiKey === "string" && body.tripoApiKey.trim().length > 0) {
       const cleanTripo = body.tripoApiKey.trim();
       setAppSetting("tripo_api_key", cleanTripo);
       updateEnvLocalKey("TRIPO_API_KEY", cleanTripo);
@@ -98,6 +108,10 @@ export async function POST(req: NextRequest) {
     const keyPreview =
       falKey.trim().length > 8
         ? `${falKey.trim().slice(0, 6)}••••${falKey.trim().slice(-4)}`
+        : "";
+    const tripoKeyPreview =
+      tripoKey.trim().length > 8
+        ? `${tripoKey.trim().slice(0, 6)}••••${tripoKey.trim().slice(-4)}`
         : "";
 
     let falTest: { valid: boolean; status: number; message: string } | null = null;
@@ -159,15 +173,18 @@ export async function POST(req: NextRequest) {
         falConfigured: falKey.trim().length > 8,
         keyPreview,
         tripoConfigured: tripoKey.trim().length > 8,
+        tripoKeyPreview,
         meshyConfigured: meshyKey.trim().length > 8,
         activeMode:
-          falKey.trim().length > 8
-            ? "fal_live"
+          tripoKey.trim().length > 8 && falKey.trim().length > 8
+            ? "tripo_and_fal_live"
             : tripoKey.trim().length > 8
               ? "tripo_live"
-              : meshyKey.trim().length > 8
-                ? "meshy_live"
-                : "sandbox",
+              : falKey.trim().length > 8
+                ? "fal_live"
+                : meshyKey.trim().length > 8
+                  ? "meshy_live"
+                  : "sandbox",
       },
     });
   } catch (err) {
