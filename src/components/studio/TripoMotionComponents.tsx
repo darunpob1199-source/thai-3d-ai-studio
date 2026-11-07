@@ -269,18 +269,18 @@ export function TripoInspirationFan({
 const PRESET_MODES = [
   {
     id: "trellis_pbr" as const,
-    pillLabel: "Best Quality",
-    credits: "4",
-    title: "Tripo H3.1 Pro HD Sculpt + 4K PBR",
-    desc: "ปั้นโมเดลตัวท็อปรายละเอียดสูงระดับ ZBrush Sculpt + 4K PBR Metallic/Roughness (4 เครดิต • สแกนจ่ายรายตัว 39฿)",
+    pillLabel: "Pro HD PBR",
+    credits: "2",
+    title: "Tencent Hunyuan3D-2.1 Pro HD + 4K PBR",
+    desc: "ปั้นโมเดลตัวท็อปเรือธง Tencent Games เก็บขอบคมกริบ + 4K PBR Metallic/Roughness แท้ (2 เครดิต • สแกนจ่ายด่วน 9฿)",
     image: "/images/tripo/hd_model.webp",
   },
   {
     id: "hunyuan3d_2_1" as const,
-    pillLabel: "Clean Quad",
-    credits: "2",
-    title: "Tripo H3.1 Clean Quad Mesh + PBR",
-    desc: "จัดเรียงเส้นโครงข่าย Quad Topology สะอาดตา พร้อมนำไป Rigging ลงเอนจินเกมหรือพิมพ์ 3D ทันที (2 เครดิต • สแกนจ่ายรายตัว 25฿)",
+    pillLabel: "Standard PBR",
+    credits: "1",
+    title: "Microsoft TRELLIS Clean Quad + PBR",
+    desc: "จัดเรียงโครงสร้าง 360° สมมาตรด้วย Microsoft TRELLIS SLAT พร้อมนำไปลงเอนจินเกมหรือพิมพ์ 3D ทันที (1 เครดิต • สแกนจ่ายด่วน 5฿)",
     image: "/images/tripo/low-poly.webp",
   },
 ];

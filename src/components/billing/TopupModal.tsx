@@ -27,7 +27,7 @@ export interface PendingCheckoutAction {
   title: string;
   modeLabel: string;
   costCredits: number;
-  directPriceThb: 25 | 39;
+  directPriceThb: 5 | 9 | 29;
   previewImage?: string | null;
   opPayload?: any;
 }
@@ -60,73 +60,73 @@ export interface CreditPkgItem {
 
 export const DIRECT_PAY_ITEMS: CreditPkgItem[] = [
   {
-    id: "direct_25",
-    name: "Clean Quad / Studio Op",
-    amountThb: 25,
-    credits: 2,
+    id: "direct_5",
+    name: "Standard PBR (TRELLIS)",
+    amountThb: 5,
+    credits: 1,
     bonus: 0,
     badge: "จ่ายรายตัว • ปั้นทันที",
-    subLabel: "ปั้นโมเดล Clean Quad หรือ Auto-Rig 1 ครั้ง",
+    subLabel: "ปั้นโมเดล TRELLIS PBR หรือ AI Texture 1 ครั้ง",
     isDirect: true,
   },
   {
-    id: "direct_39",
-    name: "Best Quality Pro HD",
-    amountThb: 39,
-    credits: 4,
+    id: "direct_9",
+    name: "Pro HD (Hunyuan3D-2.1)",
+    amountThb: 9,
+    credits: 2,
     bonus: 0,
     badge: "ตัวท็อป 4K PBR • ปั้นทันที",
-    subLabel: "ปั้นโมเดลตัวท็อป Tripo H3.1 Pro HD 1 ตัว",
+    subLabel: "ปั้นตัวท็อป Hunyuan3D-2.1 PBR หรือ Auto-Rig 1 ครั้ง",
     isDirect: true,
   },
 ];
 
 export const CREDIT_PACK_ITEMS: CreditPkgItem[] = [
   {
+    id: "starter_29",
+    name: "Starter Pack",
+    amountThb: 29,
+    credits: 6,
+    bonus: 0,
+    badge: "โปรลองของ",
+    subLabel: "ปั้นได้ 6 ตัว (เฉลี่ย 4.83฿/ตัว)",
+  },
+  {
     id: "mini_59",
     name: "Mini Pack",
     amountThb: 59,
-    credits: 8,
-    bonus: 0,
-    badge: "ชุดเปิดใจ",
-    subLabel: "ปั้นได้ 4 ตัว (เฉลี่ย 14.75฿/ตัว)",
-  },
-  {
-    id: "starter_99",
-    name: "Starter Pack",
-    amountThb: 99,
     credits: 15,
-    bonus: 1,
-    badge: "ชุดเริ่มต้น",
-    subLabel: "ปั้นได้ 7 ตัว (เฉลี่ย 13.20฿/ตัว)",
+    bonus: 3,
+    badge: "โปรเกมเมอร์",
+    subLabel: "ปั้นได้ 15 ตัว (เฉลี่ย 3.93฿/ตัว)",
   },
   {
-    id: "creator_299",
+    id: "creator_99",
     name: "Creator Pack",
-    amountThb: 299,
-    credits: 50,
-    bonus: 5,
+    amountThb: 99,
+    credits: 30,
+    bonus: 10,
     badge: "ขายดีอันดับ 1 🔥",
-    subLabel: "ปั้นได้ 25 ตัว (เฉลี่ย 11.96฿/ตัว)",
+    subLabel: "ปั้นได้ 30 ตัว (เฉลี่ย 3.30฿/ตัว)",
     popular: true,
   },
   {
-    id: "pro_690",
+    id: "pro_199",
     name: "Pro Studio",
-    amountThb: 690,
-    credits: 120,
-    bonus: 15,
-    badge: "สายผลิตจริง",
-    subLabel: "ปั้นได้ 60 ตัว (เฉลี่ย 11.50฿/ตัว)",
+    amountThb: 199,
+    credits: 65,
+    bonus: 25,
+    badge: "สายปั้นจริงจัง",
+    subLabel: "ปั้นได้ 65 ตัว (เฉลี่ย 3.06฿/ตัว)",
   },
   {
-    id: "agency_1990",
-    name: "Agency Pack",
-    amountThb: 1990,
-    credits: 360,
-    bonus: 60,
-    badge: "คุ้มสุด -55%",
-    subLabel: "ปั้นได้ 180 ตัว (เฉลี่ย 11.05฿/ตัว)",
+    id: "vip_490",
+    name: "Studio VIP",
+    amountThb: 490,
+    credits: 180,
+    bonus: 80,
+    badge: "คุ้มสุด -46%",
+    subLabel: "ปั้นได้ 180 ตัว (เฉลี่ย 2.72฿/ตัว)",
   },
 ];
 
@@ -180,14 +180,18 @@ export default function TopupModal({
       setActiveTab(initialTab);
       if (pendingAction) {
         const targetDirect =
-          pendingAction.directPriceThb === 39 ? DIRECT_PAY_ITEMS[1] : DIRECT_PAY_ITEMS[0];
+          pendingAction.costCredits > 2
+            ? CREDIT_PACK_ITEMS[0]
+            : pendingAction.directPriceThb === 9
+              ? DIRECT_PAY_ITEMS[1]
+              : DIRECT_PAY_ITEMS[0];
         setSelectedPkg(targetDirect);
       } else if (initialPackageId) {
         const allItems = [...DIRECT_PAY_ITEMS, ...CREDIT_PACK_ITEMS];
         const matched = allItems.find((item) => item.id === initialPackageId);
         setSelectedPkg(matched || CREDIT_PACK_ITEMS[2]);
       } else {
-        setSelectedPkg(CREDIT_PACK_ITEMS[2]); // Default to Creator Pack 299฿
+        setSelectedPkg(CREDIT_PACK_ITEMS[2]); // Default to Creator Pack 99฿
       }
     }
   }, [isOpen, initialTab, initialPackageId, pendingAction]);
@@ -376,7 +380,7 @@ export default function TopupModal({
                 )}
               </h3>
               <p className="text-[10px] text-slate-400">
-                จ่ายรายตัว 25฿ / 39฿ หรือเติมแพ็กสุดคุ้ม • เครดิตไม่มีวันหมดอายุ
+                สแกนด่วนรายตัว 5฿ / 9฿ หรือเติมแพ็กเริ่ม 29฿ (เฉลี่ย 2.72฿/ตัว) • เครดิตไม่มีวันหมดอายุ
               </p>
             </div>
           </div>
@@ -402,7 +406,7 @@ export default function TopupModal({
                 <span>เครดิตคงเหลือของคุณ:</span>
                 <span className="text-red-400 text-sm">{user ? user.credits_balance : 0} 🪙</span>
                 <span className="text-[10px] font-normal text-slate-400">
-                  (Clean Quad = 2 🪙 • Best Quality Pro HD = 4 🪙)
+                  (Standard TRELLIS = 1 🪙 • Pro HD Hunyuan3D-2.1 = 2 🪙)
                 </span>
               </div>
               <div className="text-[10px] text-slate-400 truncate">
@@ -784,7 +788,7 @@ export default function TopupModal({
                     </div>
                     <div className="text-[10px] text-slate-300 mt-0.5">
                       {gpuMode !== "sandbox"
-                        ? "เชื่อมต่อ Serverless GPU แท้ (Tripo3D v3.1 / H3.1 Pro HD + Flux Schnell + Meshy Rig)"
+                        ? "เชื่อมต่อ Serverless GPU แท้ (Tencent Hunyuan3D-2.1 PBR 2.40฿ + Microsoft TRELLIS 0.68฿)"
                         : "โหมด Pre-Baked Studio Sandbox (ใช้โมเดล .GLB แท้ในระบบ ฟรี 0 บาท)"}
                     </div>
                   </div>
@@ -800,12 +804,55 @@ export default function TopupModal({
                 </span>
               </div>
 
-              {/* Option A: Official Tripo3D OpenAPI Key */}
+              {/* Option A: FAL.ai / Replicate Serverless GPU Key (Primary) */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-red-400" />
+                    <span>Serverless GPU Key (`FAL_KEY` หรือ `Replicate r8_...` — ต้นทุน 0.68฿–2.40฿/ตัว)</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href="https://fal.ai/dashboard/keys"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] font-bold text-red-300 hover:underline"
+                    >
+                      คีย์ fal.ai ↗
+                    </a>
+                    <span className="text-[10px] text-slate-500">|</span>
+                    <a
+                      href="https://replicate.com/account/api-tokens"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] font-bold text-amber-300 hover:underline"
+                    >
+                      คีย์ replicate.com ↗
+                    </a>
+                  </div>
+                </div>
+                <input
+                  type="password"
+                  value={falApiKey}
+                  onChange={(e) => setFalApiKey(e.target.value)}
+                  placeholder={
+                    keyPreview
+                      ? `มีคีย์ GPU บันทึกไว้แล้ว (${keyPreview}) — วางคีย์ใหม่หากต้องการเปลี่ยน...`
+                      : "วางคีย์ FAL (key_id:key_secret) หรือ Replicate (r8_...) ที่นี่..."
+                  }
+                  className="w-full px-3 py-2 rounded-xl bg-[#090709] border border-red-500/25 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
+                />
+                <p className="text-[10px] text-slate-400">
+                  รันโมเดลระดับเรือธงคิดตามวินาทีจริง: <span className="text-emerald-300 font-semibold">Microsoft TRELLIS (0.68฿–1.25฿/ตัว)</span> + <span className="text-amber-300 font-semibold">Tencent Hunyuan3D-2.1 PBR (2.40฿/ตัว)</span> + Flux Schnell (0.10฿)
+                </p>
+              </div>
+
+              {/* Option B: Official Tripo3D OpenAPI Key (Optional) */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
                     <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Tripo3D Official API Key (`TRIPO_API_KEY` สำหรับ Tripo v3.1 / H3.1 แท้)</span>
+                    <span>Tripo3D Official API Key (`tsk_...` ตัวเลือกเสริม)</span>
                   </label>
                   <a
                     href="https://platform.tripo3d.ai/api-keys"
@@ -813,7 +860,7 @@ export default function TopupModal({
                     rel="noreferrer"
                     className="text-[10px] font-bold text-amber-300 hover:underline"
                   >
-                    รับคีย์ tsk_... ที่ platform.tripo3d.ai ↗
+                    platform.tripo3d.ai ↗
                   </a>
                 </div>
                 <input
@@ -823,42 +870,10 @@ export default function TopupModal({
                   placeholder={
                     tripoKeyPreview
                       ? `มีคีย์ Tripo3D บันทึกไว้แล้ว (${tripoKeyPreview}) — วางคีย์ใหม่หากต้องการเปลี่ยน...`
-                      : "วางคีย์ tsk_... จาก platform.tripo3d.ai (ถ้ามี)..."
+                      : "วางคีย์ tsk_... จาก platform.tripo3d.ai (ถ้าต้องการใช้ Tripo ตรง)..."
                   }
                   className="w-full px-3 py-2 rounded-xl bg-[#090709] border border-red-500/25 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
                 />
-              </div>
-
-              {/* Option B: FAL.ai Serverless GPU Key */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-red-400" />
-                    <span>FAL.ai Serverless GPU Key (`FAL_KEY` สำหรับ Tripo3D v2.5 HD / Flux / Meshy Rig)</span>
-                  </label>
-                  <a
-                    href="https://fal.ai/dashboard/keys"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[10px] font-bold text-red-300 hover:underline"
-                  >
-                    รับคีย์ที่ fal.ai/dashboard/keys ↗
-                  </a>
-                </div>
-                <input
-                  type="password"
-                  value={falApiKey}
-                  onChange={(e) => setFalApiKey(e.target.value)}
-                  placeholder={
-                    keyPreview
-                      ? `มีคีย์ FAL.ai บันทึกไว้แล้ว (${keyPreview}) — วางคีย์ใหม่หากต้องการเปลี่ยน...`
-                      : "วางคีย์ key_id:key_secret เพื่อเปิดโหมด Cloud GPU ครบวงจร..."
-                  }
-                  className="w-full px-3 py-2 rounded-xl bg-[#090709] border border-red-500/25 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
-                />
-                <p className="text-[10px] text-slate-400">
-                  รองรับครบทั้ง Text-to-2D (`fal-ai/flux/schnell`), Image/Multiview-to-3D (`fal-ai/tripo3d/v2.5` Standard & HD PBR), Auto-Rig (`fal-ai/meshy/rigging`) และ AI Retexture
-                </p>
               </div>
 
               <div className="space-y-1.5">
@@ -874,7 +889,7 @@ export default function TopupModal({
                   className="w-full px-3 py-2 rounded-xl bg-[#090709] border border-red-500/25 text-xs text-white focus:outline-none focus:border-red-500"
                 />
                 <p className="text-[10px] text-slate-400">
-                  ใช้สร้าง EMVCo Thai QR Code สแกนจ่ายเข้าบัญชีของคุณโดยตรง (ทั้งรายตัว 25฿/39฿ และแพ็ก 59฿-1,990฿)
+                  ใช้สร้าง EMVCo Thai QR Code สแกนจ่ายเข้าบัญชีของคุณโดยตรง (ทั้งรายตัว 5฿/9฿ และแพ็ก 29฿–490฿)
                 </p>
               </div>
 

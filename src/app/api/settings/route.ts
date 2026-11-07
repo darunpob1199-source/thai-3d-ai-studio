@@ -122,8 +122,34 @@ export async function POST(req: NextRequest) {
         falTest = {
           valid: false,
           status: 400,
-          message: "กรุณาวางคีย์ FAL_KEY (รูปแบบ key_id:key_secret) ก่อนกดทดสอบ",
+          message: "กรุณาวางคีย์ FAL_KEY (key_id:key_secret) หรือ Replicate (r8_...) ก่อนกดทดสอบ",
         };
+      } else if (candidateKey.startsWith("r8_")) {
+        try {
+          const repProbe = await fetch("https://api.replicate.com/v1/account", {
+            headers: { Authorization: `Bearer ${candidateKey}` },
+          });
+          if (repProbe.ok) {
+            const acc = await repProbe.json().catch(() => ({}));
+            falTest = {
+              valid: true,
+              status: 200,
+              message: `เชื่อมต่อ Replicate GPU (${acc?.username || "L40S/A100"}) สำเร็จ! พร้อมรัน Hunyuan3D-2.1 (2.40฿/ตัว) & TRELLIS`,
+            };
+          } else {
+            falTest = {
+              valid: false,
+              status: repProbe.status,
+              message: `คีย์ Replicate (r8_...) ไม่ถูกต้อง (${repProbe.status})`,
+            };
+          }
+        } catch (e) {
+          falTest = {
+            valid: false,
+            status: 500,
+            message: `ไม่สามารถติดต่อ Replicate API ได้: ${e instanceof Error ? e.message : "Network Error"}`,
+          };
+        }
       } else {
         try {
           const probeRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
@@ -151,7 +177,7 @@ export async function POST(req: NextRequest) {
             falTest = {
               valid: true,
               status: probeRes.status,
-              message: "เชื่อมต่อ FAL.ai Serverless GPU สำเร็จ 100%! พร้อมปั้นโมเดล 3D ของจริง",
+              message: "เชื่อมต่อ FAL.ai Serverless GPU สำเร็จ 100%! พร้อมรัน TRELLIS (0.68฿/ตัว) & Hunyuan3D-2.1 (2.40฿/ตัว)",
             };
           }
         } catch (e) {

@@ -353,58 +353,101 @@ async function findOrCreateGoogleUserD1(db, { email, name, avatar_url, google_su
 }
 
 const CREDIT_PACKAGES = {
+  direct_5: {
+    id: "direct_5",
+    name: "สแกนปั้นด่วน Standard PBR (TRELLIS)",
+    amountThb: 5,
+    credits: 1,
+    bonus: 0,
+  },
+  direct_9: {
+    id: "direct_9",
+    name: "สแกนปั้นด่วน Pro HD PBR (Hunyuan3D-2.1)",
+    amountThb: 9,
+    credits: 2,
+    bonus: 0,
+  },
+  starter_29: {
+    id: "starter_29",
+    name: "Starter Pack (โปรลองของ)",
+    amountThb: 29,
+    credits: 6,
+    bonus: 0,
+  },
+  mini_59: {
+    id: "mini_59",
+    name: "Mini Pack (โปรเกมเมอร์)",
+    amountThb: 59,
+    credits: 15,
+    bonus: 3,
+  },
+  creator_99: {
+    id: "creator_99",
+    name: "Creator Pack (ขายดีอันดับ 1 🔥)",
+    amountThb: 99,
+    credits: 30,
+    bonus: 10,
+  },
+  pro_199: {
+    id: "pro_199",
+    name: "Pro Studio (โปรสายปั้นจริงจัง)",
+    amountThb: 199,
+    credits: 65,
+    bonus: 25,
+  },
+  vip_490: {
+    id: "vip_490",
+    name: "Studio VIP (โปรสตูดิโอเหมา)",
+    amountThb: 490,
+    credits: 180,
+    bonus: 80,
+  },
+  // Legacy package aliases for backwards compatibility
   direct_25: {
     id: "direct_25",
     name: "จ่ายรายตัว Clean Quad / Studio Op",
     amountThb: 25,
-    credits: 2,
+    credits: 5,
     bonus: 0,
   },
   direct_39: {
     id: "direct_39",
     name: "จ่ายรายตัว Best Quality Pro HD",
     amountThb: 39,
-    credits: 4,
-    bonus: 0,
-  },
-  mini_59: {
-    id: "mini_59",
-    name: "Mini Pack (ชุดเปิดใจ)",
-    amountThb: 59,
     credits: 8,
     bonus: 0,
   },
   starter_99: {
     id: "starter_99",
-    name: "Starter Pack (ชุดเริ่มต้น)",
+    name: "Creator Pack (99฿)",
     amountThb: 99,
-    credits: 15,
-    bonus: 1,
+    credits: 30,
+    bonus: 10,
   },
   creator_299: {
     id: "creator_299",
-    name: "Creator Pack (ขายดีที่สุด 🔥)",
+    name: "Creator Pack (299฿)",
     amountThb: 299,
-    credits: 50,
-    bonus: 5,
+    credits: 95,
+    bonus: 35,
   },
   pro_690: {
     id: "pro_690",
-    name: "Pro Studio Pack (สายผลิตจริง)",
+    name: "Pro Studio Pack",
     amountThb: 690,
-    credits: 120,
-    bonus: 15,
+    credits: 240,
+    bonus: 90,
   },
   agency_1990: {
     id: "agency_1990",
     name: "Agency / Game Studio",
     amountThb: 1990,
-    credits: 360,
-    bonus: 60,
+    credits: 720,
+    bonus: 270,
   },
-  starter_50: { id: "starter_50", name: "Starter ทดลองปั้น", amountThb: 50, credits: 8, bonus: 0 },
-  indie_150: { id: "indie_150", name: "Indie Game Dev", amountThb: 150, credits: 24, bonus: 2 },
-  pro_390: { id: "pro_390", name: "Pro Studio Creator", amountThb: 390, credits: 65, bonus: 10 },
+  starter_50: { id: "starter_50", name: "Starter ทดลองปั้น", amountThb: 50, credits: 12, bonus: 0 },
+  indie_150: { id: "indie_150", name: "Indie Game Dev", amountThb: 150, credits: 45, bonus: 5 },
+  pro_390: { id: "pro_390", name: "Pro Studio Creator", amountThb: 390, credits: 140, bonus: 40 },
 };
 
 export default {
@@ -492,8 +535,34 @@ export default {
             falTest = {
               valid: false,
               status: 400,
-              message: "กรุณาวางคีย์ FAL_KEY (รูปแบบ key_id:key_secret) ก่อนกดทดสอบ",
+              message: "กรุณาวางคีย์ FAL_KEY (key_id:key_secret) หรือ Replicate (r8_...) ก่อนกดทดสอบ",
             };
+          } else if (candidateKey.startsWith("r8_")) {
+            try {
+              const repProbe = await fetch("https://api.replicate.com/v1/account", {
+                headers: { Authorization: `Bearer ${candidateKey}` },
+              });
+              if (repProbe.ok) {
+                const acc = await repProbe.json().catch(() => ({}));
+                falTest = {
+                  valid: true,
+                  status: 200,
+                  message: `เชื่อมต่อ Replicate GPU (${acc?.username || "L40S/A100"}) สำเร็จ! พร้อมรัน Hunyuan3D-2.1 (2.40฿/ตัว) & TRELLIS`,
+                };
+              } else {
+                falTest = {
+                  valid: false,
+                  status: repProbe.status,
+                  message: `คีย์ Replicate (r8_...) ไม่ถูกต้อง (${repProbe.status})`,
+                };
+              }
+            } catch (e) {
+              falTest = {
+                valid: false,
+                status: 500,
+                message: `ไม่สามารถติดต่อ Replicate API ได้: ${e?.message || "Network Error"}`,
+              };
+            }
           } else {
             try {
               const probeRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
@@ -521,7 +590,7 @@ export default {
                 falTest = {
                   valid: true,
                   status: probeRes.status,
-                  message: "เชื่อมต่อ FAL.ai Serverless GPU สำเร็จ 100%! พร้อมปั้นโมเดล 3D ของจริง",
+                  message: "เชื่อมต่อ FAL.ai Serverless GPU สำเร็จ 100%! พร้อมรัน TRELLIS (0.68฿/ตัว) & Hunyuan3D-2.1 (2.40฿/ตัว)",
                 };
               }
             } catch (e) {
@@ -935,8 +1004,8 @@ export default {
       const hasRig = Boolean(body.hasRig);
       let inputImageUrl = body.inputImageUrl || null;
 
-      const engineCosts = { triposg: 2, hunyuan3d_2_1: 2, trellis_pbr: 4 };
-      const costCredits = (engineCosts[engine] || 2) + (hasRig ? 2 : 0);
+      const engineCosts = { triposg: 1, hunyuan3d_2_1: 1, trellis_pbr: 2 };
+      const costCredits = (engineCosts[engine] || 1) + (hasRig ? 2 : 0);
 
       if (Number(user.credits_balance) < costCredits) {
         return jsonResponse(
@@ -1051,7 +1120,7 @@ export default {
         }
       }
 
-      // TIER 1: FAL.ai Serverless GPU (Tripo3D v2.5 HD / Standard PBR)
+      // TIER 1: Serverless GPU Pay-Per-Second (FAL.ai & Replicate: Tencent Hunyuan3D-2.1 PBR 2.40฿ + Microsoft TRELLIS 0.68฿)
       if (!outputGlbUrl && falKey && falKey.length > 10) {
         try {
           const isProHd = engine === "trellis_pbr";
@@ -1059,94 +1128,190 @@ export default {
           if (condImg && String(condImg).startsWith("/")) {
             condImg = `${url.origin}${condImg}`;
           }
-          if (!condImg) {
-            const fluxRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
-              method: "POST",
-              headers: {
-                Authorization: `Key ${falKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                prompt: enhanced.promptEn,
-                image_size: "square_hd",
-                num_inference_steps: 4,
-              }),
-            });
-            if (fluxRes.ok) {
-              const fd = await fluxRes.json();
-              condImg = fd?.images?.[0]?.url || null;
-              if (condImg && !inputImageUrl) {
-                inputImageUrl = condImg;
+
+          if (falKey.startsWith("r8_")) {
+            // Replicate Pay-Per-Second GPU (Nvidia L40S tencent/hunyuan3d-2 2.40฿ / A100 firtoz/trellis 1.25฿)
+            if (!condImg) {
+              const fluxRep = await fetch(
+                "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${falKey}`,
+                    "Content-Type": "application/json",
+                    Prefer: "wait=45",
+                  },
+                  body: JSON.stringify({
+                    input: {
+                      prompt: enhanced.promptEn,
+                      aspect_ratio: "1:1",
+                      output_format: "png",
+                    },
+                  }),
+                }
+              );
+              if (fluxRep.ok) {
+                const fd = await fluxRep.json();
+                const out = fd?.output;
+                condImg = Array.isArray(out) ? out[0] : typeof out === "string" ? out : null;
+                if (condImg && !inputImageUrl) inputImageUrl = condImg;
               }
-            } else {
-              falNotice = `FAL.ai Flux status ${fluxRes.status}`;
             }
-          }
-
-          let gpuRes = null;
-          if (hasMultiView && mvImages.front && mvImages.back) {
-            const frontFull = String(mvImages.front).startsWith("/")
-              ? `${url.origin}${mvImages.front}`
-              : mvImages.front;
-            const backFull = String(mvImages.back).startsWith("/")
-              ? `${url.origin}${mvImages.back}`
-              : mvImages.back;
-            const leftFull =
-              mvImages.left && String(mvImages.left).startsWith("/")
-                ? `${url.origin}${mvImages.left}`
-                : mvImages.left;
-            const rightFull =
-              mvImages.right && String(mvImages.right).startsWith("/")
-                ? `${url.origin}${mvImages.right}`
-                : mvImages.right;
-
-            gpuRes = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/multiview-to-3d", {
-              method: "POST",
-              headers: {
-                Authorization: `Key ${falKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                front_image_url: frontFull,
-                back_image_url: backFull,
-                left_image_url: leftFull || undefined,
-                right_image_url: rightFull || undefined,
-                texture: isProHd ? "HD" : "standard",
-                pbr: true,
-              }),
-            });
-          }
-
-          if (!gpuRes || !gpuRes.ok) {
-            gpuRes = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/image-to-3d", {
-              method: "POST",
-              headers: {
-                Authorization: `Key ${falKey}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                prompt: enhanced.promptEn,
-                image_url: condImg || undefined,
-                texture: isProHd ? "HD" : "standard",
-                pbr: true,
-              }),
-            });
-          }
-
-          if (gpuRes && gpuRes.ok) {
-            const gd = await gpuRes.json();
-            const rawGlb =
-              gd?.model_mesh?.url ||
-              gd?.mesh?.url ||
-              gd?.pbr_model?.url ||
-              gd?.glb?.url ||
-              null;
-            if (rawGlb) {
-              outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawGlb)}`;
-              providerMode = "fal_live";
+            if (condImg) {
+              const repEndpoint = isProHd
+                ? "https://api.replicate.com/v1/models/tencent/hunyuan3d-2/predictions"
+                : "https://api.replicate.com/v1/models/firtoz/trellis/predictions";
+              const repBody = isProHd
+                ? {
+                    input: {
+                      image: condImg,
+                      steps: 30,
+                      guidance_scale: 5.5,
+                      octree_resolution: 256,
+                      remove_background: true,
+                    },
+                  }
+                : {
+                    input: {
+                      images: [condImg],
+                      generate_model: true,
+                      texture_size: 1024,
+                      mesh_simplify: 0.95,
+                    },
+                  };
+              const repRes = await fetch(repEndpoint, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${falKey}`,
+                  "Content-Type": "application/json",
+                  Prefer: "wait=55",
+                },
+                body: JSON.stringify(repBody),
+              });
+              if (repRes.ok) {
+                const rd = await repRes.json();
+                const out = rd?.output;
+                const rawGlb =
+                  typeof out === "string"
+                    ? out
+                    : out?.mesh || out?.model_file || out?.glb || null;
+                if (rawGlb) {
+                  outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawGlb)}`;
+                  providerMode = "replicate_live";
+                }
+              }
             }
-          } else if (gpuRes) {
-            falNotice = `FAL.ai 3D endpoint returned ${gpuRes.status}`;
+          } else {
+            // FAL.ai Serverless GPU (Flux Schnell 0.10฿ -> Microsoft TRELLIS 0.68฿ / Tencent Hunyuan3D-2.1 PBR 2.40฿)
+            if (!condImg) {
+              const fluxRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
+                method: "POST",
+                headers: {
+                  Authorization: `Key ${falKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  prompt: enhanced.promptEn,
+                  image_size: "square_hd",
+                  num_inference_steps: 4,
+                }),
+              });
+              if (fluxRes.ok) {
+                const fd = await fluxRes.json();
+                condImg = fd?.images?.[0]?.url || null;
+                if (condImg && !inputImageUrl) {
+                  inputImageUrl = condImg;
+                }
+              } else {
+                falNotice = `FAL.ai Flux status ${fluxRes.status}`;
+              }
+            }
+
+            let gpuRes = null;
+            if (hasMultiView && mvImages.front && mvImages.back) {
+              const frontFull = String(mvImages.front).startsWith("/")
+                ? `${url.origin}${mvImages.front}`
+                : mvImages.front;
+              const backFull = String(mvImages.back).startsWith("/")
+                ? `${url.origin}${mvImages.back}`
+                : mvImages.back;
+              const leftFull =
+                mvImages.left && String(mvImages.left).startsWith("/")
+                  ? `${url.origin}${mvImages.left}`
+                  : mvImages.left;
+              const rightFull =
+                mvImages.right && String(mvImages.right).startsWith("/")
+                  ? `${url.origin}${mvImages.right}`
+                  : mvImages.right;
+
+              gpuRes = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/multiview-to-3d", {
+                method: "POST",
+                headers: {
+                  Authorization: `Key ${falKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  front_image_url: frontFull,
+                  back_image_url: backFull,
+                  left_image_url: leftFull || undefined,
+                  right_image_url: rightFull || undefined,
+                  texture: isProHd ? "HD" : "standard",
+                  pbr: true,
+                }),
+              });
+            }
+
+            if (!gpuRes || !gpuRes.ok) {
+              const primaryEndpoint = isProHd
+                ? "https://fal.run/fal-ai/hunyuan3d-v21"
+                : "https://fal.run/fal-ai/trellis";
+              gpuRes = await fetch(primaryEndpoint, {
+                method: "POST",
+                headers: {
+                  Authorization: `Key ${falKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  image_url: condImg || undefined,
+                  prompt: enhanced.promptEn,
+                  textured_mesh: true,
+                }),
+              });
+            }
+
+            if ((!gpuRes || !gpuRes.ok) && isProHd) {
+              gpuRes = await fetch("https://fal.run/fal-ai/trellis", {
+                method: "POST",
+                headers: {
+                  Authorization: `Key ${falKey}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  image_url: condImg || undefined,
+                  ss_guidance_strength: 7.5,
+                  slat_guidance_strength: 3.0,
+                  mesh_simplify: 0.95,
+                  texture_size: 2048,
+                }),
+              });
+            }
+
+            if (gpuRes && gpuRes.ok) {
+              const gd = await gpuRes.json();
+              const rawGlb =
+                gd?.model_mesh?.url ||
+                gd?.model_glb?.url ||
+                gd?.mesh?.url ||
+                gd?.pbr_model?.url ||
+                gd?.glb?.url ||
+                null;
+              if (rawGlb) {
+                outputGlbUrl = `/api/glb-proxy?url=${encodeURIComponent(rawGlb)}`;
+                providerMode = "fal_live";
+              }
+            } else if (gpuRes) {
+              falNotice = `FAL.ai 3D endpoint returned ${gpuRes.status}`;
+            }
           }
         } catch (err) {
           falNotice = err?.message || "FAL.ai exception";
@@ -1318,7 +1483,7 @@ export default {
       // Paid Cloud AI operations vs Free in-browser operations
       const opCosts = {
         rig: 2,
-        retexture: 2,
+        retexture: 1,
         upscale: 1,
         remesh: 0,
       };

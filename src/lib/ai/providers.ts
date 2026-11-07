@@ -23,42 +23,42 @@ export interface EngineSpec {
 export const ENGINE_SPECS: Record<AI3DEngine, EngineSpec> = {
   triposg: {
     id: "triposg",
-    name: "TripoSG Fast Draft",
-    vendor: "VAST AI Research (Open-Source)",
-    badge: "ประหยัดสุด • เร็ว 5 วิ",
+    name: "TRELLIS Fast Draft",
+    vendor: "Microsoft Research (SLAT)",
+    badge: "1 เครดิต • สแกนด่วน 5฿",
     visionBackbone: "DINOv2-Large + CLIP Dual Encoder",
-    diffusionBackbone: "Rectified Flow Transformer (SDF VAE)",
-    costCredits: 2,
-    realGpuCostThb: 0.25,
-    estSeconds: 6,
-    license: "MIT License (ฟรี 100%)",
-    description: "เหมาะสำหรับปั้นโครงขาว (White Mesh) ดูรูปทรง 360° แบบรวดเร็ว ราคาประหยัดเพียง 2 เครดิต",
+    diffusionBackbone: "Structured 3D Latents (SLAT Flow)",
+    costCredits: 1,
+    realGpuCostThb: 0.68,
+    estSeconds: 10,
+    license: "MIT License (Commercial 100%)",
+    description: "ปั้นโมเดล 3D มาตรฐานพร้อมสี PBR ด้วย Microsoft TRELLIS (ใช้เพียง 1 เครดิต หรือสแกนจ่ายด่วน 5 บาท)",
   },
   hunyuan3d_2_1: {
     id: "hunyuan3d_2_1",
-    name: "Clean Quad (Tripo H3.1 Standard PBR)",
-    vendor: "Tripo3D H3.1 / FAL.ai",
-    badge: "2 เครดิต • สแกนด่วน 25฿",
+    name: "Standard PBR (Microsoft TRELLIS)",
+    vendor: "Microsoft Research / FAL.ai A100",
+    badge: "1 เครดิต • สแกนด่วน 5฿",
     visionBackbone: "DINOv2 Giant Patch Extractor",
-    diffusionBackbone: "Tripo H3.1 Standard PBR + Clean Topology",
-    costCredits: 2,
-    realGpuCostThb: 7.3,
-    estSeconds: 15,
+    diffusionBackbone: "Microsoft TRELLIS SLAT + Clean Quad PBR",
+    costCredits: 1,
+    realGpuCostThb: 0.78,
+    estSeconds: 14,
     license: "Commercial License 100%",
-    description: "ปั้นโมเดล 3D คมชัดพร้อมพื้นผิว PBR รอบตัว 360° ด้วย Tripo H3.1 (ใช้เพียง 2 เครดิต หรือสแกนจ่ายด่วน 25 บาท)",
+    description: "ปั้นโมเดล 3D คมชัด 360° พร้อมพื้นผิว PBR ด้วย Microsoft TRELLIS (ใช้เพียง 1 เครดิต หรือสแกนจ่ายด่วน 5 บาท)",
   },
   trellis_pbr: {
     id: "trellis_pbr",
-    name: "Best Quality (Tripo H3.1 Pro HD + Quad)",
-    vendor: "Tripo3D H3.1 Detailed HD / TRELLIS.2 4B",
-    badge: "4 เครดิต • สแกนด่วน 39฿",
+    name: "Pro HD PBR (Tencent Hunyuan3D-2.1)",
+    vendor: "Tencent Games Flagship / Nvidia L40S",
+    badge: "2 เครดิต • สแกนด่วน 9฿",
     visionBackbone: "DINOv2 Dense Feature Grid",
-    diffusionBackbone: "Tripo H3.1 Detailed 4K PBR + High-Def Geometry",
-    costCredits: 4,
-    realGpuCostThb: 16.5,
+    diffusionBackbone: "Hunyuan3D-2.1 DiT + 4K Metallic/Roughness PBR",
+    costCredits: 2,
+    realGpuCostThb: 2.4,
     estSeconds: 22,
     license: "Commercial License 100%",
-    description: "ตัวท็อประดับสตูดิโอเกม เก็บรายละเอียดสูงสุด 2 ล้านโพลีกอน + พื้นผิว PBR (BaseColor, Metallic, Roughness, Normal) คมกริบ (4 เครดิต หรือสแกนจ่ายด่วน 39 บาท)",
+    description: "ตัวท็อปเรือธงจาก Tencent Games เก็บขอบคมกริบ + พื้นผิว PBR แท้ (BaseColor, Metallic, Roughness, Normal) (2 เครดิต หรือสแกนจ่ายด่วน 9 บาท)",
   },
 };
 
@@ -69,25 +69,25 @@ export const STAGE_COSTS: Record<
   preview_2d: {
     label: "ขั้นที่ 0: เจนภาพต้นแบบ 2D (Flux Schnell + ลบพื้นหลัง BiRefNet)",
     credits: 1,
-    realCostThb: 0.08,
+    realCostThb: 0.1,
     desc: "ดูภาพก่อนปั้นจริง ป้องกันการเสียเครดิตปั้น 3D ฟรี",
   },
   draft_3d: {
-    label: "ขั้นที่ 1: ปั้นโมเดล Clean Quad PBR (Tripo H3.1 Standard)",
-    credits: 2,
-    realCostThb: 7.3,
-    desc: "ปั้นโมเดล 3 มิติพร้อมพื้นผิว PBR มาตรฐาน 360°",
+    label: "ขั้นที่ 1: ปั้นโมเดล Standard PBR (Microsoft TRELLIS)",
+    credits: 1,
+    realCostThb: 0.78,
+    desc: "ปั้นโมเดล 3 มิติพร้อมพื้นผิว PBR มาตรฐาน 360° (ใช้ 1 เครดิต / สแกนด่วน 5฿)",
   },
   refine_pbr: {
-    label: "ขั้นที่ 2: ปั้นตัวเต็ม + ลงสี HD PBR (Tripo H3.1)",
-    credits: 4,
-    realCostThb: 16.5,
-    desc: "สร้างพื้นผิว PBR (BaseColor, Metallic, Roughness, Normal) ความละเอียดสูง",
+    label: "ขั้นที่ 2: ปั้นตัวท็อป Pro HD PBR (Tencent Hunyuan3D-2.1)",
+    credits: 2,
+    realCostThb: 2.4,
+    desc: "สร้างโมเดลคมกริบ + พื้นผิว 4K PBR แท้ (BaseColor, Metallic, Roughness, Normal)",
   },
   remesh_rig: {
-    label: "ขั้นที่ 3: ลดโพลีกอน Quad + Auto-Rig กระดูก (Tripo Auto-Rig)",
+    label: "ขั้นที่ 3: ลดโพลีกอน Quad + Auto-Rig กระดูก 16 ข้อต่อ",
     credits: 2,
-    realCostThb: 9.1,
+    realCostThb: 2.4,
     desc: "ลด Polygon ให้พร้อมใส่ Roblox / FiveM / Unity พร้อมใส่กระดูก Biped",
   },
 };
@@ -384,61 +384,165 @@ export async function dispatchToServerlessGpu(params: {
     }
   }
 
-  // Tier 1: VIP Serverless GPU (FAL.ai: Flux Schnell -> Tripo3D v2.5 Flagship)
-  const falKey = (getAppSetting("fal_api_key") || process.env.FAL_KEY || "").trim();
+  // Tier 1: Serverless GPU Pay-Per-Second (FAL.ai & Replicate: Flux Schnell -> Tencent Hunyuan3D-2.1 PBR 2.40฿ / Microsoft TRELLIS 0.68฿)
+  const falKey = (getAppSetting("fal_api_key") || process.env.FAL_KEY || process.env.REPLICATE_API_TOKEN || "").trim();
   if (falKey.length > 10) {
     try {
+      const isProHd = params.engine === "trellis_pbr";
       let conditioningImageUrl = params.inputImageUrl || null;
 
-      if (!conditioningImageUrl) {
-        const fluxRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
+      // Support Replicate Pay-Per-Second Token (r8_...) directly in the same key slot!
+      if (falKey.startsWith("r8_")) {
+        if (!conditioningImageUrl) {
+          const fluxRep = await fetch(
+            "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${falKey}`,
+                "Content-Type": "application/json",
+                Prefer: "wait=45",
+              },
+              body: JSON.stringify({
+                input: {
+                  prompt: enhanced.promptEn,
+                  aspect_ratio: "1:1",
+                  output_format: "png",
+                },
+              }),
+            }
+          );
+          if (fluxRep.ok) {
+            const fluxData = await fluxRep.json();
+            const out = fluxData?.output;
+            conditioningImageUrl = Array.isArray(out) ? out[0] : typeof out === "string" ? out : null;
+          }
+        }
+
+        if (conditioningImageUrl) {
+          const repEndpoint = isProHd
+            ? "https://api.replicate.com/v1/models/tencent/hunyuan3d-2/predictions"
+            : "https://api.replicate.com/v1/models/firtoz/trellis/predictions";
+          const repBody = isProHd
+            ? {
+                input: {
+                  image: conditioningImageUrl,
+                  steps: 30,
+                  guidance_scale: 5.5,
+                  octree_resolution: 256,
+                  remove_background: true,
+                },
+              }
+            : {
+                input: {
+                  images: [conditioningImageUrl],
+                  generate_model: true,
+                  texture_size: 1024,
+                  mesh_simplify: 0.95,
+                },
+              };
+
+          const repRes = await fetch(repEndpoint, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${falKey}`,
+              "Content-Type": "application/json",
+              Prefer: "wait=55",
+            },
+            body: JSON.stringify(repBody),
+          });
+          if (repRes.ok) {
+            const repData = await repRes.json();
+            const out = repData?.output;
+            const remoteGlb =
+              typeof out === "string"
+                ? out
+                : out?.mesh || out?.model_file || out?.glb || null;
+            if (remoteGlb) {
+              const cachedGlb = await cacheGlbLocally(remoteGlb, params.taskId);
+              return {
+                providerMode: "fal_live",
+                ...enhanced,
+                outputGlbUrl: cachedGlb,
+              };
+            }
+          }
+        }
+      } else {
+        // FAL.ai Serverless GPU (Flux Schnell 0.10฿ -> Microsoft TRELLIS 0.68฿ / Tencent Hunyuan3D-2.1 PBR 2.40฿)
+        if (!conditioningImageUrl) {
+          const fluxRes = await fetch("https://fal.run/fal-ai/flux/schnell", {
+            method: "POST",
+            headers: {
+              Authorization: `Key ${falKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              prompt: enhanced.promptEn,
+              image_size: "square_hd",
+              num_inference_steps: 4,
+            }),
+          });
+          if (fluxRes.ok) {
+            const fluxData = await fluxRes.json();
+            conditioningImageUrl = fluxData?.images?.[0]?.url || null;
+          }
+        }
+
+        // Primary endpoint: Tencent Hunyuan3D-2.1 PBR (for Pro HD) or Microsoft TRELLIS (for Standard)
+        const primaryEndpoint = isProHd
+          ? "https://fal.run/fal-ai/hunyuan3d-v21"
+          : "https://fal.run/fal-ai/trellis";
+
+        let res = await fetch(primaryEndpoint, {
           method: "POST",
           headers: {
             Authorization: `Key ${falKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            image_url: conditioningImageUrl || undefined,
             prompt: enhanced.promptEn,
-            image_size: "square_hd",
-            num_inference_steps: 4,
+            textured_mesh: true,
           }),
         });
-        if (fluxRes.ok) {
-          const fluxData = await fluxRes.json();
-          conditioningImageUrl = fluxData?.images?.[0]?.url || null;
+
+        // Automatic fallback to Microsoft TRELLIS if hunyuan3d-v21 endpoint is busy
+        if (!res.ok && isProHd) {
+          res = await fetch("https://fal.run/fal-ai/trellis", {
+            method: "POST",
+            headers: {
+              Authorization: `Key ${falKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              image_url: conditioningImageUrl || undefined,
+              ss_guidance_strength: 7.5,
+              slat_guidance_strength: 3.0,
+              mesh_simplify: 0.95,
+              texture_size: 2048,
+            }),
+          });
         }
-      }
 
-      const res = await fetch("https://fal.run/fal-ai/tripo3d/v2.5/image-to-3d", {
-        method: "POST",
-        headers: {
-          Authorization: `Key ${falKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: enhanced.promptEn,
-          image_url: conditioningImageUrl || undefined,
-          texture: params.engine === "trellis_pbr" ? "HD" : "standard",
-          pbr: true,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const remoteGlb =
-          data?.model_mesh?.url ||
-          data?.mesh?.url ||
-          data?.pbr_model?.url ||
-          data?.glb?.url ||
-          null;
-        const cachedGlb = remoteGlb
-          ? await cacheGlbLocally(remoteGlb, params.taskId)
-          : null;
-        return {
-          providerMode: "fal_live",
-          ...enhanced,
-          outputGlbUrl: cachedGlb,
-        };
+        if (res.ok) {
+          const data = await res.json();
+          const remoteGlb =
+            data?.model_mesh?.url ||
+            data?.model_glb?.url ||
+            data?.mesh?.url ||
+            data?.pbr_model?.url ||
+            data?.glb?.url ||
+            null;
+          const cachedGlb = remoteGlb
+            ? await cacheGlbLocally(remoteGlb, params.taskId)
+            : null;
+          return {
+            providerMode: "fal_live",
+            ...enhanced,
+            outputGlbUrl: cachedGlb,
+          };
+        }
       }
     } catch {
       // Fall through to Pre-Baked Genuine AI PBR Showcase

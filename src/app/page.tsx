@@ -183,16 +183,16 @@ const MODEL_OPTIONS: {
   {
     id: "trellis_pbr",
     code: "PRO",
-    name: "Best Quality (Tripo H3.1 Pro HD)",
-    sub: "4K PBR + Clean Quad · สแกนจ่ายรายตัว 39฿",
-    credits: 4,
+    name: "Pro HD PBR (Tencent Hunyuan3D-2.1)",
+    sub: "4K PBR + ขอบคมกริบ · สแกนด่วน 9฿",
+    credits: 2,
   },
   {
     id: "hunyuan3d_2_1",
     code: "STD",
-    name: "Clean Quad (Tripo H3.1 Standard)",
-    sub: "Quad Mesh + PBR · สแกนจ่ายรายตัว 25฿",
-    credits: 2,
+    name: "Standard PBR (Microsoft TRELLIS)",
+    sub: "360° SLAT Mesh + PBR · สแกนด่วน 5฿",
+    credits: 1,
   },
 ];
 
@@ -4062,7 +4062,7 @@ export default function SiamPrism3DStudioPage() {
         title: taskTitle,
         modeLabel: currentModelSpec.name,
         costCredits: estimatedCost,
-        directPriceThb: estimatedCost >= 4 ? 39 : 25,
+        directPriceThb: estimatedCost >= 3 ? 29 : estimatedCost === 2 ? 9 : 5,
         previewImage: uploadedImage || multiViewImages.front || null,
       });
       setTopupInitialTab("topup");
@@ -4130,7 +4130,7 @@ export default function SiamPrism3DStudioPage() {
             title: taskTitle,
             modeLabel: currentModelSpec.name,
             costCredits: estimatedCost,
-            directPriceThb: estimatedCost >= 4 ? 39 : 25,
+            directPriceThb: estimatedCost >= 3 ? 29 : estimatedCost === 2 ? 9 : 5,
             previewImage: uploadedImage || multiViewImages.front || null,
           });
           setTopupInitialTab("topup");
@@ -4798,25 +4798,25 @@ export default function SiamPrism3DStudioPage() {
         </div>
       ) : topNav === "pricing" ? (
         /* =====================================================================
-           2C. PRICING & PACKAGES VIEW — PAY-PER-MODEL QR (25฿/39฿) & 5 PACKS
+           2C. PRICING & PACKAGES VIEW — PAY-PER-MODEL QR (5฿/9฿) & 5 PACKS (29฿-490฿)
            ===================================================================== */
         <div className="relative z-10 flex-1 overflow-y-auto px-6 py-10 space-y-10 no-scrollbar">
           <div className="max-w-[1180px] mx-auto space-y-8">
             {/* Hero Title */}
-            <div className="text-center space-y-2.5 max-w-[680px] mx-auto">
+            <div className="text-center space-y-2.5 max-w-[720px] mx-auto">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-xs font-bold text-red-300">
                 <Sparkles className="w-3.5 h-3.5 text-red-400" />
                 <span>ไม่บังคับตัดบัตรรายเดือน • เครดิตไม่มีวันหมดอายุ • สแกน PromptPay QR ได้ทันที</span>
               </div>
               <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">
-                ตารางราคา & แพ็กเกจเครดิต <span className="text-[#ef4444]">Prism3D</span>
+                โปรโมชัน & ตารางราคา <span className="text-[#ef4444]">Prism3D</span>
               </h1>
               <p className="text-xs sm:text-sm text-[#d4c5cb] leading-relaxed">
-                เลือกสแกนจ่ายรายตัวเฉพาะตอนปั้น (<span className="text-white font-semibold">25฿ / 39฿</span>) หรือเติมแพ็กเกจเครดิตสุดคุ้ม (<span className="text-red-300 font-semibold">ประหยัดสูงสุด 56% เหลือเฉลี่ยตัวละ 11.05฿</span>) ด้วยโมเดลรุ่นท็อป Tripo H3.1 Pro HD + 4K PBR
+                ขับเคลื่อนด้วยขุมพลังเรือธงระดับโลก <span className="text-white font-semibold">Tencent Hunyuan3D-2.1 PBR + Microsoft TRELLIS</span> สแกนจ่ายรายตัวเริ่มเพียง <span className="text-amber-300 font-bold">5฿ / 9฿</span> หรือเติมแพ็กสุดคุ้มเริ่ม <span className="text-red-300 font-bold">29฿ (ตกตัวละ 2.72฿ – 4.83฿)</span>
               </p>
             </div>
 
-            {/* Section 1: Instant Pay-Per-Model QR (25฿ / 39฿) */}
+            {/* Section 1: Instant Pay-Per-Model QR (5฿ / 9฿) */}
             <div className="space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
@@ -4835,28 +4835,28 @@ export default function SiamPrism3DStudioPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   {
-                    id: "direct_25",
-                    title: "Clean Quad / Auto-Rig / AI Texture",
-                    badge: "ยอดฮิตสายเกม & พิมพ์ 3D",
-                    price: 25,
-                    credits: 2,
-                    engine: "Tripo H3.1 Standard PBR + Clean Quad",
+                    id: "direct_5",
+                    title: "Standard PBR (Microsoft TRELLIS)",
+                    badge: "ประหยัดสุด • มิติ 360° สมมาตร",
+                    price: 5,
+                    credits: 1,
+                    engine: "Microsoft TRELLIS SLAT + Clean Quad PBR",
                     features: [
-                      "ปั้นโมเดล 3D Clean Quad Topology + PBR ครบ 360° (1 ตัว)",
-                      "หรือใช้ผูกกระดูก Auto-Rig 16 ข้อต่อ / เปลี่ยนพื้นผิว AI Texture",
+                      "ปั้นโมเดล 3D มิติสมมาตร 360° + พื้นผิว PBR ครบ (1 ตัว)",
+                      "หรือใช้สร้างพื้นผิว AI Texture / อัปสเกล 8K Ultra HD (1 ครั้ง)",
                       "ส่งออกไฟล์ .GLB, .OBJ, .STL พร้อมใช้งานเชิงพาณิชย์ 100%",
                     ],
                   },
                   {
-                    id: "direct_39",
-                    title: "Best Quality Pro HD (4K PBR Sculpt)",
-                    badge: "รุ่นท็อปสุด คมชัดระดับ ZBrush",
-                    price: 39,
-                    credits: 4,
-                    engine: "Tripo H3.1 Pro HD + 4K Metallic/Roughness PBR",
+                    id: "direct_9",
+                    title: "Pro HD PBR (Tencent Hunyuan3D-2.1)",
+                    badge: "ตัวท็อปเรือธง Tencent Games 🔥",
+                    price: 9,
+                    credits: 2,
+                    engine: "Tencent Hunyuan3D-2.1 DiT + 4K Metallic/Roughness PBR",
                     features: [
-                      "ปั้นโมเดลรุ่นท็อปสุด High-Detail Sculpt + พื้นผิว 4K PBR คมกริบ (1 ตัว)",
-                      "รองรับทั้ง Text-to-3D, Image-to-3D และ Multi-View 4 มุม",
+                      "ปั้นโมเดลตัวท็อปสุด ขอบเกราะ/ใบดาบคมกริบ + 4K PBR แท้ (1 ตัว)",
+                      "หรือใช้ผูกกระดูก Auto-Rigging 16 ข้อต่อพร้อมอนิเมชัน",
                       "การันตีไม่หักเครดิตหาก GPU ต้นทางขัดข้อง (Auto-Refund)",
                     ],
                   },
@@ -4909,82 +4909,82 @@ export default function SiamPrism3DStudioPage() {
               </div>
             </div>
 
-            {/* Section 2: 5 Value Credit Packages (59฿ - 1,990฿) */}
+            {/* Section 2: 5 Value Credit Packages (29฿ - 490฿) */}
             <div className="space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-md bg-red-500/20 border border-red-400/40 text-xs font-extrabold text-red-300">
-                    ทางเลือกที่ 2 (คุ้มที่สุด 🔥)
+                    ทางเลือกที่ 2 (โปรสุดคุ้ม 🔥)
                   </span>
                   <h2 className="text-base sm:text-lg font-bold text-white">
-                    แพ็กเกจเครดิตสุดคุ้ม 5 ระดับ (เครดิตไม่มีวันหมดอายุ)
+                    โปรโมชันแพ็กเกจเครดิต 5 ระดับ (เริ่มเพียง 29฿ • เครดิตไม่มีวันหมดอายุ)
                   </h2>
                 </div>
                 <span className="text-xs text-emerald-300 font-medium">
-                  ✓ ถูกกว่าจ่ายรายตัวสูงสุด 56% • เติมครั้งเดียวเก็บไว้ใช้ข้ามปีได้
+                  ✓ เฉลี่ยเริ่มต้นเพียงตัวละ 2.72 บาท • เติมครั้งเดียวเก็บไว้ใช้ข้ามปีได้
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
                 {[
                   {
+                    id: "starter_29",
+                    name: "Starter Pack",
+                    sub: "โปรลองของ",
+                    price: 29,
+                    credits: 6,
+                    cleanCount: 6,
+                    proCount: 3,
+                    avgClean: "4.83",
+                    savePct: "แถมคุ้ม",
+                    popular: false,
+                  },
+                  {
                     id: "mini_59",
                     name: "Mini Pack",
-                    sub: "ชุดเปิดใจทดลองปั้น",
+                    sub: "โปรเกมเมอร์ (+3 ฟรี)",
                     price: 59,
-                    credits: 8,
-                    cleanCount: 4,
-                    proCount: 2,
-                    avgClean: "14.75",
-                    savePct: "41%",
-                    popular: false,
-                  },
-                  {
-                    id: "starter_99",
-                    name: "Starter Pack",
-                    sub: "ชุดเริ่มต้นสายทำโปรเจกต์",
-                    price: 99,
                     credits: 15,
-                    cleanCount: 7,
-                    proCount: 3,
-                    avgClean: "13.20",
-                    savePct: "47%",
+                    cleanCount: 15,
+                    proCount: 7,
+                    avgClean: "3.93",
+                    savePct: "-21%",
                     popular: false,
                   },
                   {
-                    id: "creator_299",
+                    id: "creator_99",
                     name: "Creator Pack",
-                    sub: "ขายดีอันดับ 1 🔥",
-                    price: 299,
-                    credits: 50,
-                    cleanCount: 25,
-                    proCount: 12,
-                    avgClean: "11.96",
-                    savePct: "52%",
+                    sub: "ขายดีอันดับ 1 🔥 (+10 ฟรี)",
+                    price: 99,
+                    credits: 30,
+                    cleanCount: 30,
+                    proCount: 15,
+                    avgClean: "3.30",
+                    savePct: "-34%",
                     popular: true,
                   },
                   {
-                    id: "pro_690",
+                    id: "pro_199",
                     name: "Pro Studio",
-                    sub: "สายผลิตเกม / พิมพ์ 3D จริงจัง",
-                    price: 690,
-                    credits: 120,
-                    cleanCount: 60,
-                    proCount: 30,
-                    avgClean: "11.50",
-                    savePct: "54%",
+                    sub: "สายปั้นจริงจัง (+25 ฟรี)",
+                    price: 199,
+                    credits: 65,
+                    cleanCount: 65,
+                    proCount: 32,
+                    avgClean: "3.06",
+                    savePct: "-39%",
                     popular: false,
                   },
                   {
-                    id: "agency_1990",
-                    name: "Agency Pack",
-                    sub: "สตูดิโอเกม & เอเจนซี่",
-                    price: 1990,
-                    credits: 360,
+                    id: "vip_490",
+                    name: "Studio VIP",
+                    sub: "สตูดิโอเหมา (+80 ฟรี)",
+                    price: 490,
+                    credits: 180,
                     cleanCount: 180,
                     proCount: 90,
-                    avgClean: "11.05",
-                    savePct: "56%",
+                    avgClean: "2.72",
+                    savePct: "-46%",
                     popular: false,
                   },
                 ].map((pkg) => (
@@ -5005,9 +5005,9 @@ export default function SiamPrism3DStudioPage() {
                               : "bg-red-500/15 text-red-300"
                           }`}
                         >
-                          ประหยัด {pkg.savePct}
+                          {pkg.savePct}
                         </span>
-                        <span className="text-[11px] font-mono text-slate-400">
+                        <span className="text-[10.5px] font-mono text-slate-400">
                           {pkg.sub}
                         </span>
                       </div>
@@ -5026,11 +5026,11 @@ export default function SiamPrism3DStudioPage() {
 
                       <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] space-y-1 text-[11px]">
                         <div className="flex justify-between text-slate-200">
-                          <span>ปั้น Clean Quad:</span>
+                          <span>ปั้น TRELLIS PBR:</span>
                           <span className="font-bold text-white">{pkg.cleanCount} ตัว</span>
                         </div>
                         <div className="flex justify-between text-slate-300">
-                          <span>ปั้น Best Quality:</span>
+                          <span>ปั้น Hunyuan Pro HD:</span>
                           <span className="font-bold text-amber-300">{pkg.proCount} ตัว</span>
                         </div>
                         <div className="flex justify-between text-emerald-300 pt-1 border-t border-white/10">
@@ -5069,23 +5069,23 @@ export default function SiamPrism3DStudioPage() {
                 <div className="space-y-2 text-xs">
                   {[
                     {
-                      feature: "ปั้นโมเดล 3D โหมด Clean Quad (Tripo H3.1 Standard + PBR)",
-                      cost: "2 เครดิต (25฿ รายตัว)",
+                      feature: "ปั้นโมเดล 3D โหมด Standard PBR (Microsoft TRELLIS)",
+                      cost: "1 เครดิต (สแกนด่วน 5฿)",
                     },
                     {
-                      feature: "ปั้นโมเดล 3D โหมด Best Quality (Tripo H3.1 Pro HD + 4K PBR)",
-                      cost: "4 เครดิต (39฿ รายตัว)",
+                      feature: "ปั้นโมเดล 3D โหมด Pro HD PBR (Tencent Hunyuan3D-2.1 4K PBR)",
+                      cost: "2 เครดิต (สแกนด่วน 9฿)",
                     },
                     {
-                      feature: "ผูกกระดูก Auto-Rigging 16 ข้อต่อ / สร้างพื้นผิว AI Texture ใหม่",
-                      cost: "2 เครดิต (25฿ รายตัว)",
+                      feature: "สร้างพื้นผิว AI Texture ใหม่ / อัปสเกลภาพพื้นผิว 8K Ultra HD",
+                      cost: "1 เครดิต (สแกนด่วน 5฿)",
                     },
                     {
-                      feature: "อัปสเกลภาพพื้นผิว AI Aura-SR 4x (8K Ultra HD)",
-                      cost: "1 เครดิต",
+                      feature: "ผูกกระดูก Auto-Rigging 16 ข้อต่อพร้อมอนิเมชัน",
+                      cost: "2 เครดิต (สแกนด่วน 9฿)",
                     },
                     {
-                      feature: "ชมคลังโมเดล 122 .GLB + กาง UV + เช็คพิมพ์ 3D + ส่งออก .GLB/.STL",
+                      feature: "ชมคลังโมเดล 122 .GLB + กาง UV + เช็กพิมพ์ 3D + ส่งออก .GLB/.STL",
                       cost: "ฟรี 0 เครดิต",
                     },
                   ].map((row) => (
@@ -5111,7 +5111,13 @@ export default function SiamPrism3DStudioPage() {
                   <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] flex justify-between items-center">
                     <span>ขั้นต่ำในการเริ่มต้นใช้งาน</span>
                     <span className="text-emerald-300 font-bold">
-                      Prism3D เริ่ม 25฿ (เว็บนอกบังคับ 680฿/เดือน)
+                      Prism3D เริ่ม 5฿ / แพ็ก 29฿ (เว็บนอกบังคับ 680฿/เดือน)
+                    </span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] flex justify-between items-center">
+                    <span>ราคาเฉลี่ยต่อโมเดล 3D</span>
+                    <span className="text-emerald-300 font-bold">
+                      เริ่มต้นเพียง 2.72฿ – 4.83฿ / ตัว (ถูกเท่าระดับโปรใหญ่เว็บนอก)
                     </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] flex justify-between items-center">
@@ -6354,9 +6360,9 @@ export default function SiamPrism3DStudioPage() {
                           setPendingCheckoutAction({
                             type: "studio_op",
                             title: `AI Texture: ${texturePrompt.slice(0, 32)}`,
-                            modeLabel: "สร้างพื้นผิว AI Texture (2 เครดิต)",
-                            costCredits: 2,
-                            directPriceThb: 25,
+                            modeLabel: "สร้างพื้นผิว AI Texture (1 เครดิต)",
+                            costCredits: 1,
+                            directPriceThb: 5,
                             previewImage: activeTask?.input_image_url || null,
                             opPayload: {
                               operation: "retexture",
@@ -6367,7 +6373,7 @@ export default function SiamPrism3DStudioPage() {
                           });
                           setTopupInitialTab("topup");
                           setTopupModalOpen(true);
-                          triggerToast(data.error || "สแกนจ่าย 25฿ หรือเติมเครดิตเพื่อสร้างพื้นผิว AI Texture");
+                          triggerToast(data.error || "สแกนจ่ายด่วน 5฿ หรือเติมเครดิตเพื่อสร้างพื้นผิว AI Texture");
                           return;
                         }
                         if (data?.user) setUser(data.user);
@@ -6387,7 +6393,7 @@ export default function SiamPrism3DStudioPage() {
                   >
                     <span>สร้างพื้นผิว AI Texture</span>
                     <span className="px-1.5 py-0.5 rounded-[4px] bg-black/25 text-[11px] font-mono tabular-nums font-medium">
-                      2 เครดิต
+                      1 เครดิต
                     </span>
                   </button>
                 </div>
@@ -7035,7 +7041,7 @@ export default function SiamPrism3DStudioPage() {
                           title: `ผูกกระดูก Auto-Rig: ${activeTask?.prompt_th || "โมเดล 3D"}`,
                           modeLabel: "Auto-Rigging & Skinning (2 เครดิต)",
                           costCredits: 2,
-                          directPriceThb: 25,
+                          directPriceThb: 9,
                           previewImage: activeTask?.input_image_url || null,
                           opPayload: {
                             operation: "rig",
@@ -7044,7 +7050,7 @@ export default function SiamPrism3DStudioPage() {
                         });
                         setTopupInitialTab("topup");
                         setTopupModalOpen(true);
-                        triggerToast(data.error || "สแกนจ่าย 25฿ หรือเติมเครดิตเพื่อผูกกระดูก Auto-Rig");
+                        triggerToast(data.error || "สแกนจ่ายด่วน 9฿ หรือเติมเครดิตเพื่อผูกกระดูก Auto-Rig");
                         return;
                       }
                       if (data?.user) setUser(data.user);
