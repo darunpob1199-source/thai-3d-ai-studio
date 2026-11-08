@@ -4812,11 +4812,11 @@ export default function SiamPrism3DStudioPage() {
                 โปรโมชัน & ตารางราคา <span className="text-[#ef4444]">Prism3D</span>
               </h1>
               <p className="text-xs sm:text-sm text-[#d4c5cb] leading-relaxed">
-                ขับเคลื่อนด้วยขุมพลังเรือธงระดับโลก <span className="text-white font-semibold">Tencent Hunyuan3D-2.1 PBR + Microsoft TRELLIS</span> สแกนจ่ายรายตัวเริ่มเพียง <span className="text-amber-300 font-bold">5฿ / 9฿</span> หรือเติมแพ็กสุดคุ้มเริ่ม <span className="text-red-300 font-bold">29฿ (ตกตัวละ 2.72฿ – 4.83฿)</span>
+                ขับเคลื่อนด้วยขุมพลังเรือธงระดับโลก <span className="text-white font-semibold">Tencent Hunyuan3D-2.1 PBR + Microsoft TRELLIS</span> สแกนจ่ายรายตัวเริ่มเพียง <span className="text-amber-300 font-bold">3฿ / 5฿</span> หรือเติมแพ็กสุดคุ้มเริ่ม <span className="text-red-300 font-bold">29฿ (ตกตัวละ 2.00฿ – 2.41฿)</span>
               </p>
             </div>
 
-            {/* Section 1: Instant Pay-Per-Model QR (5฿ / 9฿) */}
+            {/* Section 1: Instant Pay-Per-Model QR (3฿ / 5฿) */}
             <div className="space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
@@ -4835,10 +4835,10 @@ export default function SiamPrism3DStudioPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
                   {
-                    id: "direct_5",
+                    id: "direct_3",
                     title: "Standard PBR (Microsoft TRELLIS)",
                     badge: "ประหยัดสุด • มิติ 360° สมมาตร",
-                    price: 5,
+                    price: 3,
                     credits: 1,
                     engine: "Microsoft TRELLIS SLAT + Clean Quad PBR",
                     features: [
@@ -4848,10 +4848,10 @@ export default function SiamPrism3DStudioPage() {
                     ],
                   },
                   {
-                    id: "direct_9",
+                    id: "direct_5",
                     title: "Pro HD PBR (Tencent Hunyuan3D-2.1)",
                     badge: "ตัวท็อปเรือธง Tencent Games 🔥",
-                    price: 9,
+                    price: 5,
                     credits: 2,
                     engine: "Tencent Hunyuan3D-2.1 DiT + 4K Metallic/Roughness PBR",
                     features: [
@@ -4921,7 +4921,7 @@ export default function SiamPrism3DStudioPage() {
                   </h2>
                 </div>
                 <span className="text-xs text-emerald-300 font-medium">
-                  ✓ เฉลี่ยเริ่มต้นเพียงตัวละ 2.72 บาท • เติมครั้งเดียวเก็บไว้ใช้ข้ามปีได้
+                  ✓ เฉลี่ยเริ่มต้นเพียงตัวละ 2.00 บาท • เติมครั้งเดียวเก็บไว้ใช้ข้ามปีได้
                 </span>
               </div>
 
@@ -4930,61 +4930,61 @@ export default function SiamPrism3DStudioPage() {
                   {
                     id: "starter_29",
                     name: "Starter Pack",
-                    sub: "โปรลองของ",
+                    sub: "โปรลองของ (+2 ฟรี)",
                     price: 29,
-                    credits: 6,
-                    cleanCount: 6,
-                    proCount: 3,
-                    avgClean: "4.83",
-                    savePct: "แถมคุ้ม",
+                    credits: 12,
+                    cleanCount: 12,
+                    proCount: 6,
+                    avgClean: "2.41",
+                    savePct: "-20%",
                     popular: false,
                   },
                   {
                     id: "mini_59",
                     name: "Mini Pack",
-                    sub: "โปรเกมเมอร์ (+3 ฟรี)",
+                    sub: "โปรเกมเมอร์ (+5 ฟรี)",
                     price: 59,
-                    credits: 15,
-                    cleanCount: 15,
-                    proCount: 7,
-                    avgClean: "3.93",
+                    credits: 25,
+                    cleanCount: 25,
+                    proCount: 12,
+                    avgClean: "2.36",
                     savePct: "-21%",
                     popular: false,
                   },
                   {
                     id: "creator_99",
                     name: "Creator Pack",
-                    sub: "ขายดีอันดับ 1 🔥 (+10 ฟรี)",
+                    sub: "ขายดีอันดับ 1 🔥 (+15 ฟรี)",
                     price: 99,
-                    credits: 30,
-                    cleanCount: 30,
-                    proCount: 15,
-                    avgClean: "3.30",
-                    savePct: "-34%",
+                    credits: 45,
+                    cleanCount: 45,
+                    proCount: 22,
+                    avgClean: "2.20",
+                    savePct: "-27%",
                     popular: true,
                   },
                   {
                     id: "pro_199",
                     name: "Pro Studio",
-                    sub: "สายปั้นจริงจัง (+25 ฟรี)",
+                    sub: "สายปั้นจริงจัง (+35 ฟรี)",
                     price: 199,
-                    credits: 65,
-                    cleanCount: 65,
-                    proCount: 32,
-                    avgClean: "3.06",
-                    savePct: "-39%",
+                    credits: 95,
+                    cleanCount: 95,
+                    proCount: 47,
+                    avgClean: "2.09",
+                    savePct: "-30%",
                     popular: false,
                   },
                   {
                     id: "vip_490",
                     name: "Studio VIP",
-                    sub: "สตูดิโอเหมา (+80 ฟรี)",
+                    sub: "สตูดิโอเหมา (+95 ฟรี)",
                     price: 490,
-                    credits: 180,
-                    cleanCount: 180,
-                    proCount: 90,
-                    avgClean: "2.72",
-                    savePct: "-46%",
+                    credits: 245,
+                    cleanCount: 245,
+                    proCount: 122,
+                    avgClean: "2.00",
+                    savePct: "-33%",
                     popular: false,
                   },
                 ].map((pkg) => (
@@ -5070,19 +5070,19 @@ export default function SiamPrism3DStudioPage() {
                   {[
                     {
                       feature: "ปั้นโมเดล 3D โหมด Standard PBR (Microsoft TRELLIS)",
-                      cost: "1 เครดิต (สแกนด่วน 5฿)",
+                      cost: "1 เครดิต (สแกนด่วน 3฿)",
                     },
                     {
                       feature: "ปั้นโมเดล 3D โหมด Pro HD PBR (Tencent Hunyuan3D-2.1 4K PBR)",
-                      cost: "2 เครดิต (สแกนด่วน 9฿)",
+                      cost: "2 เครดิต (สแกนด่วน 5฿)",
                     },
                     {
                       feature: "สร้างพื้นผิว AI Texture ใหม่ / อัปสเกลภาพพื้นผิว 8K Ultra HD",
-                      cost: "1 เครดิต (สแกนด่วน 5฿)",
+                      cost: "1 เครดิต (สแกนด่วน 3฿)",
                     },
                     {
                       feature: "ผูกกระดูก Auto-Rigging 16 ข้อต่อพร้อมอนิเมชัน",
-                      cost: "2 เครดิต (สแกนด่วน 9฿)",
+                      cost: "2 เครดิต (สแกนด่วน 5฿)",
                     },
                     {
                       feature: "ชมคลังโมเดล 122 .GLB + กาง UV + เช็กพิมพ์ 3D + ส่งออก .GLB/.STL",
@@ -5111,13 +5111,13 @@ export default function SiamPrism3DStudioPage() {
                   <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] flex justify-between items-center">
                     <span>ขั้นต่ำในการเริ่มต้นใช้งาน</span>
                     <span className="text-emerald-300 font-bold">
-                      Prism3D เริ่ม 5฿ / แพ็ก 29฿ (เว็บนอกบังคับ 680฿/เดือน)
+                      Prism3D เริ่ม 3฿ / แพ็ก 29฿ (เว็บนอกบังคับ 680฿/เดือน)
                     </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] flex justify-between items-center">
                     <span>ราคาเฉลี่ยต่อโมเดล 3D</span>
                     <span className="text-emerald-300 font-bold">
-                      เริ่มต้นเพียง 2.72฿ – 4.83฿ / ตัว (ถูกเท่าระดับโปรใหญ่เว็บนอก)
+                      เริ่มต้นเพียง 2.00฿ – 2.41฿ / ตัว (ถูกกว่า API เว็บนอก 5 เท่า)
                     </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-black/35 border border-white/[0.06] flex justify-between items-center">

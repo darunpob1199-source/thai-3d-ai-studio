@@ -27,7 +27,7 @@ export interface PendingCheckoutAction {
   title: string;
   modeLabel: string;
   costCredits: number;
-  directPriceThb: 5 | 9 | 29;
+  directPriceThb: 3 | 5 | 9 | 29;
   previewImage?: string | null;
   opPayload?: any;
 }
@@ -60,9 +60,9 @@ export interface CreditPkgItem {
 
 export const DIRECT_PAY_ITEMS: CreditPkgItem[] = [
   {
-    id: "direct_5",
+    id: "direct_3",
     name: "Standard PBR (TRELLIS)",
-    amountThb: 5,
+    amountThb: 3,
     credits: 1,
     bonus: 0,
     badge: "จ่ายรายตัว • ปั้นทันที",
@@ -70,9 +70,9 @@ export const DIRECT_PAY_ITEMS: CreditPkgItem[] = [
     isDirect: true,
   },
   {
-    id: "direct_9",
+    id: "direct_5",
     name: "Pro HD (Hunyuan3D-2.1)",
-    amountThb: 9,
+    amountThb: 5,
     credits: 2,
     bonus: 0,
     badge: "ตัวท็อป 4K PBR • ปั้นทันที",
@@ -86,47 +86,47 @@ export const CREDIT_PACK_ITEMS: CreditPkgItem[] = [
     id: "starter_29",
     name: "Starter Pack",
     amountThb: 29,
-    credits: 6,
-    bonus: 0,
+    credits: 12,
+    bonus: 2,
     badge: "โปรลองของ",
-    subLabel: "ปั้นได้ 6 ตัว (เฉลี่ย 4.83฿/ตัว)",
+    subLabel: "ปั้นได้ 12 ตัว (เฉลี่ย 2.41฿/ตัว)",
   },
   {
     id: "mini_59",
     name: "Mini Pack",
     amountThb: 59,
-    credits: 15,
-    bonus: 3,
+    credits: 25,
+    bonus: 5,
     badge: "โปรเกมเมอร์",
-    subLabel: "ปั้นได้ 15 ตัว (เฉลี่ย 3.93฿/ตัว)",
+    subLabel: "ปั้นได้ 25 ตัว (เฉลี่ย 2.36฿/ตัว)",
   },
   {
     id: "creator_99",
     name: "Creator Pack",
     amountThb: 99,
-    credits: 30,
-    bonus: 10,
+    credits: 45,
+    bonus: 15,
     badge: "ขายดีอันดับ 1 🔥",
-    subLabel: "ปั้นได้ 30 ตัว (เฉลี่ย 3.30฿/ตัว)",
+    subLabel: "ปั้นได้ 45 ตัว (เฉลี่ย 2.20฿/ตัว)",
     popular: true,
   },
   {
     id: "pro_199",
     name: "Pro Studio",
     amountThb: 199,
-    credits: 65,
-    bonus: 25,
+    credits: 95,
+    bonus: 35,
     badge: "สายปั้นจริงจัง",
-    subLabel: "ปั้นได้ 65 ตัว (เฉลี่ย 3.06฿/ตัว)",
+    subLabel: "ปั้นได้ 95 ตัว (เฉลี่ย 2.09฿/ตัว)",
   },
   {
     id: "vip_490",
     name: "Studio VIP",
     amountThb: 490,
-    credits: 180,
-    bonus: 80,
-    badge: "คุ้มสุด -46%",
-    subLabel: "ปั้นได้ 180 ตัว (เฉลี่ย 2.72฿/ตัว)",
+    credits: 245,
+    bonus: 95,
+    badge: "คุ้มสุด -33%",
+    subLabel: "ปั้นได้ 245 ตัว (เฉลี่ย 2.00฿/ตัว)",
   },
 ];
 
