@@ -182,7 +182,7 @@ export default function TopupModal({
         const targetDirect =
           pendingAction.costCredits > 2
             ? CREDIT_PACK_ITEMS[0]
-            : pendingAction.directPriceThb === 9
+            : pendingAction.costCredits === 2 || pendingAction.directPriceThb >= 5
               ? DIRECT_PAY_ITEMS[1]
               : DIRECT_PAY_ITEMS[0];
         setSelectedPkg(targetDirect);

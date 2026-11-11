@@ -272,7 +272,7 @@ const PRESET_MODES = [
     pillLabel: "Pro HD PBR",
     credits: "2",
     title: "Tencent Hunyuan3D-2.1 Pro HD + 4K PBR",
-    desc: "ปั้นโมเดลตัวท็อปเรือธง Tencent Games เก็บขอบคมกริบ + 4K PBR Metallic/Roughness แท้ (2 เครดิต • สแกนจ่ายด่วน 9฿)",
+    desc: "ปั้นโมเดลตัวท็อปเรือธง Tencent Games เก็บขอบคมกริบ + 4K PBR Metallic/Roughness แท้ (2 เครดิต • สแกนจ่ายด่วน 5฿)",
     image: "/images/tripo/hd_model.webp",
   },
   {
@@ -280,7 +280,7 @@ const PRESET_MODES = [
     pillLabel: "Standard PBR",
     credits: "1",
     title: "Microsoft TRELLIS Clean Quad + PBR",
-    desc: "จัดเรียงโครงสร้าง 360° สมมาตรด้วย Microsoft TRELLIS SLAT พร้อมนำไปลงเอนจินเกมหรือพิมพ์ 3D ทันที (1 เครดิต • สแกนจ่ายด่วน 5฿)",
+    desc: "จัดเรียงโครงสร้าง 360° สมมาตรด้วย Microsoft TRELLIS SLAT พร้อมนำไปลงเอนจินเกมหรือพิมพ์ 3D ทันที (1 เครดิต • สแกนจ่ายด่วน 3฿)",
     image: "/images/tripo/low-poly.webp",
   },
 ];

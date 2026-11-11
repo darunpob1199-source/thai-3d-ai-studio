@@ -4062,7 +4062,7 @@ export default function SiamPrism3DStudioPage() {
         title: taskTitle,
         modeLabel: currentModelSpec.name,
         costCredits: estimatedCost,
-        directPriceThb: estimatedCost >= 3 ? 29 : estimatedCost === 2 ? 9 : 5,
+        directPriceThb: estimatedCost >= 3 ? 29 : estimatedCost === 2 ? 5 : 3,
         previewImage: uploadedImage || multiViewImages.front || null,
       });
       setTopupInitialTab("topup");
@@ -4130,7 +4130,7 @@ export default function SiamPrism3DStudioPage() {
             title: taskTitle,
             modeLabel: currentModelSpec.name,
             costCredits: estimatedCost,
-            directPriceThb: estimatedCost >= 3 ? 29 : estimatedCost === 2 ? 9 : 5,
+            directPriceThb: estimatedCost >= 3 ? 29 : estimatedCost === 2 ? 5 : 3,
             previewImage: uploadedImage || multiViewImages.front || null,
           });
           setTopupInitialTab("topup");
@@ -6362,7 +6362,7 @@ export default function SiamPrism3DStudioPage() {
                             title: `AI Texture: ${texturePrompt.slice(0, 32)}`,
                             modeLabel: "สร้างพื้นผิว AI Texture (1 เครดิต)",
                             costCredits: 1,
-                            directPriceThb: 5,
+                            directPriceThb: 3,
                             previewImage: activeTask?.input_image_url || null,
                             opPayload: {
                               operation: "retexture",
@@ -6373,7 +6373,7 @@ export default function SiamPrism3DStudioPage() {
                           });
                           setTopupInitialTab("topup");
                           setTopupModalOpen(true);
-                          triggerToast(data.error || "สแกนจ่ายด่วน 5฿ หรือเติมเครดิตเพื่อสร้างพื้นผิว AI Texture");
+                          triggerToast(data.error || "สแกนจ่ายด่วน 3฿ หรือเติมเครดิตเพื่อสร้างพื้นผิว AI Texture");
                           return;
                         }
                         if (data?.user) setUser(data.user);
@@ -7041,7 +7041,7 @@ export default function SiamPrism3DStudioPage() {
                           title: `ผูกกระดูก Auto-Rig: ${activeTask?.prompt_th || "โมเดล 3D"}`,
                           modeLabel: "Auto-Rigging & Skinning (2 เครดิต)",
                           costCredits: 2,
-                          directPriceThb: 9,
+                          directPriceThb: 5,
                           previewImage: activeTask?.input_image_url || null,
                           opPayload: {
                             operation: "rig",
@@ -7050,7 +7050,7 @@ export default function SiamPrism3DStudioPage() {
                         });
                         setTopupInitialTab("topup");
                         setTopupModalOpen(true);
-                        triggerToast(data.error || "สแกนจ่ายด่วน 9฿ หรือเติมเครดิตเพื่อผูกกระดูก Auto-Rig");
+                        triggerToast(data.error || "สแกนจ่ายด่วน 5฿ หรือเติมเครดิตเพื่อผูกกระดูก Auto-Rig");
                         return;
                       }
                       if (data?.user) setUser(data.user);
